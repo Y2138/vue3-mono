@@ -1,0 +1,3 @@
+{
+    "extends": "@mono-configs/tsconfig/base.json"
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@mono-configs/unbuild",
+  "version": "1.0.0",
+  "description": "unbuild 配置",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "unbuild"
+  },
+  "files": [
+    "lib"
+  ],
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@mono-configs/tsconfig": "workspace:^",
+    "unbuild": "^2.0.0"
+  },
+  "peerDependencies": {
+    "unbuild": "^2.0.0"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "@mono-configs/rsbuild",
+  "version": "1.0.0",
+  "description": "rsbuild打包配置文件",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "unbuild",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "files": ["lib"],
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@mono-configs/tsconfig": "workspace:^",
+    "@mono-configs/unbuild": "workspace:^",
+    "unbuild": "^2.0.0"
+  },
+  "dependencies": {
+    "@rsbuild/core": "^1.1.0",
+    "@rsbuild/plugin-sass": "^1.1.0",
+    "@rsbuild/plugin-vue": "^1.0.4",
+    "@rsbuild/plugin-vue2": "^1.0.1"
+  }
+}

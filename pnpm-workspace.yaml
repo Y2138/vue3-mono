@@ -1,0 +1,7 @@
+packages:
+  # 所有包，运行时相关包
+  - "packages/*"
+  # 配置包，ts、打包工具、eslint等
+  - "configs/*"
+  # apps 实际项目相关包
+  - "apps/*"
