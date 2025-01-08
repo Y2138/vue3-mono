@@ -2,7 +2,7 @@
   <div class="px-2 pt-4 pb-2 shadow-rs">
     <div class="flex-center mb-2">
       <div class="flex-1 w-0 flex-start">
-        <n-icon :component="Menu" size="20"></n-icon>
+        <n-icon class="cursor-pointer" :component="Menu" size="20" @click="handleToggleMenu"></n-icon>
         <n-breadcrumb class="ml-2">
           <n-breadcrumb-item v-for="item in menuRoutes" :key="item.path" @click="handleLinkClick(item)">
             {{ item.text }}
@@ -28,6 +28,7 @@ import { ref } from 'vue'
 import { Menu, Search, Refresh } from '@vicons/ionicons5'
 import TabBar from './tabBar.vue';
 import { useRouter } from 'vue-router';
+import { useMenuStore } from '@/store/modules/menu';
 
 const router = useRouter();
 const menuRoutes = ref([
@@ -50,6 +51,10 @@ const menuRoutes = ref([
 // 跳转
 const handleLinkClick = (item) => {
   router.push(item.path)
+}
+const handleToggleMenu = () => {
+  const menuStore = useMenuStore()
+  menuStore.toggleCollapse()
 }
 </script>
 

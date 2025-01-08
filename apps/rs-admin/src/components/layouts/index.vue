@@ -1,13 +1,21 @@
 <template>
   <n-layout class="h-100%" content-class="h-100%" has-sider>
-    <n-layout-sider ref="siderRef" :native-scrollbar="false" bordered>
+    <n-layout-sider
+      ref="siderRef"
+      :native-scrollbar="false"
+      bordered
+      collapse-mode="width"
+      :collapsed-width="64"
+      :collapsed="collapsed"
+      show-trigger
+      @collapse="handleToggleMenu">
       <Menu></Menu>
     </n-layout-sider>
-    <n-layout class="h-100%" content-class="w-100%">
+    <n-layout class="h-100%" content-class="w-100% flex flex-col">
       <n-layout-header>
         <Header></Header>
       </n-layout-header>
-      <n-layout-content ref="contentRef" class="flex-1 w-100% h-100% mx-2 my-2" content-class="h-100%">
+      <n-layout-content ref="contentRef" class="flex-1 w-100% h-0 mx-2 my-2" content-class="h-100%">
         <slot></slot>
       </n-layout-content>
       <n-layout-footer class="w100%">
@@ -18,9 +26,20 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import Menu from './menu.vue'
-import Header from './header.vue';
-import Footer from './footer.vue';
+import Header from './header.vue'
+import Footer from './footer.vue'
+import { useMenuStore } from '@/store/modules/menu'
+
+const collapsed = computed(() => {
+  const menuStore = useMenuStore()
+  return menuStore.collapsed
+})
+const handleToggleMenu = () => {
+  const menuStore = useMenuStore()
+  menuStore.toggleCollapse()
+}
 </script>
 
 <style scoped>

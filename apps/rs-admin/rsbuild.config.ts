@@ -24,8 +24,17 @@ export default defineConfig({
             presetIcons(),
           ],
           rules: [
-            ['shadow-rs', { 'box-shadow': '0 1px 4px #00152914' } ]
+            ['shadow-rs', { 'box-shadow': '0 1px 4px #00152914' }],
           ],
+          theme: {
+            colors: {
+              primary: 'var(--n-link-text-color-active)',
+              // success: 'var(',
+              // warning: '#faad14',
+              // error: '#f5222d',
+              // info: '#1890ff',
+            },
+          },
           // rules: [{
           //   /fz-/
           // }],

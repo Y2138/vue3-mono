@@ -1,38 +1,46 @@
 <template>
-  <n-tabs
-    type="card"
-    tab-class="max-w-lg"
-    closable
-    @update:value="handleUpdateValue">
-    <n-tab v-for="item in tabs" :name="item.text" :key="item.path"></n-tab>
-  </n-tabs>
+  <n-space size="small">
+    <n-tag
+      v-for="item in tabs"
+      :key="item.path"
+      class="cursor-pointer"
+      :type="item.path === tabStore.activeTabKey ? 'success' : ''"
+      closable
+      @click="handleTagClick(item)"
+      :on-close="() => handleTabClose(item)">
+      <span class="tabbar-span" :class="item.path === tabStore.activeTabKey ? 'active' : ''">
+        {{ item.name }}
+      </span>
+    </n-tag>
+  </n-space>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue'
+import { useTabStore } from '@/store/modules/tab'
+import { useRouter } from 'vue-router'
+import { ITabItem } from '@/types/common'
 
-const tabs = ref([
-  {
-    text: '首页',
-    path: '/',
-    icon: 'home'
-  },
-  {
-    text: '系统管理',
-    path: '/home',
-    icon: 'home'
-  },
-  {
-    text: '菜单管理',
-    path: '/test',
-    icon: 'home'
-  }
-])
-const handleUpdateValue = () => {
-  
+const tabStore = useTabStore() 
+const router = useRouter()
+
+const tabs = computed<ITabItem[]>(() => {
+  return tabStore.tabList
+})
+const handleTabClose = (item: ITabItem) => {
+  tabStore.removeTab(item, router)
+}
+const handleTagClick = (item: ITabItem) => {
+  tabStore.activeTab(item.path, item.name)
+  router.push(item.path)
 }
 </script>
 
 <style scoped>
-
+.n-tag :deep(.tabbar-span:hover) {
+  color: var(--n-link-text-color-hover)
+}
+.n-tag .tabbar-span {
+  color: var(--n-text-color)
+}
 </style>
