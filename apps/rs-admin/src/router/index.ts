@@ -13,6 +13,14 @@ import { useTabStore } from '@/store/modules/tab';
 
 export const routes: RouteRecordRaw[] = [
 	{
+		path: '/',
+		name: '首页',
+		component: () => import('@/views/home.vue'),
+		meta: {
+			title: '首页'
+		}
+	},
+	{
 		path: '/front/market',
 		component: () => import('@/views/home.vue'),
 		meta: {
@@ -127,7 +135,7 @@ router.beforeEach((to, from, next) => {
   const tabStore = useTabStore();
   console.log('to => ', to)
   tabStore.activeTab(to.path, String(to.meta?.name || to.name));
-	next();
+  next();
 });
 
 export default router;

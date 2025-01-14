@@ -18,3 +18,17 @@ export function transferRouteToMenu(routes: RouteRecordRaw[], parent?: IMenuItem
     return menuItem
   })
 }
+
+export function flattenTreeWithPaths(nodes: IMenuItem[]) {
+  const result: IMenuItem[] = [];
+
+  nodes.forEach(node => {
+    // const currentPath = [...parentPath, node.name];
+    result.push({ ...node });
+
+    if (node.children) {
+      result.push(...flattenTreeWithPaths(node.children));
+    }
+  });
+  return result
+}

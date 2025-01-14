@@ -1,4 +1,14 @@
 <template>
+  <div class="py-5 text-6 font-600 flex-center">
+    <n-icon @click="goToMain">
+      <MenuIcon></MenuIcon>
+    </n-icon>
+    <span v-if="!collapsed" class="whitespace-nowrap overflow-hidden">
+      Rs-Admin
+    </span>
+    <!-- <Transition name="collapse">
+    </Transition> -->
+  </div>
   <n-menu
     v-model:value="menuStore.activeMenuKey"
     ref="menuRef"
@@ -12,12 +22,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h, computed, watch, type Component } from 'vue'
+import { ref, h, computed, watch, Transition, type Component } from 'vue'
 import type { MenuOption, MenuInst } from 'naive-ui'
 import { NIcon } from 'naive-ui'
 import { useMenuStore } from '@/store/modules/menu'
 import { IMenuItem } from '@/types/common'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
+import { Menu as MenuIcon } from '@vicons/ionicons5'
 
 const menuRef = ref<MenuInst | null>(null)
 const menuStore = useMenuStore()
@@ -52,8 +63,12 @@ const transferMenu = (menuList?: IMenuItem[]): MenuOption[] | undefined => {
   }))
 }
 const menuOptions = computed(() => {
-  return transferMenu(menuStore.menuList)
+  return transferMenu(menuStore.menuTree)
 })
+const router = useRouter()
+const goToMain = () => {
+  router.push('/')
+}
 
 
 // const menuOptions = ref<MenuOption[]>([
@@ -188,5 +203,16 @@ const menuOptions = computed(() => {
 </script>
 
 <style scoped>
-
+.collapse-enter-active,
+.collapse-leave-active {
+  transition: width .3s ease-in;
+}
+.collapse-enter-from,
+.collapse-leave-to {
+  width: 0;
+}
+.collapse-enter-to,
+.collapse-leave-from {
+  width: 100px;
+}
 </style>

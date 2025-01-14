@@ -1,15 +1,25 @@
 <template>
-  <n-config-provider inline-theme-disabled>
+  <n-config-provider :theme="themeVar" inline-theme-disabled>
     <Layout>
-      <RouterView></RouterView>
+      <RouterView :key="fullPath + pageRefreshKey"></RouterView>
     </Layout>
   </n-config-provider>
 </template>
 
 <script setup lang="ts">
+import { computed, toRefs } from 'vue'
 import Layout from '@/components/layouts/index.vue'
-import { RouterView } from 'vue-router';
+import { RouterView, useRoute } from 'vue-router';
+import { useGlobalStore } from './store/modules/global';
+import { storeToRefs } from 'pinia';
+import { darkTheme } from 'naive-ui';
 
+const route = useRoute()
+const { fullPath } = toRefs(route)
+const { pageRefreshKey, theme } = storeToRefs(useGlobalStore())
+const themeVar = computed(() => {
+  return theme.value === 'dark' ? darkTheme : ''
+})
 </script>
 
 <style scoped>

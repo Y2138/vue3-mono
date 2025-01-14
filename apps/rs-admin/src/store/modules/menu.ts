@@ -1,22 +1,37 @@
 import { defineStore } from 'pinia'
 import { routes } from '@/router'
-import { transferRouteToMenu } from '@/utils'
+import { transferRouteToMenu, flattenTreeWithPaths } from '@/utils'
+import { IMenuItem } from '@/types/common'
 
-const menuList = transferRouteToMenu(routes)
+const menuTree = transferRouteToMenu(routes)
 
 export const useMenuStore = defineStore('menu', {
   state: () => ({
     activeMenuKey: '', // 当前路由路径
-    menuList,
+    menuTree,
+    flatMenuList: flattenTreeWithPaths(menuTree),
     collapsed: false, // 菜单是否收起
   }),
-	getters: {},
+	getters: {
+    menuRoutes(): IMenuItem[] {
+      const result: IMenuItem[] = []
+      let curMenu = this.flatMenuList.find(item => item.path === this.activeMenuKey)
+      if (curMenu) {
+        result.push(curMenu)
+        while(curMenu.parent) {
+          result.unshift(curMenu.parent)
+          curMenu = curMenu.parent
+        }
+      }
+      return result
+    }
+  },
   actions: {
     setActiveMenuKey(activeMenuKey: string) {
       this.activeMenuKey = activeMenuKey
     },
-    setMenuList(menuList: any) {
-      this.menuList = menuList
+    setMenuList(menuTree: any) {
+      this.menuTree = menuTree
     },
     toggleCollapse() {
       this.collapsed = !this.collapsed

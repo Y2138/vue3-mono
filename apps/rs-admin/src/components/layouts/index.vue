@@ -6,9 +6,7 @@
       bordered
       collapse-mode="width"
       :collapsed-width="64"
-      :collapsed="collapsed"
-      show-trigger
-      @collapse="handleToggleMenu">
+      :collapsed="collapsed">
       <Menu></Menu>
     </n-layout-sider>
     <n-layout class="h-100%" content-class="w-100% flex flex-col">
@@ -31,15 +29,11 @@ import Menu from './menu.vue'
 import Header from './header.vue'
 import Footer from './footer.vue'
 import { useMenuStore } from '@/store/modules/menu'
+const menuStore = useMenuStore()
 
 const collapsed = computed(() => {
-  const menuStore = useMenuStore()
   return menuStore.collapsed
 })
-const handleToggleMenu = () => {
-  const menuStore = useMenuStore()
-  menuStore.toggleCollapse()
-}
 </script>
 
 <style scoped>

@@ -1,1 +1,5 @@
 /* 使用unocss后 尽量不使用全局样式 */
+
+.mx-context-menu-item {
+  cursor: pointer;
+}

@@ -5,7 +5,8 @@ import type { Router } from 'vue-router'
 export const useTabStore = defineStore('tab', {
   state: () => ({
     tabList: <ITabItem[]>[],
-    activeTabKey: ''
+    activeTabKey: '',
+    pageRefreshKey: 1
   }),
   getters: {},
   actions: {
@@ -33,11 +34,22 @@ export const useTabStore = defineStore('tab', {
         this.tabList.splice(_fIndex, 1)
       }
     },
-    removeRightTab(tab: ITabItem) {
+    removeOtherTabs(tab: ITabItem) {
+      this.tabList = this.tabList.filter(item => item.path === tab.path)
+      this.activeTabKey = this.tabList[0].path
+    },
+    removeRightTabs(tab: ITabItem) {
       const _fIndex = this.tabList.findIndex(item => item.path === tab.path)
       if (_fIndex !== -1) {
         this.tabList.splice(_fIndex + 1)
       }
+    },
+    removeAllTabs(router: Router) {
+      this.tabList = []
+      router.push('/')
+    },
+    refresh() {
+      this.pageRefreshKey ++
     }
   }
 })
