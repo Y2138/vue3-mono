@@ -1,16 +1,29 @@
 import { defineConfig } from '@rsbuild/core';
 import { pluginVue } from '@rsbuild/plugin-vue';
+import { pluginVueJsx } from '@rsbuild/plugin-vue-jsx';
+import { pluginBabel } from '@rsbuild/plugin-babel'
 import { NaiveUiResolver } from 'unplugin-vue-components/resolvers';
 import Components from 'unplugin-vue-components/rspack';
 import { UnoCSSRspackPlugin } from '@unocss/webpack/rspack'
 import { presetIcons, presetUno, presetAttributify } from 'unocss'
+// import markdownLoader
 
 export default defineConfig({
   plugins: [
+    pluginBabel({
+      include: /\.(?:jsx|tsx)$/
+    }),
     pluginVue(),
+    pluginVueJsx()
   ],
+  source: {
+    exclude: ['node_modules/@vicons/ionicons5/README.md'],
+  },
   tools: {
     rspack: {
+      loader: {
+        
+      },
       plugins: [
         Components({
           resolvers: [NaiveUiResolver()],

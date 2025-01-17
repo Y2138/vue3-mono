@@ -1,17 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import type { RouteRecordRaw } from 'vue-router';
 import testRouters from './test-router'
-import {
-	BookOutline as BookIcon,
-	PersonOutline as PersonIcon,
-	WineOutline as WineIcon,
-} from '@vicons/ionicons5'
+import { Person, WifiOutline } from '@vicons/ionicons5'
 import { useMenuStore } from '@/store/modules/menu';
 import { useTabStore } from '@/store/modules/tab';
 
 // const modules = import.meta.glob(`./*-router.ts`, { eager: true, import: 'default' });
 
-export const routes: RouteRecordRaw[] = [
+export const routes: CustomRouteRecord[] = [
 	{
 		path: '/',
 		name: '首页',
@@ -25,7 +20,7 @@ export const routes: RouteRecordRaw[] = [
 		component: () => import('@/views/home.vue'),
 		meta: {
 			title: '市场素材审核管理',
-			icon: BookIcon
+			icon: 'Menu'
 		},
 		name: '市场素材审核管理',
 		redirect: '/front/market/material',
@@ -35,7 +30,7 @@ export const routes: RouteRecordRaw[] = [
 				name: '市场素材审核',
 				meta: {
 					title: '市场素材审核',
-					icon: PersonIcon
+					icon: Person
 				},
 				component: () => import('@/views/home.vue'),
 				redirect: '/front/market/material/audit-list',
@@ -46,7 +41,7 @@ export const routes: RouteRecordRaw[] = [
 						name: '市场素材初审',
 						meta: {
 							title: '市场素材初审',
-							icon: PersonIcon
+							icon: 'Person'
 						}
 					},
 					{
@@ -54,7 +49,8 @@ export const routes: RouteRecordRaw[] = [
 						component: () => import('@/views/home.vue'),
 						name: '市场素材复审',
 						meta: {
-							title: '市场素材复审'
+							title: '市场素材复审',
+							icon: 'AddCircle'
 						}
 					},
 					{
@@ -62,7 +58,8 @@ export const routes: RouteRecordRaw[] = [
 						component: () => import('@/views/home.vue'),
 						name: '脚本初审',
 						meta: {
-							title: '脚本初审'
+							title: '脚本初审',
+							icon: 'AlertCircle'
 						}
 					},
 					{
@@ -79,7 +76,7 @@ export const routes: RouteRecordRaw[] = [
 						name: '导出管理',
 						meta: {
 							title: '导出管理',
-							icon: WineIcon
+							icon: WifiOutline
 						}
 					},
 					{

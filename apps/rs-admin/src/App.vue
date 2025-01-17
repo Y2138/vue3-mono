@@ -1,8 +1,10 @@
 <template>
   <n-config-provider :theme="themeVar" inline-theme-disabled>
-    <Layout>
-      <RouterView :key="fullPath + pageRefreshKey"></RouterView>
-    </Layout>
+    <n-message-provider>
+      <Layout>
+        <RouterView :key="fullPath + pageRefreshKey"></RouterView>
+      </Layout>
+    </n-message-provider>
   </n-config-provider>
 </template>
 

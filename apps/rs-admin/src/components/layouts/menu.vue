@@ -1,10 +1,11 @@
 <template>
   <div class="py-5 text-6 font-600 flex-center">
     <n-icon @click="goToMain">
-      <MenuIcon></MenuIcon>
+      <!-- TODO 自定义svg图标 -->
+      <!-- <MenuIcon /> -->
     </n-icon>
     <span v-if="!collapsed" class="whitespace-nowrap overflow-hidden">
-      Rs-Admin
+      Rs-Admins
     </span>
     <!-- <Transition name="collapse">
     </Transition> -->
@@ -22,19 +23,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h, computed, watch, Transition, type Component } from 'vue'
+import { ref, h, computed, watch, Transition, type Component, type DefineComponent } from 'vue'
 import type { MenuOption, MenuInst } from 'naive-ui'
 import { NIcon } from 'naive-ui'
 import { useMenuStore } from '@/store/modules/menu'
-import { IMenuItem } from '@/types/common'
 import { RouterLink, useRouter } from 'vue-router'
-import { Menu as MenuIcon } from '@vicons/ionicons5'
+import * as Ionicons5 from '@vicons/ionicons5'
 
 const menuRef = ref<MenuInst | null>(null)
 const menuStore = useMenuStore()
-function renderIcon(icon: Component) {
-  return () => h(NIcon, null, { default: () => h(icon) })
-}
 // 定位到菜单项
 function scrollTo(key: string) {
   menuRef.value?.showOption(key)
@@ -49,22 +46,73 @@ const collapsed = computed(() => {
   return menuStore.collapsed
 })
 
-const transferMenu = (menuList?: IMenuItem[]): MenuOption[] | undefined => {
-  if (!menuList) return
-  return menuList.map(item => ({
-    label: item.children ? item.name : () => h(
-      RouterLink,
-      { to: item.path },
-      { default: () => item.name }
-    ),
-    path: item.path,
-    icon: renderIcon(item.icon),
-    children: transferMenu(item.children)
-  }))
+function renderIconWithName(iconName: IIcons) {
+  // console.log('2501=> ', iconComp)
+  const iconComp = Ionicons5[iconName]
+  return () => h(NIcon, null, { default: () => h(iconComp) })
 }
-const menuOptions = computed(() => {
-  return transferMenu(menuStore.menuTree)
-})
+
+function renderIcon(icon: Component) {
+  return () => h(NIcon, null, { default: () => h(icon) })
+}
+
+const menuOptions = ref<MenuOption[]>([])
+function transferMenu(menuList?: IMenuItem[]): MenuOption[] {
+  if (!menuList) return []
+  return menuList.map((item) => {
+    const icon = typeof item.icon === 'string' ? renderIconWithName(item.icon): renderIcon(item.icon)
+    // const icon = renderIcon(item.icon)
+    return {
+      label: item.children ? item.name : () => h(
+        RouterLink,
+        { to: item.path },
+        { default: () => item.name }
+      ),
+      path: item.path,
+      icon,
+      children: item.children ? transferMenu(item.children) : []
+    }
+  })
+}
+
+// 动态导入 没必要 无法做到分包
+// async function renderIconWithNameSync(iconName: IIcons) {
+//   const iconComp: {default: DefineComponent} = await import(`@vicons/ionicons5/${iconName}`)
+//   console.log('2501=> ', iconComp)
+//   // const iconComp = Ionicons[iconName]
+//   return () => h(NIcon, null, { default: () => h(iconComp.default) })
+// }
+// async function transferMenu (menuList?: IMenuItem[]): Promise<MenuOption[]> {
+//   if (!menuList) return []
+//   const result = await Promise.all(menuList.map(async (item) => {
+//     const icon = typeof item.icon === 'string' ? await renderIconWithName(item.icon): renderIcon(item.icon)
+//     // const icon = renderIcon(item.icon)
+//     return {
+//       label: item.children ? item.name : () => h(
+//         RouterLink,
+//         { to: item.path },
+//         { default: () => item.name }
+//       ),
+//       path: item.path,
+//       icon,
+//       children: item.children ? await transferMenu(item.children) : []
+//     }
+//   }))
+//   return result
+// }
+watch(
+  () => menuStore.menuTree,
+  async (val) => {
+    menuOptions.value = await transferMenu(val)
+  },
+  {
+    immediate: true
+  }
+)
+
+// const menuOptions = computed(() => {
+//   return transferMenu(menuStore.menuTree)
+// })
 const router = useRouter()
 const goToMain = () => {
   router.push('/')

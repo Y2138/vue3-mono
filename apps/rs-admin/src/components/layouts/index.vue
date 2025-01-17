@@ -29,7 +29,11 @@ import Menu from './menu.vue'
 import Header from './header.vue'
 import Footer from './footer.vue'
 import { useMenuStore } from '@/store/modules/menu'
+import { useMessage } from 'naive-ui'
+
 const menuStore = useMenuStore()
+// 在window上挂载一个$message以在setup函数外使用
+window.$message = useMessage();
 
 const collapsed = computed(() => {
   return menuStore.collapsed

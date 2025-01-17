@@ -1,5 +1,4 @@
 import { RouteRecordRaw } from 'vue-router'
-import type { IMenuItem } from '@/types/common'
 import {
   Menu as MenuIcon
 } from '@vicons/ionicons5'

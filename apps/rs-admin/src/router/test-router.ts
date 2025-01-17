@@ -1,6 +1,4 @@
-import type { RouteRecordRaw } from 'vue-router';
-
-const routes: RouteRecordRaw[] = [
+const routes: CustomRouteRecord[] = [
 	{
 		path: '/test',
 		name: '测试路由',

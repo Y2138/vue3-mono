@@ -1,14 +1,25 @@
 // index.ts
-import axios, { AxiosInstance, RawAxiosRequestHeaders, AxiosRequestHeaders, AxiosResponse, AxiosError, AxiosRequestConfig, isCancel } from 'axios'
+import axios, { AxiosInstance, RawAxiosRequestHeaders, AxiosRequestHeaders, AxiosResponse, AxiosRequestConfig, isCancel } from 'axios'
 import { PendingMap } from './cancelToken'
-import { getEnv, initConfig, getResCode, createLogin, cancelIns } from '@/utils/utils'
+// import { getEnv, initConfig, getResCode, createLogin, cancelIns } from '@/utils/utils'
 // import cookie from './cookie'
 // import { ObjTy, ResResult } from '@/types/common';
-interface ResResult<T> {
-  success: boolean
-  data: T
-  message: string
+// 继续改造
+interface customAxiosConfig<T> extends AxiosRequestConfig<T> {
+    /* 是否不需要错误信息提示，默认有 */
+    disableErrorMsg?: boolean
+	/* 是否需要全屏loading */
+    fullLoading?: boolean
+	/* 是否重试 */
+	retry?: boolean
+	/* 重试次数 */
+	retryMaxCount?: number
+	/* 重试间隔 */
+	retryRelay?: number
+	/* 已重试次数 */
+	__retryCount?: number
 }
+
 
 const loginUrls = ['/auth/v3/login', '/auth/v3/sendSmsCode', '/auth/v3/logout', '/auth/v3/api/verify-token']
 
@@ -34,7 +45,7 @@ const errorHandle = (status: number, other: string, errorCode?: string) => {
 		// 在登录成功后返回当前页面，这一步需要在登录页操作。
 		case 401: //重定向
 			console.error('token:登录失效:' + errorCode)
-			createLogin()
+			// createLogin()
 			break
 		// 403 token过期
 		// 清除token并跳转登录页
@@ -95,8 +106,8 @@ const instance = axios.create({
 
 	// 请求时长
 	timeout: 1000 * 10,
-	// 请求的base地址 TODO:这块以后根据不同的模块调不同的api
-	baseURL: `${location.protocol}//ngw.${getEnv()}enmonster.com`,
+	// TODO 请求的base地址 根据不同的模块调不同的api
+	// baseURL: `${location.protocol}//ngw.${getEnv()}enmonster.com`,
 	// 表示跨域请求时是否需要使用凭证
 	withCredentials: false,
 })
@@ -106,7 +117,7 @@ const instance = axios.create({
  * 每次请求前，如果存在token则在请求头中携带token
  */
 instance.interceptors.request.use(
-	config => {
+	(config) => {
         // TODO 若非同域名请求，需要前端获取cookie后塞入header头中
         // TODO 若是同域名请求，header头会带入该域名下所有cookie，无需再处理
         const headers: RawAxiosRequestHeaders = {}
@@ -151,8 +162,8 @@ instance.interceptors.response.use(
 				return Promise.resolve(data)
 			}
 			// 不需要显示提示文案
-			const { noFalseMsg }: { noFalseMsg: boolean } = config as any
-			if (!noFalseMsg) {
+			const { disableErrorMsg } = config as customAxiosConfig<any>
+			if (!disableErrorMsg) {
                 // 此处默认展示提示信息
 			}
 
@@ -162,41 +173,40 @@ instance.interceptors.response.use(
 		}
 		// 请求失败
 	},
-	(error: any) => {
-		const { response } = error
+	(error) => {
+		const { response }: {response: AxiosResponse} = error
 
 		if (response) {
 			/**
 			 * 接口抛出异常时，从错误信息中解析出请求唯一标志，并从请求队列中将其删除
 			 */
-			const { config = {}, status, data = {} } = response
+			const { config, status, data = {} } = response
 			const { errorMessage = '', errorCode = '' } = data
             pendingMap.removePending(config)
-
 			errorHandle(status, errorMessage, errorCode)
+			
+			const _config = response.config as customAxiosConfig<any>
 			if (![401, 403, 404].includes(status)) {
 				// 超时重新请求
-				const config = error.config,
-					// 全局的请求次数,请求的间隙
-					[RETRY_COUNT, RETRY_DELAY] = [1, 1000]
-
-				if (config && RETRY_COUNT) {
+				// 全局的请求次数,请求的间隙
+				if (_config && _config.retry && (_config.retryMaxCount || 0) > 0) {
 					// 设置用于跟踪重试计数的变量
-					config.__retryCount = config.__retryCount || 0
+					_config.__retryCount = _config.__retryCount || 0
 					// 检查是否已经把重试的总数用完
-					if (config.__retryCount >= RETRY_COUNT) {
+					if (_config.__retryCount >= (_config.retryMaxCount || 0)) {
 						return Promise.reject(response || { message: error.message || '网络异常' })
 					}
 					// 增加重试计数
-					config.__retryCount++
-					// 创造新的Promise来处理指数后退
+					_config.__retryCount++
+
+					// 创造新的Promise来处理计数后退
 					const backoff = new Promise<void>(resolve => {
 						setTimeout(() => {
 							resolve()
-						}, RETRY_DELAY || 1)
+						}, _config.retryRelay || 1)
 					})
+					
 					// instance重试请求的Promise
-
 					return backoff.then(() => {
 						return instance(config)
 					})
@@ -216,43 +226,47 @@ instance.interceptors.response.use(
 )
 // 只需要考虑单一职责，这块只封装axios
 export default instance
-const request = <T = any>(config: string | AxiosRequestConfig<T>, options?: any): Promise<T> => {
+
+// T是请求data类型，D是响应data类型
+const request = <R = any, Q = any>(config: string | AxiosRequestConfig<Q>, options?: customAxiosConfig<Q>) => {
 	if (typeof config === 'string') {
 		if (!options) {
-			return instance.request({
+			return instance.request<R>({
 				url: config,
 			})
 			// throw new Error('请配置正确的请求参数');
 		}
-		return instance.request({
+		return instance.request<R>({
 			url: config,
 			...options,
 		})
 	}
-	return instance.request({ ...config, ...options })
+	return instance.request<R>({ ...config, ...options })
 }
 
-// TODO 以下类型需要重新处理
-
-// TODO 利用函数重载
-function toAwait<T>(promise: Promise<ResResult<T>>): Promise<[ResResult<T>, null]>
-function toAwait<T>(promise: Promise<ResResult<T>>): Promise<[ResResult<undefined>, any]>
-function toAwait<T>(promise: Promise<ResResult<T>>) {
-	return promise.then<[ResResult<T>, null]>((data: ResResult<T>) => [data, null]).catch<[ResResult<undefined>, any]>(error => [{ success: false }, error])
+export async function get<R = any, Q = any>(config: AxiosRequestConfig<Q> | string, options: customAxiosConfig<Q>): Promise<[ResResult<R>, null] | [null, any]> {
+    try {
+        const response = await request<ResResult<R>, Q>(config, { method: 'GET', ...(options || {}) })
+        const { data } = response
+        return [data, null]
+    } catch (error) {
+        return [null, error]
+    }
 }
 
-// export function toAwait<T = any>(promise: Promise<ResResult<T>>) {
-// 	return promise.then<[ResResult<T>, null]>((data: ResResult<T>) => [data, null]).catch<[ResResult<undefined>, any]>(error => [{ success: false }, error]);
-// }
-export function get<T = any>(config: any, options?: any) {
-	const get = request({ ...config, method: 'GET' }, options)
-	return toAwait<T>(get)
+export async function post<R = any, Q = any>(config: AxiosRequestConfig<Q> | string, options: customAxiosConfig<Q>):  Promise<[ResResult<R>, null] | [null, any]> {
+    try {
+        const response = await request<ResResult<R>, Q>(config, { method: 'POST', ...(options || {}) })
+        const { data } = response
+        return [data, null]
+    } catch (error) {
+        return [null, error]
+    }
 }
+// const api_example2 = (data: string) => post('/api/example2', { data: 'aaa' })
+// const api_example = (req: 'name') => post<'string'>('api/example', { data: 'name' })
+// const [res, err] = await api_example('name')
 
-export function post<T = any>(config: any, options?: any) {
-	const post = request({ ...config, method: 'POST' }, options)
-	return toAwait<T>(post)
-}
 
 // axios请求返回类型
 type axiosResType<T> = Promise<[ResResult<undefined>, any] | [ResResult<T>, null]>
