@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { routes } from '@/router'
 import { transferRouteToMenu, flattenTreeWithPaths } from '@/utils'
-import { IMenuItem } from '@/types/common'
 
 const menuTree = transferRouteToMenu(routes)
 

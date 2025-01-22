@@ -1,15 +1,16 @@
 // index.ts
-import axios, { AxiosInstance, RawAxiosRequestHeaders, AxiosRequestHeaders, AxiosResponse, AxiosRequestConfig, isCancel } from 'axios'
+import axios, { isCancel } from 'axios'
+import type { AxiosInstance, RawAxiosRequestHeaders, AxiosRequestHeaders, AxiosResponse, AxiosRequestConfig } from 'axios'
 import { PendingMap } from './cancelToken'
 // import { getEnv, initConfig, getResCode, createLogin, cancelIns } from '@/utils/utils'
 // import cookie from './cookie'
 // import { ObjTy, ResResult } from '@/types/common';
 // 继续改造
 interface customAxiosConfig<T> extends AxiosRequestConfig<T> {
-    /* 是否不需要错误信息提示，默认有 */
-    disableErrorMsg?: boolean
-	/* 是否需要全屏loading */
-    fullLoading?: boolean
+  /* 是否不需要错误信息提示，默认有 */
+  disableErrorMsg?: boolean
+  /* 是否需要全屏loading */
+  fullLoading?: boolean
 	/* 是否重试 */
 	retry?: boolean
 	/* 重试次数 */
@@ -18,6 +19,8 @@ interface customAxiosConfig<T> extends AxiosRequestConfig<T> {
 	retryRelay?: number
 	/* 已重试次数 */
 	__retryCount?: number
+  /* 是否不需要拼接时间戳，默认拼接 */
+  noTimestamp?: boolean
 }
 
 
@@ -118,9 +121,9 @@ const instance = axios.create({
  */
 instance.interceptors.request.use(
 	(config) => {
-        // TODO 若非同域名请求，需要前端获取cookie后塞入header头中
-        // TODO 若是同域名请求，header头会带入该域名下所有cookie，无需再处理
-        const headers: RawAxiosRequestHeaders = {}
+    // TODO 若非同域名请求，需要前端获取cookie后塞入header头中
+    // TODO 若是同域名请求，header头会带入该域名下所有cookie，无需再处理
+    const headers: RawAxiosRequestHeaders = {}
 
 		// headers.Auth = cookie.get(`${initConfig().tokenName}`) || ''
 		// headers['agentNo'] = cookie.get('agentNo') || ''
@@ -134,7 +137,8 @@ instance.interceptors.request.use(
 
 		// console.log("config.header---", config.headers, config.url);
 		const configUrl = config.url?.replace(/\?.*/, '') // 过滤掉多余的/
-        // TODO 登录使用不同的域名
+    // TODO 拼接时间戳
+    // TODO 登录使用不同的域名
 		if (configUrl && loginUrls.includes(configUrl)) {
 			config.baseURL = config.baseURL?.replace('ngw.', 'uag.')
 		}
@@ -164,7 +168,7 @@ instance.interceptors.response.use(
 			// 不需要显示提示文案
 			const { disableErrorMsg } = config as customAxiosConfig<any>
 			if (!disableErrorMsg) {
-                // 此处默认展示提示信息
+        // 此处默认展示提示信息
 			}
 
 			return Promise.reject(data)
@@ -184,7 +188,7 @@ instance.interceptors.response.use(
 			const { errorMessage = '', errorCode = '' } = data
             pendingMap.removePending(config)
 			errorHandle(status, errorMessage, errorCode)
-			
+
 			const _config = response.config as customAxiosConfig<any>
 			if (![401, 403, 404].includes(status)) {
 				// 超时重新请求
@@ -205,7 +209,7 @@ instance.interceptors.response.use(
 							resolve()
 						}, _config.retryRelay || 1)
 					})
-					
+
 					// instance重试请求的Promise
 					return backoff.then(() => {
 						return instance(config)
@@ -224,11 +228,9 @@ instance.interceptors.response.use(
 		}
 	},
 )
-// 只需要考虑单一职责，这块只封装axios
-export default instance
 
-// T是请求data类型，D是响应data类型
-const request = <R = any, Q = any>(config: string | AxiosRequestConfig<Q>, options?: customAxiosConfig<Q>) => {
+// Q是请求data类型，R是响应data类型
+const request = <Q = any, R = any>(config: string | AxiosRequestConfig<Q>, options?: customAxiosConfig<Q>) => {
 	if (typeof config === 'string') {
 		if (!options) {
 			return instance.request<R>({
@@ -244,9 +246,9 @@ const request = <R = any, Q = any>(config: string | AxiosRequestConfig<Q>, optio
 	return instance.request<R>({ ...config, ...options })
 }
 
-export async function get<R = any, Q = any>(config: AxiosRequestConfig<Q> | string, options: customAxiosConfig<Q>): Promise<[ResResult<R>, null] | [null, any]> {
+export async function get<Q = any, R = any>(config: AxiosRequestConfig<Q> | string, options: customAxiosConfig<Q>): Promise<[ResResult<R>, null] | [null, any]> {
     try {
-        const response = await request<ResResult<R>, Q>(config, { method: 'GET', ...(options || {}) })
+        const response = await request<Q, ResResult<R>>(config, { method: 'GET', ...(options || {}) })
         const { data } = response
         return [data, null]
     } catch (error) {
@@ -254,9 +256,9 @@ export async function get<R = any, Q = any>(config: AxiosRequestConfig<Q> | stri
     }
 }
 
-export async function post<R = any, Q = any>(config: AxiosRequestConfig<Q> | string, options: customAxiosConfig<Q>):  Promise<[ResResult<R>, null] | [null, any]> {
+export async function post<Q = any, R = any>(config: AxiosRequestConfig<Q> | string, options: customAxiosConfig<Q>):  Promise<[ResResult<R>, null] | [null, any]> {
     try {
-        const response = await request<ResResult<R>, Q>(config, { method: 'POST', ...(options || {}) })
+        const response = await request<Q, ResResult<R>>(config, { method: 'POST', ...(options || {}) })
         const { data } = response
         return [data, null]
     } catch (error) {
@@ -267,8 +269,5 @@ export async function post<R = any, Q = any>(config: AxiosRequestConfig<Q> | str
 // const api_example = (req: 'name') => post<'string'>('api/example', { data: 'name' })
 // const [res, err] = await api_example('name')
 
-
-// axios请求返回类型
-type axiosResType<T> = Promise<[ResResult<undefined>, any] | [ResResult<T>, null]>
-
-export type { AxiosInstance, AxiosResponse, axiosResType }
+// 只需要考虑单一职责，这块只封装axios
+export default instance

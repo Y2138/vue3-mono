@@ -1,5 +1,5 @@
 <template>
-  <n-config-provider :theme="themeVar" inline-theme-disabled>
+  <n-config-provider :theme="themeVar" :locale="zhCN" :date-locale="dateZhCN" inline-theme-disabled>
     <n-message-provider>
       <Layout>
         <RouterView :key="fullPath + pageRefreshKey"></RouterView>
@@ -14,7 +14,7 @@ import Layout from '@/components/layouts/index.vue'
 import { RouterView, useRoute } from 'vue-router';
 import { useGlobalStore } from './store/modules/global';
 import { storeToRefs } from 'pinia';
-import { darkTheme } from 'naive-ui';
+import { darkTheme, zhCN, dateZhCN } from 'naive-ui';
 
 const route = useRoute()
 const { fullPath } = toRefs(route)

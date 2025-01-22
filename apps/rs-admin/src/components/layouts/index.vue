@@ -13,7 +13,7 @@
       <n-layout-header>
         <Header></Header>
       </n-layout-header>
-      <n-layout-content ref="contentRef" class="flex-1 w-100% h-0 mx-2 my-2" content-class="h-100%">
+      <n-layout-content ref="contentRef" class="flex-1 w-100% h-0 px-2 my-2" content-class="h-100%">
         <slot></slot>
       </n-layout-content>
       <n-layout-footer class="w100%">

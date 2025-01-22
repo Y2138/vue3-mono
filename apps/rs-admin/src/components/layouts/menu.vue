@@ -15,7 +15,9 @@
     ref="menuRef"
     :options="menuOptions"
     key-field="path"
-    :indent="24"
+    :width="240"
+    :indent="20"
+    :root-indent="16"
     :collapsed="collapsed"
     :collapsed-width="64"
     accordion>
@@ -23,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h, computed, watch, Transition, type Component, type DefineComponent } from 'vue'
+import { ref, h, computed, watch, Transition, type Component } from 'vue'
 import type { MenuOption, MenuInst } from 'naive-ui'
 import { NIcon } from 'naive-ui'
 import { useMenuStore } from '@/store/modules/menu'
@@ -70,7 +72,7 @@ function transferMenu(menuList?: IMenuItem[]): MenuOption[] {
       ),
       path: item.path,
       icon,
-      children: item.children ? transferMenu(item.children) : []
+      children: item.children ? transferMenu(item.children) : undefined
     }
   })
 }

@@ -19,10 +19,22 @@ export default defineConfig({
   source: {
     exclude: ['node_modules/@vicons/ionicons5/README.md'],
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://guanli-platform.qimao.com',
+        changeOrigin: true,
+        secure: false,
+        pathRewrite: {
+          '^/api': '',
+        },
+      },
+    }
+  },
   tools: {
     rspack: {
       loader: {
-        
+
       },
       plugins: [
         Components({
