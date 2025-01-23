@@ -10,7 +10,7 @@
 
 <script setup lang="ts">
 import { computed, toRefs } from 'vue'
-import Layout from '@/components/layouts/index.vue'
+import Layout from '@/layouts/index.vue'
 import { RouterView, useRoute } from 'vue-router';
 import { useGlobalStore } from './store/modules/global';
 import { storeToRefs } from 'pinia';

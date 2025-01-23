@@ -7,10 +7,6 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    Footer: typeof import('./src/components/layouts/footer.vue')['default']
-    Header: typeof import('./src/components/layouts/header.vue')['default']
-    Layouts: typeof import('./src/components/layouts/index.vue')['default']
-    Menu: typeof import('./src/components/layouts/menu.vue')['default']
     NAvatar: typeof import('naive-ui')['NAvatar']
     NBreadcrumb: typeof import('naive-ui')['NBreadcrumb']
     NBreadcrumbItem: typeof import('naive-ui')['NBreadcrumbItem']
@@ -20,10 +16,7 @@ declare module 'vue' {
     NDataTable: typeof import('naive-ui')['NDataTable']
     NDatePicker: typeof import('naive-ui')['NDatePicker']
     NFlex: typeof import('naive-ui')['NFlex']
-    NForm: typeof import('naive-ui')['NForm']
-    NFormItem: typeof import('naive-ui')['NFormItem']
     NIcon: typeof import('naive-ui')['NIcon']
-    NInput: typeof import('naive-ui')['NInput']
     NLayout: typeof import('naive-ui')['NLayout']
     NLayoutContent: typeof import('naive-ui')['NLayoutContent']
     NLayoutFooter: typeof import('naive-ui')['NLayoutFooter']
@@ -36,6 +29,8 @@ declare module 'vue' {
     OverflowDecorate: typeof import('./src/components/overflowDecorate/index.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    TabBar: typeof import('./src/components/layouts/tabBar.vue')['default']
+    SearchPanel: typeof import('./src/components/searchPanel/index.vue')['default']
+    WrapCol: typeof import('./src/components/wrapRow/wrapCol.vue')['default']
+    WrapRow: typeof import('./src/components/wrapRow/index.vue')['default']
   }
 }

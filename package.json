@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "devapp1": "pnpm run -C @mono-apps/vue3-demo dev"
+    "devapp1": "pnpm run -C @mono-apps/vue3-demo dev",
+    "dev:admin": "pnpm dev --filter rs-admin"
   },
   "keywords": [],
   "author": "",

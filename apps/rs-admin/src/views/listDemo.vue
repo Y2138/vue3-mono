@@ -1,7 +1,17 @@
 <template>
   <div>
-    <n-card>
-      <n-form
+    <SearchPanel inline>
+      <WrapCol label="日期">
+        <n-date-picker v-model:value="formModel.daterange" close-on-select type="daterange"></n-date-picker>
+      </WrapCol>
+      <WrapCol label="名称">
+        <n-date-picker v-model:value="formModel.daterange" close-on-select type="daterange"></n-date-picker>
+      </WrapCol>
+      <WrapCol label="名称">
+        <n-date-picker v-model:value="formModel.daterange" close-on-select type="daterange"></n-date-picker>
+      </WrapCol>
+    </SearchPanel>
+      <!-- <n-form
         ref="formRef"
         inline
         label-width="auto"
@@ -10,7 +20,7 @@
         :model="formModel"
         size="small">
         <n-form-item label="日期" path="date">
-          <n-date-picker v-model:value="formModel.daterange" type="daterange"></n-date-picker>
+          <n-date-picker v-model:value="formModel.daterange" close-on-select type="daterange"></n-date-picker>
         </n-form-item>
         <n-form-item label="Name" path="name">
           <n-input v-model:value="formModel.name" />
@@ -24,8 +34,7 @@
         <n-form-item>
           <n-button @click="firstPageRequest">查询</n-button>
         </n-form-item>
-      </n-form>
-    </n-card>
+      </n-form> -->
     <n-data-table
       class="mt-2"
       :columns="tableColumns"
@@ -40,6 +49,7 @@
 import { ref } from 'vue'
 import useTablePage from '@/hooks/useTablePage'
 import { get } from '@/request/axios'
+import WrapCol from '@/components/wrapRow/wrapCol.vue'
 const formRef = ref()
 const formModel = ref({
   daterange: null,

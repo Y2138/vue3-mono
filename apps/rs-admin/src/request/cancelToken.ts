@@ -37,7 +37,7 @@ export class PendingMap {
             this.pendingMap.delete(pendingKey);
         }
     }
-    // 若有重复请求，则删除重复的请求
+    // 删除重复的请求
     removePending(config: InternalAxiosRequestConfig) {
         const pendingKey = this.getPendingKey(config);
         if (this.pendingMap.has(pendingKey)) {

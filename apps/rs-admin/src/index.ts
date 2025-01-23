@@ -6,7 +6,8 @@ import router from '@/router';
 import Pinia from '@/store';
 import 'uno.css';
 
-createApp(App)
-  .use(router)
+const app = createApp(App);
+
+app.use(router)
   .use(Pinia)
   .mount('#root');

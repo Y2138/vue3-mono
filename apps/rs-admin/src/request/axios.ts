@@ -143,8 +143,8 @@ instance.interceptors.request.use(
 			config.baseURL = config.baseURL?.replace('ngw.', 'uag.')
 		}
 
-        pendingMap.cancelPending(config)
-        pendingMap.addPending(config)
+    pendingMap.cancelPending(config)
+    pendingMap.addPending(config)
 
 		return config
 	},
@@ -159,7 +159,7 @@ instance.interceptors.response.use(
 	(response) => {
 		// 请求成功
 		const { config, data = {}, status } = response
-        pendingMap.removePending(config);
+    pendingMap.removePending(config);
 
 		if (status === 200) {
 			if (data.success) {
