@@ -1,12 +1,9 @@
 // index.ts
 import axios, { isCancel } from 'axios'
-import type { AxiosInstance, RawAxiosRequestHeaders, AxiosRequestHeaders, AxiosResponse, AxiosRequestConfig } from 'axios'
+import type { RawAxiosRequestHeaders, AxiosRequestHeaders, AxiosResponse, AxiosRequestConfig } from 'axios'
 import { PendingMap } from './cancelToken'
-// import { getEnv, initConfig, getResCode, createLogin, cancelIns } from '@/utils/utils'
-// import cookie from './cookie'
-// import { ObjTy, ResResult } from '@/types/common';
-// 继续改造
-interface customAxiosConfig<T> extends AxiosRequestConfig<T> {
+
+interface ICustomAxiosConfig<T> extends AxiosRequestConfig<T> {
   /* 是否不需要错误信息提示，默认有 */
   disableErrorMsg?: boolean
   /* 是否需要全屏loading */
@@ -34,7 +31,7 @@ const pendingMap = new PendingMap()
  * 请求失败后的错误统一处理
  * @param {Number} status 请求失败的状态码
  */
-const errorHandle = (status: number, other: string, errorCode?: string) => {
+const errorHandle = (status: number, other?: string, errorCode?: string) => {
 	// 状态码判断
 	switch (status) {
 		case 302:
@@ -102,17 +99,20 @@ const errorHandle = (status: number, other: string, errorCode?: string) => {
 
 /* 实例化请求配置 */
 const instance = axios.create({
-	headers: {
-		'Content-Type': 'application/json;charset=UTF-8',
-		// "Access-Control-Allow-Origin-Type": "*",
-	},
+	// headers: {
+	// 	'Content-Type': 'application/json;charset=UTF-8',
+	// 	// "Access-Control-Allow-Origin-Type": "*",
+	// },
+  headers: {
+    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8', // 简单请求header标识
+  },
 
 	// 请求时长
 	timeout: 1000 * 10,
 	// TODO 请求的base地址 根据不同的模块调不同的api
 	// baseURL: `${location.protocol}//ngw.${getEnv()}enmonster.com`,
 	// 表示跨域请求时是否需要使用凭证
-	withCredentials: false,
+	withCredentials: true,
 })
 
 /**
@@ -138,10 +138,17 @@ instance.interceptors.request.use(
 		// console.log("config.header---", config.headers, config.url);
 		const configUrl = config.url?.replace(/\?.*/, '') // 过滤掉多余的/
     // TODO 拼接时间戳
-    // TODO 登录使用不同的域名
+    if (!(config as ICustomAxiosConfig<unknown>).noTimestamp) {
+      config.params = {
+        ...config.params,
+        timestamp: Date.now(),
+      }
+    }
 		if (configUrl && loginUrls.includes(configUrl)) {
-			config.baseURL = config.baseURL?.replace('ngw.', 'uag.')
+
 		}
+    // test
+    config.url = `https://guanli-platform.qimao.com${config.url}`;
 
     pendingMap.cancelPending(config)
     pendingMap.addPending(config)
@@ -157,39 +164,25 @@ instance.interceptors.request.use(
 // 响应拦截器
 instance.interceptors.response.use(
 	(response) => {
-		// 请求成功
-		const { config, data = {}, status } = response
+		// 2xx 请求成功
+		const { config } = response
     pendingMap.removePending(config);
 
-		if (status === 200) {
-			if (data.success) {
-				return Promise.resolve(data)
-			}
-			// 不需要显示提示文案
-			const { disableErrorMsg } = config as customAxiosConfig<any>
-			if (!disableErrorMsg) {
-        // 此处默认展示提示信息
-			}
-
-			return Promise.reject(data)
-		} else {
-			return Promise.reject(data)
-		}
-		// 请求失败
+    return response
 	},
 	(error) => {
 		const { response }: {response: AxiosResponse} = error
 
 		if (response) {
+      const { config, status, data = {} } = response
 			/**
-			 * 接口抛出异常时，从错误信息中解析出请求唯一标志，并从请求队列中将其删除
-			 */
-			const { config, status, data = {} } = response
+       * 接口抛出异常时，从错误信息中解析出请求唯一标志，并从请求队列中将其删除
+      */
+      pendingMap.removePending(config)
 			const { errorMessage = '', errorCode = '' } = data
-            pendingMap.removePending(config)
 			errorHandle(status, errorMessage, errorCode)
 
-			const _config = response.config as customAxiosConfig<any>
+			const _config = response.config as ICustomAxiosConfig<any>
 			if (![401, 403, 404].includes(status)) {
 				// 超时重新请求
 				// 全局的请求次数,请求的间隙
@@ -230,36 +223,56 @@ instance.interceptors.response.use(
 )
 
 // Q是请求data类型，R是响应data类型
-const request = <Q = any, R = any>(config: string | AxiosRequestConfig<Q>, options?: customAxiosConfig<Q>) => {
+const request = async <Q = any, R = any>(config: string | AxiosRequestConfig<Q>, options?: ICustomAxiosConfig<Q>) => {
 	if (typeof config === 'string') {
 		if (!options) {
-			return instance.request<R>({
+			return instance.request<ResResult<R>>({
 				url: config,
 			})
 			// throw new Error('请配置正确的请求参数');
 		}
-		return instance.request<R>({
+		return instance.request<ResResult<R>>({
 			url: config,
 			...options,
 		})
 	}
-	return instance.request<R>({ ...config, ...options })
+  return instance.request<ResResult<R>>({ ...config, ...options })
 }
 
-export async function get<Q = any, R = any>(config: AxiosRequestConfig<Q> | string, options: customAxiosConfig<Q>): Promise<[ResResult<R>, null] | [null, any]> {
+// 统一处理响应
+function handleResponseResult<Q = any, R = any>(data: ResResult<R>, config: ICustomAxiosConfig<Q>): boolean {
+  // 错误处理
+  if (data.code !== 200) {
+    // 不需要显示提示文案
+    const { disableErrorMsg } = config
+    if (!disableErrorMsg) {
+      // 此处默认展示提示信息
+      data.msg && window.$message.error(data.msg)
+    }
+    return false
+  }
+  return true
+}
+
+export async function get<Q = any, R = any>(url: string, options: ICustomAxiosConfig<Q>): Promise<[ResResult<R>, null] | [null, any]> {
     try {
-        const response = await request<Q, ResResult<R>>(config, { method: 'GET', ...(options || {}) })
-        const { data } = response
+        const response = await request<Q, R>(url, { method: 'GET', ...(options || {}) })
+        // console.log('2501 response===>', response)
+        const { data, config } = response
+        handleResponseResult<Q, R>(data, config)
+
         return [data, null]
-    } catch (error) {
+      } catch (error) {
         return [null, error]
     }
 }
 
-export async function post<Q = any, R = any>(config: AxiosRequestConfig<Q> | string, options: customAxiosConfig<Q>):  Promise<[ResResult<R>, null] | [null, any]> {
+export async function post<Q = any, R = any>(url: string, options: ICustomAxiosConfig<Q>):  Promise<[ResResult<R>, null] | [null, any]> {
     try {
-        const response = await request<Q, ResResult<R>>(config, { method: 'POST', ...(options || {}) })
-        const { data } = response
+        const response = await request<Q, R>(url, { method: 'POST', ...(options || {}) })
+        const { data, config } = response
+        handleResponseResult<Q, R>(data, config)
+
         return [data, null]
     } catch (error) {
         return [null, error]

@@ -12,11 +12,11 @@ defineOptions({
 const {
   labelWidth = 'auto',
   cols = 3,
-  size = 'small'
+  size = [0, 4]
 } = defineProps<{
   labelWidth?: string | number | 'auto'
   cols?: number
-  size?: 'small' | 'medium' | number
+  size?: 'small' | 'medium' | number | [number, number]
 }>()
 provide('wrapInjectKey', {
   labelWidth,

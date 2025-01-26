@@ -20,7 +20,7 @@ const route = useRoute()
 const { fullPath } = toRefs(route)
 const { pageRefreshKey, theme } = storeToRefs(useGlobalStore())
 const themeVar = computed(() => {
-  return theme.value === 'dark' ? darkTheme : ''
+  return theme.value === 'dark' ? darkTheme : null
 })
 </script>
 

@@ -34,15 +34,13 @@ declare global {
 
   // 请求返回类型
   interface ResResult<T = IObj> {
-    success?: boolean
+    code?: number
     data?: T
-    errorMessage?: string
+    msg?: string
 
-    totalCount?: number
-    // 以下待定义
-    code: number
+    // totalCount?: number
   }
-  // 表格接口相关类型
+  // 分页表格接口data类型
   interface IPaginationResData<T extends Array> {
     table_data: T
     header?: Record<string, string>

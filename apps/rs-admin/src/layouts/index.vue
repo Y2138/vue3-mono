@@ -3,6 +3,7 @@
     <n-layout-sider
       ref="siderRef"
       :native-scrollbar="false"
+      :width="244"
       bordered
       collapse-mode="width"
       :collapsed-width="64"

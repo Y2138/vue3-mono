@@ -10,7 +10,9 @@
   "dependencies": {
     "@imengyu/vue3-context-menu": "^1.4.4",
     "axios": "^1.7.7",
+    "date-fns": "^4.1.0",
     "pinia": "^2.3.0",
+    "qs": "^6.10.3",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0"
   },

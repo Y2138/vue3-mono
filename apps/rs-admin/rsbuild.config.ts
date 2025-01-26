@@ -20,6 +20,7 @@ export default defineConfig({
     exclude: ['node_modules/@vicons/ionicons5/README.md'],
   },
   server: {
+    port: 8081,
     proxy: {
       '/api': {
         target: 'https://guanli-platform.qimao.com',

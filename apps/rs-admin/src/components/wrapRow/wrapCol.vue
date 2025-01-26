@@ -1,10 +1,10 @@
 <template>
-  <n-flex :style="{ width: colWidth }" align="center" :wrap="false">
-    <label v-if="label" :style="{ width: computedLabelWidth }" class="whitespace-nowrap flex-shrink-0">{{ label }}</label>
-    <div :style="{ width: computedContentWidth }" :class="contentClass">
+  <div class="flex items-center px-2" :style="{ width: colWidth }" align="center" :wrap="false">
+    <label v-if="label" :style="{ width: computedLabelWidth }" class="whitespace-nowrap flex-shrink-0 mr-2">{{ label }}</label>
+    <div class="flex-1" :class="contentClass">
       <slot></slot>
     </div>
-  </n-flex>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -12,16 +12,15 @@ import { computed, inject } from 'vue'
 defineOptions({
   name: 'WrapCol'
 })
-const { label, labelWidth = 'auto', contentWidth = '200px', contentClass = '' } = defineProps<{
+const { label, labelWidth = 'auto', contentClass = '' } = defineProps<{
   label?: string
   labelWidth?: string | number | 'auto'
-  contentWidth?: string | number
   contentClass?: string
 }>()
 const injectedConfig = inject<{
   labelWidth: string | number | 'auto'
   cols: number
-  size: 'small' | 'medium' | number
+  inline: boolean
 }>('wrapInjectKey')
 
 function dealWidth(width: string | number | 'auto'): string {
@@ -41,9 +40,6 @@ const computedLabelWidth = computed(() => {
   }
   return 'auto'
 })
-const computedContentWidth = computed(() => {
-  return dealWidth(contentWidth)
-})
 
 const colWidth = computed(() => {
   let col = 3
@@ -54,8 +50,7 @@ const colWidth = computed(() => {
       col = injectedConfig.cols
     }
   }
-  const gap = injectedConfig?.size === 'small' ? 8 : injectedConfig?.size === 'medium' ? 16 : (injectedConfig?.size || 0)
-  return `calc(${(100 / col).toFixed(2)}% - ${gap}px)`
+  return `${(100 / col).toFixed(2)}%`
 })
 </script>
 
