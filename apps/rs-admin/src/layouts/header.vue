@@ -12,7 +12,7 @@
       <n-space size="large" class="mr-5" align="center" item-class="flex">
         <n-icon :component="Search" size="20" class="cursor-pointer"></n-icon>
         <n-icon :component="SunIcon" size="20" class="cursor-pointer" @click="handleChangeTheme" title="切换主题"></n-icon>
-        <n-icon :component="Refresh" size="20" class="cursor-pointer" @click="handleRefresh" title="刷新"></n-icon>
+        <n-icon :component="Refresh" size="20" class="cursor-pointer animate-keyframes-spin" @click="handleRefresh" title="刷新"></n-icon>
         <n-avatar
           class="ml-5"
           round
@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import {
   ChevronBackCircleOutline as BackIcon,
   SunnySharp as SunIcon,
@@ -35,12 +35,14 @@ import TabBar from './tabBar.vue';
 import { useRouter } from 'vue-router';
 import { useMenuStore } from '@/store/modules/menu';
 import { useGlobalStore } from '@/store/modules/global';
-import { IMenuItem } from '@/types/common';
+import { usePageLoading } from '@/hooks/usePageLoading';
 
 const router = useRouter()
 const globalStore = useGlobalStore()
+const { refresh } = usePageLoading()
 const menuStore = useMenuStore()
 const menuRoutes = computed(() => menuStore.menuRoutes)
+
 // 跳转
 const handleLinkClick = (item: IMenuItem) => {
   router.push(item.path)
@@ -49,7 +51,7 @@ const handleToggleMenu = () => {
   menuStore.toggleCollapse()
 }
 const handleRefresh = () => {
-  globalStore.refresh()
+  refresh()
 }
 const handleChangeTheme = () => {
   globalStore.changeTheme()

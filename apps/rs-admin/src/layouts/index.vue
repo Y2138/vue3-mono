@@ -11,12 +11,14 @@
       <Menu></Menu>
     </n-layout-sider>
     <n-layout class="h-100%" content-class="w-100% flex flex-col">
-      <n-layout-header>
+      <n-layout-header class="shadow-rs">
         <Header></Header>
       </n-layout-header>
-      <n-layout-content ref="contentRef" class="flex-1 w-100% h-0 px-2 my-2" content-class="h-100%">
-        <slot></slot>
-      </n-layout-content>
+      <n-spin class="flex-1 h-0 w-100% m-2" content-class="h-100%" :show="pageRefreshStatus">
+        <n-layout-content ref="contentRef" class="h-100% p-2" content-class="h-100%">
+          <slot></slot>
+        </n-layout-content>
+      </n-spin>
       <n-layout-footer class="w100%">
         <Footer></Footer>
       </n-layout-footer>
@@ -30,15 +32,18 @@ import Menu from './menu.vue'
 import Header from './header.vue'
 import Footer from './footer.vue'
 import { useMenuStore } from '@/store/modules/menu'
-import { useMessage } from 'naive-ui'
+import { useMessage, useLoadingBar } from 'naive-ui'
+import { usePageLoading } from '@/hooks/usePageLoading'
 
 const menuStore = useMenuStore()
 // 在window上挂载一个$message以在setup函数外使用
 window.$message = useMessage();
+window.$loadingBar = useLoadingBar();
 
 const collapsed = computed(() => {
   return menuStore.collapsed
 })
+const { pageRefreshStatus } = usePageLoading()
 </script>
 
 <style scoped>

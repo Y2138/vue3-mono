@@ -132,7 +132,17 @@ router.beforeEach((to, from, next) => {
   const tabStore = useTabStore();
   console.log('to => ', to)
   tabStore.activeTab(to.path, String(to.meta?.name || to.name));
+  // 开启loadingBar
+  window.$loadingBar.start()
   next();
 });
+
+router.afterEach((to, from, failure) => {
+  if (failure) {
+    console.error('错误: ', failure)
+  }
+  // 关闭loadingBar
+  window.$loadingBar.finish()
+})
 
 export default router;

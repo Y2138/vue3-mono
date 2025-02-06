@@ -1,16 +1,23 @@
 <template>
   <n-card size="small">
     <slot name="top"></slot>
-    <WrapRow :cols="computedCols" v-bind="$attrs">
-      <slot></slot>
-      <WrapCol v-if="inline" contentWidth="auto">
+    <WrapRow v-if="inline" :cols="computedCols" v-bind="$attrs">
+      <slot>
+        <WrapCol></WrapCol>
+      </slot>
+      <WrapCol contentWidth="auto">
+        <slot name="btn-affix"></slot>
         <n-button size="small" type="primary" @click="handleSearch">查询</n-button>
         <n-button size="small" class="ml-4" @click="handleReset">重置</n-button>
+        <slot name="btn-suffix"></slot>
       </WrapCol>
     </WrapRow>
     <n-flex v-if="!inline" size="small" class="mt-2 mx-2">
+      <slot></slot>
+      <slot name="btn-affix"></slot>
       <n-button type="primary" :disabled="props.searchLoading" @click="handleSearch">查询</n-button>
       <n-button :disabled="props.searchLoading" @click="handleReset">重置</n-button>
+      <slot name="btn-suffix"></slot>
     </n-flex>
     <slot name="bottom"></slot>
   </n-card>

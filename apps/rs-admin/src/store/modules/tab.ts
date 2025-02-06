@@ -1,12 +1,10 @@
 import { defineStore } from 'pinia'
-import type { ITabItem } from '@/types/common'
 import type { Router } from 'vue-router'
 
 export const useTabStore = defineStore('tab', {
   state: () => ({
     tabList: <ITabItem[]>[],
     activeTabKey: '',
-    pageRefreshKey: 1
   }),
   getters: {},
   actions: {
@@ -48,8 +46,5 @@ export const useTabStore = defineStore('tab', {
       this.tabList = []
       router.push('/')
     },
-    refresh() {
-      this.pageRefreshKey ++
-    }
   }
 })

@@ -59,6 +59,7 @@ import useTablePage from '@/hooks/useTablePage'
 import { get } from '@/request/axios'
 import type { SelectMixedOption } from 'naive-ui/es/select/src/interface'
 import { format } from 'date-fns'
+import { usePageLoading } from '@/hooks/usePageLoading'
 interface IFormModel {
   type: 'date' | 'month' | 'year'
   daterange: null | [string, string]
@@ -89,6 +90,8 @@ interface IRes {
   is_direct_sign: string
   contract_type_text: string
 }
+
+usePageLoading()
 
 const formModel = ref<IFormModel>({
   type: 'date' as 'date' | 'month' | 'year',

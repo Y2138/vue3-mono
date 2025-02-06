@@ -1,10 +1,13 @@
 <template>
-  <el-tooltip effect="light" :content="title" :disabled="!isOverflow">
-    <p ref="overflowDecorateRef" :class="`truncate ${contentClass}`" :style="contentStyle" uc-truncate
-      bg="blue-400 hover:blue-500">
-      {{ title }}
-    </p>
-  </el-tooltip>
+  <n-tooltip effect="light" :disabled="!isOverflow" v-bind="$attrs">
+    <template #trigger>
+      <p ref="overflowDecorateRef" :class="`truncate ${contentClass}`" :style="contentStyle" uc-truncate
+        bg="blue-400 hover:blue-500">
+        {{ title }}
+      </p>
+    </template>
+    {{ title }}
+  </n-tooltip>
 </template>
 
 <script setup lang="ts">
@@ -37,7 +40,6 @@ const contentStyle: ComputedRef<StyleValue> = computed(() => {
 function computeTruncate() {
   if (overflowDecorateRef.value) {
     console.log(
-      '2412==> ',
       overflowDecorateRef.value.scrollWidth,
       overflowDecorateRef.value.offsetWidth,
     )

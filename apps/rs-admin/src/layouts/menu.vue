@@ -7,8 +7,6 @@
     <span v-if="!collapsed" class="whitespace-nowrap overflow-hidden">
       Rs-Admins
     </span>
-    <!-- <Transition name="collapse">
-    </Transition> -->
   </div>
   <n-menu
     v-model:value="menuStore.activeMenuKey"
@@ -25,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h, computed, watch, Transition, type Component } from 'vue'
+import { ref, shallowRef, h, computed, watch, type Component } from 'vue'
 import type { MenuOption, MenuInst } from 'naive-ui'
 import { NIcon } from 'naive-ui'
 import { useMenuStore } from '@/store/modules/menu'
@@ -58,7 +56,7 @@ function renderIcon(icon: Component) {
   return () => h(NIcon, null, { default: () => h(icon) })
 }
 
-const menuOptions = ref<MenuOption[]>([])
+const menuOptions = shallowRef<MenuOption[]>([])
 function transferMenu(menuList?: IMenuItem[]): MenuOption[] {
   if (!menuList) return []
   return menuList.map((item) => {
@@ -77,44 +75,16 @@ function transferMenu(menuList?: IMenuItem[]): MenuOption[] {
   })
 }
 
-// 动态导入 没必要 无法做到分包
-// async function renderIconWithNameSync(iconName: IIcons) {
-//   const iconComp: {default: DefineComponent} = await import(`@vicons/ionicons5/${iconName}`)
-//   console.log('2501=> ', iconComp)
-//   // const iconComp = Ionicons[iconName]
-//   return () => h(NIcon, null, { default: () => h(iconComp.default) })
-// }
-// async function transferMenu (menuList?: IMenuItem[]): Promise<MenuOption[]> {
-//   if (!menuList) return []
-//   const result = await Promise.all(menuList.map(async (item) => {
-//     const icon = typeof item.icon === 'string' ? await renderIconWithName(item.icon): renderIcon(item.icon)
-//     // const icon = renderIcon(item.icon)
-//     return {
-//       label: item.children ? item.name : () => h(
-//         RouterLink,
-//         { to: item.path },
-//         { default: () => item.name }
-//       ),
-//       path: item.path,
-//       icon,
-//       children: item.children ? await transferMenu(item.children) : []
-//     }
-//   }))
-//   return result
-// }
 watch(
   () => menuStore.menuTree,
-  async (val) => {
-    menuOptions.value = await transferMenu(val)
+  (val) => {
+    menuOptions.value = transferMenu(val)
   },
   {
     immediate: true
   }
 )
 
-// const menuOptions = computed(() => {
-//   return transferMenu(menuStore.menuTree)
-// })
 const router = useRouter()
 const goToMain = () => {
   router.push('/')

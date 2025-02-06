@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center px-2" :style="{ width: colWidth }" align="center" :wrap="false">
+  <div class="flex items-center px-2" :style="{ width: colWidth }">
     <label v-if="label" :style="{ width: computedLabelWidth }" class="whitespace-nowrap flex-shrink-0 mr-2">{{ label }}</label>
     <div class="flex-1" :class="contentClass">
       <slot></slot>

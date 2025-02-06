@@ -1,6 +1,7 @@
 import type { Component } from 'vue'
 import * as Ionicons from '@vicons/ionicons5/index'
 import type { RouteRecordRaw } from 'vue-router'
+import type { MessageApi, LoadingBarApi } from 'naive-ui'
 
 declare global {
   // 可选图标
@@ -63,6 +64,7 @@ declare global {
   }
   // window扩展属性
   interface Window {
-    $message: MessageApiInjection
+    $message: MessageApi
+    $loadingBar: LoadingBarApi
   }
 }

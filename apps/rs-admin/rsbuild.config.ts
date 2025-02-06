@@ -49,6 +49,16 @@ export default defineConfig({
             }),
             presetIcons(),
           ],
+          safelist: [
+            'transition-transform-1000',
+            // (context) => {
+            //   let arr: number[] = [], i = 3
+            //   while (i < 60) {
+            //     arr.push(i * 50)
+            //   }
+            //   return arr.map(v => `transition-transform-${v}`)
+            // }
+          ],
           rules: [
             ['shadow-rs', { 'box-shadow': '0 1px 4px #00152914' }],
           ],

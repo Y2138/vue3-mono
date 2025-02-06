@@ -1,9 +1,11 @@
 <template>
   <n-config-provider :theme="themeVar" :locale="zhCN" :date-locale="dateZhCN" inline-theme-disabled>
     <n-message-provider>
-      <Layout>
-        <RouterView :key="fullPath + pageRefreshKey"></RouterView>
-      </Layout>
+      <n-loading-bar-provider>
+        <Layout>
+          <RouterView :key="fullPath + pageRefreshKey"></RouterView>
+        </Layout>
+      </n-loading-bar-provider>
     </n-message-provider>
   </n-config-provider>
 </template>
@@ -22,6 +24,7 @@ const { pageRefreshKey, theme } = storeToRefs(useGlobalStore())
 const themeVar = computed(() => {
   return theme.value === 'dark' ? darkTheme : null
 })
+
 </script>
 
 <style scoped>

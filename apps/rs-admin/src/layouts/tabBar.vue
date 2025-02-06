@@ -4,7 +4,7 @@
       v-for="item in tabs"
       :key="item.path"
       class="cursor-pointer"
-      :type="item.path === tabStore.activeTabKey ? 'success' : ''"
+      :type="item.path === tabStore.activeTabKey ? 'success' : 'default'"
       closable
       @click="handleTagClick(item)"
       @contextmenu.prevent="handleContextMenu(item, $event)"
@@ -17,11 +17,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, h, type Component } from 'vue'
+import { computed, h, type Component } from 'vue'
 import { useTabStore } from '@/store/modules/tab'
 import { useGlobalStore } from '@/store/modules/global'
 import { useRouter } from 'vue-router'
-import { ITabItem } from '@/types/common'
 import ContextMenu from '@imengyu/vue3-context-menu'
 import '@imengyu/vue3-context-menu/lib/vue3-context-menu.css'
 import { Refresh } from '@vicons/ionicons5'
