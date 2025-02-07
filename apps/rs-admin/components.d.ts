@@ -7,6 +7,11 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    DCheckbox: typeof import('./src/components/dForm/components/dCheckbox.vue')['default']
+    DDatePicker: typeof import('./src/components/dForm/components/dDatePicker.vue')['default']
+    DRadio: typeof import('./src/components/dForm/components/dRadio.vue')['default']
+    DUpload: typeof import('./src/components/dForm/components/dUpload.vue')['default']
+    Item: typeof import('./src/components/dForm/item.vue')['default']
     NAvatar: typeof import('naive-ui')['NAvatar']
     NBreadcrumb: typeof import('naive-ui')['NBreadcrumb']
     NBreadcrumbItem: typeof import('naive-ui')['NBreadcrumbItem']
@@ -33,6 +38,7 @@ declare module 'vue' {
     NSpin: typeof import('naive-ui')['NSpin']
     NTag: typeof import('naive-ui')['NTag']
     OverflowDecorate: typeof import('./src/components/overflowDecorate/index.vue')['default']
+    Root: typeof import('./src/components/dForm/root.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SearchPanel: typeof import('./src/components/searchPanel/index.vue')['default']

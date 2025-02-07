@@ -18,7 +18,7 @@
 import DFormItem from './item.vue'
 import type { IFormConfig, IOption } from './types'
 const { formModel, selectOptions } = defineProps<{
-  formModel: Record<string, any>
+  formModel: Record<string, unknown>
   formConfigs: IFormConfig[]
   selectOptions: Record<string, IOption[]>
 }>()

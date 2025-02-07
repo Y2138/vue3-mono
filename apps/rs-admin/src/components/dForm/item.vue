@@ -20,13 +20,11 @@
 <script setup lang="ts">
 import { computed, useAttrs, shallowReactive } from 'vue'
 import type { IFormConfig, IOption } from './types'
-import DSelect from './components/dSelect.vue'
 import DDatePicker from './components/dDatePicker.vue'
 import { NInput } from 'naive-ui'
 
 const componentsName = shallowReactive<Record<string, any>>({
   NInput,
-  DSelect,
   DDatePicker
 })
 
@@ -39,7 +37,7 @@ const formModel = defineModel<Record<string, any>>('formModel', { required: true
 // placeholder
 const attrs = useAttrs()
 const placeholder = computed(() => {
-  if (props.props && props.props.placeholder) return props.props.placeholder;
+  if (props.props && 'placeholder' in props.props) return props.props.placeholder;
   return attrs.placeholder || `${(['d-select', 'd-date-picker'].includes(props.comp || '') ? '请选择' : '请填写') + props.label}`;
 })
 
