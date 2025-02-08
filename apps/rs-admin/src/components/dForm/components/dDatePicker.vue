@@ -1,28 +1,24 @@
 <template>
   <n-date-picker
-    v-if="props.type?.includes('range')"
-    v-model:formatted-value="value"
-    :type="props.type"
-    v-bind="mergedProps"
-    @update:formatted-value="handleChange">
+    v-model:formatted-value="curValue"
+    v-bind="mergedProps">
   </n-date-picker>
 </template>
 
 <script setup lang="ts">
-import { computed, useAttrs } from 'vue'
+import { computed } from 'vue'
 import type { DatePickerProps } from 'naive-ui'
 
-const props = defineProps<{
-  type: DatePickerProps['type'],
-  value: string | [string, string]
-}>()
-const attrs = useAttrs()
-const emits = defineEmits<{
-  'update:value': [value: string | [string, string]]
-}>()
-const handleChange = (value: [string, string]) => {
-  emits('update:value', value)
-}
+const curValue = defineModel<string | [string, string] | null>('value', {
+  required: true
+})
+
+const props = withDefaults(defineProps<{
+  type?: DatePickerProps['type'],
+  // value: string | [string, string]
+}>(), {
+  type: 'date'
+})
 
 // 定义通用的属性字段
 const defaultProps: DatePickerProps = {
@@ -47,7 +43,7 @@ const mergedProps = computed(() => {
   return {
     ...defaultProps,
     valueFormat: defaultValueFormatConfig[props.type || 'date'],
-    ...attrs
+    ...props,
   }
 })
 </script>

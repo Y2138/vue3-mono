@@ -1,5 +1,5 @@
 <template>
-    <n-flex class="w-full" align="center" :size="size" v-bind="$attrs">
+    <n-flex class="w-full ml-[-0.5rem]" align="center" :size="size" v-bind="$attrs">
       <slot></slot>
     </n-flex>
 </template>

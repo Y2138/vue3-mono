@@ -14,8 +14,8 @@
       <n-layout-header class="shadow-rs">
         <Header></Header>
       </n-layout-header>
-      <n-spin class="flex-1 h-0 w-100% m-2" content-class="h-100%" :show="pageRefreshStatus">
-        <n-layout-content ref="contentRef" class="h-100% p-2" content-class="h-100%">
+      <n-spin class="flex-1 h-0 w-100% p-2" content-class="h-100%" :show="pageRefreshStatus">
+        <n-layout-content ref="contentRef" class="h-100%" content-class="h-100%">
           <slot></slot>
         </n-layout-content>
       </n-spin>

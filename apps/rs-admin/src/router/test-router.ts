@@ -8,6 +8,10 @@ const routes: CustomRouteRecord[] = [
     path: '/list-demo',
     name: '列表Demo',
     component: () => import('@/views/listDemo.vue'),
+  }, {
+    path: '/form-demo',
+    name: '表单页Demo',
+    component: () => import('@/views/formDemo.vue')
   }
 ];
 

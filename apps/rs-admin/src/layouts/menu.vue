@@ -23,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, shallowRef, h, computed, watch, type Component } from 'vue'
+import { ref, markRaw, h, computed, watch, type Component } from 'vue'
 import type { MenuOption, MenuInst } from 'naive-ui'
 import { NIcon } from 'naive-ui'
 import { useMenuStore } from '@/store/modules/menu'
@@ -49,14 +49,14 @@ const collapsed = computed(() => {
 function renderIconWithName(iconName: IIcons) {
   // console.log('2501=> ', iconComp)
   const iconComp = Ionicons5[iconName]
-  return () => h(NIcon, null, { default: () => h(iconComp) })
+  return () => markRaw(h(NIcon, null, { default: () => h(iconComp) }))
 }
 
 function renderIcon(icon: Component) {
-  return () => h(NIcon, null, { default: () => h(icon) })
+  return () => markRaw(h(NIcon, null, { default: () => h(icon) }))
 }
 
-const menuOptions = shallowRef<MenuOption[]>([])
+const menuOptions = ref<MenuOption[]>([])
 function transferMenu(menuList?: IMenuItem[]): MenuOption[] {
   if (!menuList) return []
   return menuList.map((item) => {
@@ -69,7 +69,7 @@ function transferMenu(menuList?: IMenuItem[]): MenuOption[] {
         { default: () => item.name }
       ),
       path: item.path,
-      icon,
+      icon: markRaw(icon),
       children: item.children ? transferMenu(item.children) : undefined
     }
   })

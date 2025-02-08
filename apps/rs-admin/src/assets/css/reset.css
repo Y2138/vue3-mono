@@ -96,9 +96,9 @@ a {
 a:hover {
 	color: rgb(131, 192, 253);
 }
-#root {
+#app {
 	height: 100%;
 }
-#root .n-config-provider {
+#app .n-config-provider {
   height: 100%;
 }

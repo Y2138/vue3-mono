@@ -12,14 +12,14 @@ type withOption<T> = T & {
 }
 // 组件及其内部属性
 type FormType =
-  | { comp: 'd-radio', props: withOption<RadioButtonProps> }
-  | { comp: 'n-select', props: withOption<SelectProps> }
-  | { comp: 'd-date-picker', props: withOption<DatePickerProps> }
-  | { comp: 'd-checkbox', props: withOption<CheckboxGroupProps> }
-  | { comp: 'n-cascader', props: withOption<CascaderProps> }
-  | { comp: 'n-input', props: withOption<InputProps> }
-  | { comp: 'n-input-number', props: withOption<InputNumberProps> }
-  | { comp: 'n-time-picker', props: withOption<TimePickerProps> }
+  | { comp: 'd-radio', props?: withOption<RadioButtonProps> }
+  | { comp: 'n-select', props?: withOption<SelectProps> }
+  | { comp: 'd-date-picker', props?: Omit<DatePickerProps, 'value'> & { value?: string | [string, string] | null } }
+  | { comp: 'd-checkbox', props?: withOption<CheckboxGroupProps> }
+  | { comp: 'n-cascader', props?: withOption<CascaderProps> }
+  | { comp: 'n-input', props?: InputProps }
+  | { comp: 'n-input-number', props?: InputNumberProps }
+  | { comp: 'n-time-picker', props?: TimePickerProps }
 
 type WithConfig<T> = T & {
   valueKey: string

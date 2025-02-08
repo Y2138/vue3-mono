@@ -12,13 +12,17 @@
         <slot name="btn-suffix"></slot>
       </WrapCol>
     </WrapRow>
-    <n-flex v-if="!inline" size="small" class="mt-2 mx-2">
-      <slot></slot>
-      <slot name="btn-affix"></slot>
-      <n-button type="primary" :disabled="props.searchLoading" @click="handleSearch">查询</n-button>
-      <n-button :disabled="props.searchLoading" @click="handleReset">重置</n-button>
-      <slot name="btn-suffix"></slot>
-    </n-flex>
+    <template v-if="!inline">
+      <div class="flex flex-wrap items-center ml-[-0.5rem]">
+        <slot></slot>
+      </div>
+      <div class="mt-2">
+        <slot name="btn-affix"></slot>
+        <n-button type="primary" :disabled="props.searchLoading" @click="handleSearch">查询</n-button>
+        <n-button class="ml-2" :disabled="props.searchLoading" @click="handleReset">重置</n-button>
+        <slot name="btn-suffix"></slot>
+      </div>
+    </template>
     <slot name="bottom"></slot>
   </n-card>
 </template>
