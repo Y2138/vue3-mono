@@ -5,7 +5,7 @@
       <!-- <MenuIcon /> -->
     </n-icon>
     <span v-if="!collapsed" class="whitespace-nowrap overflow-hidden">
-      Rs-Admins
+      Naive-Admin
     </span>
   </div>
   <n-menu

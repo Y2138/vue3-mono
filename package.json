@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "devapp1": "pnpm run -C @mono-apps/vue3-demo dev",
-    "dev:admin": "pnpm dev --filter rs-admin"
+    "dev:admin": "pnpm dev --filter naive-admin"
   },
   "keywords": [],
   "author": "",
