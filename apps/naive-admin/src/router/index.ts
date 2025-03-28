@@ -1,6 +1,6 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHistory, RouteLocationNormalized, NavigationGuardNext } from 'vue-router';
 import testRouters from './test-router'
-import { Person, WifiOutline } from '@vicons/ionicons5'
+import { Icon } from '@iconify/vue'
 import { useMenuStore } from '@/store/modules/menu';
 import { useTabStore } from '@/store/modules/tab';
 
@@ -16,11 +16,32 @@ export const routes: CustomRouteRecord[] = [
 		}
 	},
 	{
+		path: '/operation',
+		// component: () => import('@/views/home.vue'),
+		meta: {
+			title: '运营管理',
+			icon: 'material-symbols:menu'
+		},
+		name: '运营管理',
+		redirect: '/operation/column',
+		children: [
+			{
+				path: 'column',
+				name: '专栏管理',
+				meta: {
+					title: '专栏管理',
+					icon: 'mdi:account'
+				},
+				component: () => import('@/views/operation-manage/column.vue')
+			}
+		]
+	},
+	{
 		path: '/front/market',
 		component: () => import('@/views/home.vue'),
 		meta: {
 			title: '市场素材审核管理',
-			icon: 'Menu'
+			icon: 'material-symbols:menu'
 		},
 		name: '市场素材审核管理',
 		redirect: '/front/market/material',
@@ -30,7 +51,7 @@ export const routes: CustomRouteRecord[] = [
 				name: '市场素材审核',
 				meta: {
 					title: '市场素材审核',
-					icon: Person
+					icon: 'mdi:account'
 				},
 				component: () => import('@/views/home.vue'),
 				redirect: '/front/market/material/audit-list',
@@ -41,7 +62,7 @@ export const routes: CustomRouteRecord[] = [
 						name: '市场素材初审',
 						meta: {
 							title: '市场素材初审',
-							icon: 'Person'
+							icon: 'mdi:account'
 						}
 					},
 					{
@@ -50,7 +71,7 @@ export const routes: CustomRouteRecord[] = [
 						name: '市场素材复审',
 						meta: {
 							title: '市场素材复审',
-							icon: 'AddCircle'
+							icon: 'material-symbols:add-circle'
 						}
 					},
 					{
@@ -59,7 +80,7 @@ export const routes: CustomRouteRecord[] = [
 						name: '脚本初审',
 						meta: {
 							title: '脚本初审',
-							icon: 'AlertCircle'
+							icon: 'material-symbols:error-circle'
 						}
 					},
 					{
@@ -76,7 +97,7 @@ export const routes: CustomRouteRecord[] = [
 						name: '导出管理',
 						meta: {
 							title: '导出管理',
-							icon: WifiOutline
+							icon: 'mdi:wifi'
 						}
 					},
 					{
@@ -124,7 +145,7 @@ const router = createRouter({
 	routes,
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) => {
 	// console.log('to: ', to);
 	// console.log('from: ', from);
   const menuStore = useMenuStore();
@@ -137,7 +158,7 @@ router.beforeEach((to, from, next) => {
   next();
 });
 
-router.afterEach((to, from, failure) => {
+router.afterEach((to: RouteLocationNormalized, from: RouteLocationNormalized, failure: any) => {
   if (failure) {
     console.error('错误: ', failure)
   }

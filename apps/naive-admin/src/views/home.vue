@@ -1,25 +1,22 @@
 <template>
   <div>
     {{ loading ? '加载中...' : '这是主页' }}
-    <n-button @click="loadIcon1('Accessibility')">
+    <n-button @click="loadIcon('accessibility')">
       加载Accessibility图标
     </n-button>
-    <n-button @click="loadIcon1('Menu')">
+    <n-button @click="loadIcon('menu')">
       加载Menu图标
     </n-button>
-    <n-button @click="loadIcon2">
-      加载全图标
-    </n-button>
-    <n-icon>
-      <component :is="dynamicContent"></component>
-    </n-icon>
+    <Icon :icon="currentIcon" width="24" height="24" />
   </div>
 </template>
 
-<script setup lang="tsx">
-import { ref, onMounted, h, type VNode } from 'vue';
-const loading = ref(true)
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { Icon } from '@iconify/vue';
 
+const loading = ref(true)
+const currentIcon = ref('ion:accessibility')
 
 onMounted(() => {
   setTimeout(() => {
@@ -27,16 +24,8 @@ onMounted(() => {
   }, 2000)
 })
 
-const dynamicContent = ref<VNode>()
-async function loadIcon1(iconName: string) {
-  const AccessibilityIcon = await import(`@vicons/ionicons5/${iconName}`)
-  console.log('2501=> ', AccessibilityIcon.default)
-  dynamicContent.value = h(AccessibilityIcon.default)
-}
-async function loadIcon2() {
-  const allIcons = await import('@vicons/ionicons5')
-  console.log('2501=> ', allIcons.Accessibility)
-  dynamicContent.value = h(allIcons.Accessibility)
+function loadIcon(iconName: string) {
+  currentIcon.value = `ion:${iconName}`
 }
 </script>
 

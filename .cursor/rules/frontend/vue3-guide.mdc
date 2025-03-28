@@ -1,0 +1,21 @@
+---
+description: 
+globs: *.vue
+alwaysApply: false
+---
+# Vue开发规范
+在开发Vue组件时，请遵循以下规范:
+- 使用script setup+composition-api。
+- 响应式变量请始终使用ref，而非reactive。
+- 支持ts的项目中，defineProps和defineEmits始终使用ts类型定义。
+- 合理使用 computed 和 watch，避免过多的计算。
+- 使用 computed 构建动态 style 而不是 通过 :style="" 的方式。
+- 使用 ref 而不是 id 来捕获 html 元素（v-if的元素例外）。
+- 在适用的地方使用 VueUse 函数来增强响应式和性能。
+- 单个 vue 文件的 template 部分不要太长，如果 template 部分非常长（超过300行），考虑是否需要进行二级拆分。
+- 使用最新的 vue 语法，若vue版本不是最新的则更新到最新版。
+
+在开发功能时，请综合功能的通用性和代码可读性考虑是否可以提取为组合式函数，组合式函数放置于src/hooks目录下，请遵需以下规范：
+- 以 `use` 开头命名。
+- 返回响应式数据。
+- 注意依赖收集。

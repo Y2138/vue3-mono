@@ -8,7 +8,7 @@ export function usePageLoading(from?: string) {
 
   onMounted(() => {
     setTimeout(() => {
-      globalStore.setRefreshStatus(false, from);
+      globalStore.setRefreshStatus(false, { from });
     }, 0);
   });
 

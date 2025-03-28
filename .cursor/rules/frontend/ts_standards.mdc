@@ -1,0 +1,33 @@
+---
+description: 
+globs: *.vue,*.ts
+alwaysApply: false
+---
+# Typescript规范
+- 在支持 TypeScript 的项目中始终使用 TypeScript 以确保类型安全。
+- 出于可扩展性和合并能力的考虑，可能的话优先使用 interface 而不是 type。
+- 避免使用枚举 enum；使用对象映射或联合类型代替以获得更好的类型安全性和灵活性。
+- tsx中必须使用 as 断言，避免语法冲突。
+- 不要滥用类型断言，尽量使用更准确的类型或类型守卫。
+- 让泛型变量更加语义化，常见泛型如下：
+  - T(Type): 表示一个 TypeScript 类型
+  - K(Key): 表示对象中的键类型
+  - V(Value): 表示对象中的值类型
+  - E(Element): 表示元素类型
+- 请使用 TSDoc 对涉及到请求相关 interface 添加字段摘要，表明各字段的中文含义（与API文档给出的一致）。
+
+## 可读性
+- 在一个ts文件中，类型定义应该出现在顶部。
+- 建议给 interface 声明顺序，只读参数放第一位，然后是必选参数，然后是可选参数，不确定参数放最后，如：
+```TypeScript
+interface IProps {
+  readonly x: number;
+  readonly y: number;
+  name: string;
+  age: number;
+  height?: number;
+  [propName: string]: any;
+}
+```
+
+

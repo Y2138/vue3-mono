@@ -1,9 +1,6 @@
 <template>
   <div class="py-5 text-6 font-600 flex-center">
-    <n-icon @click="goToMain">
-      <!-- TODO 自定义svg图标 -->
-      <!-- <MenuIcon /> -->
-    </n-icon>
+    <Icon icon="ion:menu" width="24" height="24" class="cursor-pointer" @click="goToMain" />
     <span v-if="!collapsed" class="whitespace-nowrap overflow-hidden">
       Naive-Admin
     </span>
@@ -23,19 +20,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, markRaw, h, computed, watch, type Component } from 'vue'
+import { ref, h, computed, watch } from 'vue'
 import type { MenuOption, MenuInst } from 'naive-ui'
-import { NIcon } from 'naive-ui'
+import { Icon } from '@iconify/vue'
 import { useMenuStore } from '@/store/modules/menu'
 import { RouterLink, useRouter } from 'vue-router'
-import * as Ionicons5 from '@vicons/ionicons5'
+
+interface IMenuItem {
+  name: string
+  path: string
+  icon?: string
+  children?: IMenuItem[]
+  parent?: IMenuItem | null
+}
 
 const menuRef = ref<MenuInst | null>(null)
 const menuStore = useMenuStore()
-// 定位到菜单项
-function scrollTo(key: string) {
-  menuRef.value?.showOption(key)
-}
 
 watch(() => menuStore.activeMenuKey, (val) => {
   console.log('2501===>', val)
@@ -46,38 +46,30 @@ const collapsed = computed(() => {
   return menuStore.collapsed
 })
 
-function renderIconWithName(iconName: IIcons) {
-  // console.log('2501=> ', iconComp)
-  const iconComp = Ionicons5[iconName]
-  return () => markRaw(h(NIcon, null, { default: () => h(iconComp) }))
-}
-
-function renderIcon(icon: Component) {
-  return () => markRaw(h(NIcon, null, { default: () => h(icon) }))
+function renderIcon(icon: string) {
+  return () => h(Icon, { icon, width: '16', height: '16' })
 }
 
 const menuOptions = ref<MenuOption[]>([])
 function transferMenu(menuList?: IMenuItem[]): MenuOption[] {
   if (!menuList) return []
   return menuList.map((item) => {
-    const icon = typeof item.icon === 'string' ? renderIconWithName(item.icon): renderIcon(item.icon)
-    // const icon = renderIcon(item.icon)
     return {
       label: item.children ? item.name : () => h(
         RouterLink,
         { to: item.path },
         { default: () => item.name }
       ),
-      path: item.path,
-      icon: markRaw(icon),
+      key: item.path,
+      icon: item.icon ? renderIcon(item.icon) : undefined,
       children: item.children ? transferMenu(item.children) : undefined
-    }
+    } as MenuOption
   })
 }
 
 watch(
   () => menuStore.menuTree,
-  (val) => {
+  (val: any) => {
     menuOptions.value = transferMenu(val)
   },
   {

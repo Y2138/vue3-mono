@@ -1,12 +1,14 @@
 <template>
   <n-config-provider :theme="themeVar" :locale="zhCN" :date-locale="dateZhCN" inline-theme-disabled>
-    <n-message-provider>
-      <n-loading-bar-provider>
-        <Layout>
-          <RouterView :key="fullPath + pageRefreshKey"></RouterView>
-        </Layout>
-      </n-loading-bar-provider>
-    </n-message-provider>
+    <n-dialog-provider>
+      <n-message-provider>
+        <n-loading-bar-provider>
+          <Layout>
+            <RouterView :key="fullPath + pageRefreshKey"></RouterView>
+          </Layout>
+        </n-loading-bar-provider>
+      </n-message-provider>
+    </n-dialog-provider>
   </n-config-provider>
 </template>
 

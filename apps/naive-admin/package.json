@@ -9,16 +9,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@imengyu/vue3-context-menu": "^1.4.4",
+    "@vueuse/core": "^13.0.0",
     "axios": "^1.7.7",
     "date-fns": "^4.1.0",
+    "motion-v": "^0.13.1",
     "pinia": "^2.3.0",
     "qs": "^6.10.3",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0"
   },
   "devDependencies": {
-    "@vicons/ionicons5": "^0.13.0",
+    "@iconify/vue": "^4.3.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vitejs/plugin-vue-jsx": "^4.1.1",
     "naive-ui": "^2.41.0",

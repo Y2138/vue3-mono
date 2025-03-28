@@ -1,0 +1,7 @@
+---
+description: 
+globs: *.vue,*.css
+alwaysApply: false
+---
+使用 unocss 来构建样式，请参考 unocss.config.ts 的配置
+- 如果有必要，将通用的样式提取到 unocss 的配置中
