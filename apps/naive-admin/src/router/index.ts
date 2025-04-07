@@ -1,8 +1,8 @@
-import { createRouter, createWebHistory, RouteLocationNormalized, NavigationGuardNext } from 'vue-router';
-import testRouters from './test-router'
-import { Icon } from '@iconify/vue'
 import { useMenuStore } from '@/store/modules/menu';
 import { useTabStore } from '@/store/modules/tab';
+import { NavigationGuardNext, RouteLocationNormalized, createRouter, createWebHistory } from 'vue-router';
+import systemRoutes from './modules/system'
+import testRouters from './test-router'
 
 // const modules = import.meta.glob(`./*-router.ts`, { eager: true, import: 'default' });
 
@@ -36,90 +36,7 @@ export const routes: CustomRouteRecord[] = [
 			}
 		]
 	},
-	{
-		path: '/front/market',
-		component: () => import('@/views/home.vue'),
-		meta: {
-			title: '市场素材审核管理',
-			icon: 'material-symbols:menu'
-		},
-		name: '市场素材审核管理',
-		redirect: '/front/market/material',
-		children: [
-			{
-				path: 'material',
-				name: '市场素材审核',
-				meta: {
-					title: '市场素材审核',
-					icon: 'mdi:account'
-				},
-				component: () => import('@/views/home.vue'),
-				redirect: '/front/market/material/audit-list',
-				children: [
-					{
-						path: 'audit-list',
-						component: () => import('@/views/home.vue'),
-						name: '市场素材初审',
-						meta: {
-							title: '市场素材初审',
-							icon: 'mdi:account'
-						}
-					},
-					{
-						path: 'recheck-list',
-						component: () => import('@/views/home.vue'),
-						name: '市场素材复审',
-						meta: {
-							title: '市场素材复审',
-							icon: 'material-symbols:add-circle'
-						}
-					},
-					{
-						path: 'script-audit',
-						component: () => import('@/views/home.vue'),
-						name: '脚本初审',
-						meta: {
-							title: '脚本初审',
-							icon: 'material-symbols:error-circle'
-						}
-					},
-					{
-						path: 'script-recheck',
-						component: () => import('@/views/home.vue'),
-						name: '脚本复审',
-						meta: {
-							title: '脚本复审'
-						}
-					},
-					{
-						path: 'export',
-						component: () => import('@/views/home.vue'),
-						name: '导出管理',
-						meta: {
-							title: '导出管理',
-							icon: 'mdi:wifi'
-						}
-					},
-					{
-						path: 'config',
-						component: () => import('@/views/home.vue'),
-						name: '配置管理',
-						meta: {
-							title: '配置管理'
-						}
-					},
-					{
-						path: 'strategy-lexicon',
-						component: () => import('@/views/home.vue'),
-						name: '策略词库',
-						meta: {
-							title: '策略词库'
-						}
-					}
-				]
-			}
-		]
-	},
+	systemRoutes,
 	...testRouters
 ];
 

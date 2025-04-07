@@ -1,16 +1,14 @@
+import type { LoadingBarApi, MessageApi } from 'naive-ui'
 import type { Component } from 'vue'
-import * as Ionicons from '@vicons/ionicons5/index'
 import type { RouteRecordRaw } from 'vue-router'
-import type { MessageApi, LoadingBarApi } from 'naive-ui'
 
 declare global {
   // 可选图标
-  type IIcons =  keyof typeof Ionicons
   // route
   type CustomRouteRecord = RouteRecordRaw & {
     meta?: {
       title: string
-      icon?: IIcons | Component
+      icon?: string
     }
     children?: CustomRouteRecord[]
   }
@@ -26,7 +24,7 @@ declare global {
     name: string
     parent: IMenuItem | null
     children?: IMenuItem[]
-    icon: Component | keyof typeof Ionicons
+    icon: string
   }
   // 全局通用类型
   interface IObj {
@@ -67,4 +65,15 @@ declare global {
     $message: MessageApi
     $loadingBar: LoadingBarApi
   }
+  declare module '*.gql' {
+    import { DocumentNode } from 'graphql';
+    const content: DocumentNode;
+    export default content;
+  } 
+  
+  declare module '*.vue' {
+    import type { DefineComponent } from 'vue';
+    const component: DefineComponent<{}, {}, any>;
+    export default component;
+  } 
 }

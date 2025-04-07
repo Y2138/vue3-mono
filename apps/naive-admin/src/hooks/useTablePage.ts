@@ -1,8 +1,8 @@
+import type { DataTableColumn, DataTableColumns } from 'naive-ui'
 import { reactive, ref } from 'vue'
-import type { DataTableColumns, DataTableColumn } from 'naive-ui'
 
 interface IOptions<R> {
-  returnHeader: boolean,
+  returnHeader: boolean
   customHeaders?: Record<string, DataTableColumn<R>>
   customResHandleFn?: (data?: IPaginationResData<R[]>) => void
   pageConfig?: {
@@ -10,12 +10,12 @@ interface IOptions<R> {
     pageSizes: number[]
   }
 }
-function dealWithTableColumns<T = any>(
+function dealWithTableColumns<T>(
   headers: Record<string, string>,
-  customOptions?: Record<string, DataTableColumn<T>>
-) {
+  customOptions?: Record<string, DataTableColumn<T>>,
+): DataTableColumns<T> {
   const columns: DataTableColumns<T> = []
-  Object.keys(headers).forEach(key => {
+  for (const key of Object.keys(headers)) {
     let customColumnConfig = {}
     if (customOptions) {
       customColumnConfig = customOptions[key] || {}
@@ -23,10 +23,10 @@ function dealWithTableColumns<T = any>(
     const column: DataTableColumn<T> = {
       title: headers[key],
       key: key,
-      ...customColumnConfig
+      ...customColumnConfig,
     }
     columns.push(column)
-  })
+  }
   return columns
 }
 // Q 是请求参数类型，R是响应参数类型（单条数据）
@@ -40,7 +40,7 @@ function dealWithTableColumns<T = any>(
 const useTablePage = <Q extends IPaginationRequest, R>(
   request: IRequest<Q, IPaginationResData<R[]>>,
   paramsHandleFn: () => Q,
-  options?: IOptions<R>
+  options?: IOptions<R>,
 ) => {
   const tableData = ref<R[]>([])
   const tableColumns = ref<DataTableColumns<R>>([])
@@ -58,11 +58,14 @@ const useTablePage = <Q extends IPaginationRequest, R>(
     const { data: pageData } = data || {}
     tableData.value = pageData?.table_data || []
     pagination.itemCount = pageData?.page_data?.count || 0
-    if (options && options.returnHeader && pageData?.header) {
-      tableColumns.value = dealWithTableColumns(pageData.header || {}, options?.customHeaders)
+    if (options?.returnHeader && pageData?.header) {
+      tableColumns.value = dealWithTableColumns(
+        pageData.header || {},
+        options?.customHeaders,
+      )
     }
     // 自定义处理方法
-    if (options && options.customResHandleFn) {
+    if (options?.customResHandleFn) {
       options.customResHandleFn(pageData)
     }
   }
@@ -81,11 +84,13 @@ const useTablePage = <Q extends IPaginationRequest, R>(
   const pagination = reactive({
     page: 1,
     pageSize: options?.pageConfig?.pageSize ? options.pageConfig.pageSize : 30,
-    pageSizes: options?.pageConfig?.pageSizes ? options.pageConfig.pageSizes : [30, 50, 100],
+    pageSizes: options?.pageConfig?.pageSizes
+      ? options.pageConfig.pageSizes
+      : [30, 50, 100],
     itemCount: 0,
     showSizePicker: true,
     onChange: handlePageChange,
-    onUpdatePageSize: handlePageSizeChange
+    onUpdatePageSize: handlePageSizeChange,
   })
 
   return {

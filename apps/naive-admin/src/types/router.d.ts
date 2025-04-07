@@ -4,7 +4,7 @@ import { Component } from 'vue'
 declare module 'vue-router' {
   interface RouteMeta {
     title?: string
-    icon?: string | Component
+    icon?: string
     name?: string
   }
 }

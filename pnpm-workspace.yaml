@@ -5,3 +5,5 @@ packages:
   - "configs/*"
   # apps 实际项目相关包
   - "apps/*"
+  # server 目录
+  - "server/*"

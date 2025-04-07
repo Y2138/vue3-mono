@@ -1,6 +1,6 @@
 // index.ts
 import axios, { isCancel } from 'axios'
-import type { RawAxiosRequestHeaders, AxiosRequestHeaders, AxiosResponse, AxiosRequestConfig } from 'axios'
+import type { AxiosRequestConfig, AxiosRequestHeaders, AxiosResponse, RawAxiosRequestHeaders } from 'axios'
 import { PendingMap } from './cancelToken'
 
 interface ICustomAxiosConfig<T> extends AxiosRequestConfig<T> {
@@ -38,19 +38,19 @@ const errorHandle = (status: number, other?: string, errorCode?: string) => {
 			console.error('接口重定向了！')
 			break
 		case 400:
-			console.error('发出的请求有错误，服务器没有进行新建或修改数据的操作:' + status)
+			console.error(`发出的请求有错误，服务器没有进行新建或修改数据的操作:${status}`)
 			break
 		// 401: 未登录
 		// 未登录则跳转登录页面，并携带当前页面的路径
 		// 在登录成功后返回当前页面，这一步需要在登录页操作。
 		case 401: //重定向
-			console.error('token:登录失效:' + errorCode)
+			console.error(`token:登录失效:${errorCode}`)
 			// createLogin()
 			break
 		// 403 token过期
 		// 清除token并跳转登录页
 		case 403:
-			console.error(`${other}:` + status)
+			console.error(`${other}:${status}`)
 			if (!isCancel(other)) {
 				// Emitter.emit(MITT_GLOBAL_MSG, {
 				// 	msg: `${errorCode || status}，${other || '鉴权失败，无权限访问该接口'}`,
@@ -59,10 +59,10 @@ const errorHandle = (status: number, other?: string, errorCode?: string) => {
 			}
 			break
 		case 404:
-			console.error('网络请求不存在:' + status)
+			console.error(`网络请求不存在:${status}`)
 			break
 		case 406:
-			console.error('请求的格式不可得:' + status)
+			console.error(`请求的格式不可得:${status}`)
 			break
 		case 408:
 			console.error(' 请求超时！')
@@ -75,25 +75,25 @@ const errorHandle = (status: number, other?: string, errorCode?: string) => {
 
 			break
 		case 410:
-			console.error('请求的资源被永久删除，且不会再得到的:' + status)
+			console.error(`请求的资源被永久删除，且不会再得到的:${status}`)
 			break
 		case 422:
-			console.error('当创建一个对象时，发生一个验证错误:' + status)
+			console.error(`当创建一个对象时，发生一个验证错误:${status}`)
 			break
 		case 500:
-			console.error('服务器发生错误，请检查服务器:' + status)
+			console.error(`服务器发生错误，请检查服务器:${status}`)
 			break
 		case 502:
-			console.error('网关错误:' + status)
+			console.error(`网关错误:${status}`)
 			break
 		case 503:
-			console.error('服务不可用，服务器暂时过载或维护:' + status)
+			console.error(`服务不可用，服务器暂时过载或维护:${status}`)
 			break
 		case 504:
-			console.error('网关超时:' + status)
+			console.error(`网关超时:${status}`)
 			break
 		default:
-			console.error('其他错误错误:' + status)
+			console.error(`其他错误错误:${status}`)
 	}
 }
 
@@ -186,7 +186,7 @@ instance.interceptors.response.use(
 			if (![401, 403, 404].includes(status)) {
 				// 超时重新请求
 				// 全局的请求次数,请求的间隙
-				if (_config && _config.retry && (_config.retryMaxCount || 0) > 0) {
+				if (_config?.retry && (_config.retryMaxCount || 0) > 0) {
 					// 设置用于跟踪重试计数的变量
 					_config.__retryCount = _config.__retryCount || 0
 					// 检查是否已经把重试的总数用完
@@ -210,15 +210,14 @@ instance.interceptors.response.use(
 				}
 			}
 			return Promise.reject(response)
-		} else {
-			// 处理断网的情况 || 超时 || 接口跨域
-			// eg:请求超时或断网时，更新state的network状态
-			// network状态在app.vue中控制着一个全局的断网提示组件的显示隐藏
-			// 后续增加断网情况下做的一些操作
-			// store.commit('networkState', false);
-			errorHandle(408, error)
-			return Promise.reject(error)
 		}
+		// 处理断网的情况 || 超时 || 接口跨域
+		// eg:请求超时或断网时，更新state的network状态
+		// network状态在app.vue中控制着一个全局的断网提示组件的显示隐藏
+		// 后续增加断网情况下做的一些操作
+		// store.commit('networkState', false);
+		errorHandle(408, error)
+		return Promise.reject(error)
 	},
 )
 

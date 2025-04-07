@@ -23,7 +23,7 @@ const defaultProps: Partial<UploadProps> = {
 }
 
 interface IDUpload {
-  hasDragger
+  hasDragger?: boolean
 }
 
 const props = defineProps<UploadProps>()

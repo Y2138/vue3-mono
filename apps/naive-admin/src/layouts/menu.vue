@@ -6,10 +6,9 @@
     </span>
   </div>
   <n-menu
-    v-model:value="menuStore.activeMenuKey"
+    :v-model:value="menuStore.activeMenuKey"
     ref="menuRef"
     :options="menuOptions"
-    key-field="path"
     :width="240"
     :indent="20"
     :root-indent="16"
@@ -20,10 +19,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h, computed, watch } from 'vue'
-import type { MenuOption, MenuInst } from 'naive-ui'
-import { Icon } from '@iconify/vue'
 import { useMenuStore } from '@/store/modules/menu'
+import { Icon } from '@iconify/vue'
+import type { MenuInst, MenuOption } from 'naive-ui'
+import { computed, h, ref, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 
 interface IMenuItem {
@@ -60,7 +59,7 @@ function transferMenu(menuList?: IMenuItem[]): MenuOption[] {
         { to: item.path },
         { default: () => item.name }
       ),
-      key: item.path,
+      key: `m_${item.path}`,
       icon: item.icon ? renderIcon(item.icon) : undefined,
       children: item.children ? transferMenu(item.children) : undefined
     } as MenuOption
