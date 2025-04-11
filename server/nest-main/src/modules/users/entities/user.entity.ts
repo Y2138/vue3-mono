@@ -1,45 +1,37 @@
-import { Field, ObjectType } from '@nestjs/graphql';
-import { Column, CreateDateColumn, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Field, ID, ObjectType } from '@nestjs/graphql';
+import { Column, CreateDateColumn, Entity, JoinTable, ManyToMany, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 import { Role } from '../../rbac/entities/role.entity';
 
 @ObjectType()
 @Entity('users')
 export class User {
   @Field(() => String)
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryColumn()
+  phone: string;
 
-  @Field(() => String)
-  @Column({ length: 100, unique: true })
-  email: string;
+  @Field()
+  @Column()
+  username: string;
 
   @Column()
   password: string;
 
-  @Field(() => String)
-  @Column({ length: 50 })
-  firstName: string;
-
-  @Field(() => String)
-  @Column({ length: 50 })
-  lastName: string;
-
-  @Field(() => Boolean)
-  @Column({ default: true })
+  @Field()
+  @Column({ default: false })
   isActive: boolean;
 
-  @Field(() => Date)
+  @Field()
   @CreateDateColumn()
   createdAt: Date;
 
-  @Field(() => Date)
+  @Field()
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @ManyToMany(() => Role, role => role.users, { eager: true })
+  @ManyToMany(() => Role, role => role.users)
   @JoinTable({
     name: 'user_roles',
-    joinColumn: { name: 'user_id', referencedColumnName: 'id' },
+    joinColumn: { name: 'user_id', referencedColumnName: 'phone' },
     inverseJoinColumn: { name: 'role_id', referencedColumnName: 'id' },
   })
   @Field(() => [Role])

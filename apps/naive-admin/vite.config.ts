@@ -22,7 +22,7 @@ export default defineConfig({
     }
   },
   server: {
-    port: 8081,
+    port: 6767,
     proxy: {
       '/api': {
         target: 'https://guanli-platform.qimao.com',

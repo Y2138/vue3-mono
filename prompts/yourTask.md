@@ -1,0 +1,16 @@
+curl 'http://localhost:3000/graphql' \
+  -H 'Accept-Language: zh-CN,zh;q=0.9,ko;q=0.8,en;q=0.7' \
+  -H 'Connection: keep-alive' \
+  -H 'Origin: http://localhost:6767' \
+  -H 'Referer: http://localhost:6767/' \
+  -H 'Sec-Fetch-Dest: empty' \
+  -H 'Sec-Fetch-Mode: cors' \
+  -H 'Sec-Fetch-Site: same-site' \
+  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36' \
+  -H 'accept: */*' \
+  -H 'authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNTMxNjEyMDU4MCIsInBob25lIjoiMTUzMTYxMjA1ODAiLCJpYXQiOjE3NDQzMzY5NjksImV4cCI6MTc0NDQyMzM2OX0.Rw_lS0sypnurA1RnV5O0dXSm2CCibmNEWkO6pANU-oA' \
+  -H 'content-type: application/json' \
+  -H 'sec-ch-ua: "Chromium";v="134", "Not:A-Brand";v="24", "Google Chrome";v="134"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "macOS"' \
+  --data-raw '{"operationName":"GetRoles","variables":{},"query":"query GetRoles {\n  roles {\n    id\n    name\n    description\n    permissions {\n      id\n      name\n      resource\n      action\n      description\n      __typename\n    }\n    createdAt\n    updatedAt\n    __typename\n  }\n}"}'

@@ -2,6 +2,7 @@
 import axios, { isCancel } from 'axios'
 import type { AxiosRequestConfig, AxiosRequestHeaders, AxiosResponse, RawAxiosRequestHeaders } from 'axios'
 import { PendingMap } from './cancelToken'
+import { useUserStore } from '@/store/modules/user'
 
 interface ICustomAxiosConfig<T> extends AxiosRequestConfig<T> {
   /* 是否不需要错误信息提示，默认有 */
@@ -45,7 +46,10 @@ const errorHandle = (status: number, other?: string, errorCode?: string) => {
 		// 在登录成功后返回当前页面，这一步需要在登录页操作。
 		case 401: //重定向
 			console.error(`token:登录失效:${errorCode}`)
-			// createLogin()
+			// 清除token并跳转到登录页
+			const userStore = useUserStore();
+			userStore.logout();
+			window.location.href = '/login';
 			break
 		// 403 token过期
 		// 清除token并跳转登录页
@@ -99,20 +103,15 @@ const errorHandle = (status: number, other?: string, errorCode?: string) => {
 
 /* 实例化请求配置 */
 const instance = axios.create({
-	// headers: {
-	// 	'Content-Type': 'application/json;charset=UTF-8',
-	// 	// "Access-Control-Allow-Origin-Type": "*",
-	// },
-  headers: {
-    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8', // 简单请求header标识
-  },
-
+	headers: {
+		'Content-Type': 'application/json;charset=UTF-8',
+	},
 	// 请求时长
 	timeout: 1000 * 10,
-	// TODO 请求的base地址 根据不同的模块调不同的api
-	// baseURL: `${location.protocol}//ngw.${getEnv()}enmonster.com`,
 	// 表示跨域请求时是否需要使用凭证
-	withCredentials: true,
+	withCredentials: false,
+  // 设置基础URL
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
 })
 
 /**
@@ -125,10 +124,13 @@ instance.interceptors.request.use(
     // TODO 若是同域名请求，header头会带入该域名下所有cookie，无需再处理
     const headers: RawAxiosRequestHeaders = {}
 
-		// headers.Auth = cookie.get(`${initConfig().tokenName}`) || ''
-		// headers['agentNo'] = cookie.get('agentNo') || ''
-		// headers['userView'] = cookie.get('usingView') || ''
-		// headers['resCode'] = getResCode(config.headers) || ''
+    // 获取并添加JWT token到请求头
+    const userStore = useUserStore();
+    const token = userStore.getToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
 		if (config.data instanceof FormData && config.url) {
 			headers['Content-Type'] = 'multipart/form-data'
 		}
@@ -145,10 +147,8 @@ instance.interceptors.request.use(
       }
     }
 		if (configUrl && loginUrls.includes(configUrl)) {
-
+      // 登录相关接口的特殊处理
 		}
-    // test
-    config.url = `https://guanli-platform.qimao.com${config.url}`;
 
     pendingMap.cancelPending(config)
     pendingMap.addPending(config)

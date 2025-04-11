@@ -24,6 +24,7 @@ export interface CreatePermissionInput {
   resource: string;
   action: string;
   description?: string;
+  isActive?: boolean;
 }
 
 export interface UpdatePermissionInput extends Partial<CreatePermissionInput> {

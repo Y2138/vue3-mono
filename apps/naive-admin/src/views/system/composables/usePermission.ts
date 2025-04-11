@@ -38,17 +38,17 @@ export function usePermission(): UsePermissionReturn {
   const error = ref<Error | null>(null);
   const message = useMessage();
 
-  useQuery<{
-    health: string;
-  }>(GET_HEALTH as DocumentNode, {}, {
-    fetchPolicy: 'network-only',
-    onResult: ({ data }) => {
-      console.log(data);
-    },
-    onError: (err: Error) => {
-      console.log(err);
-    },
-  });
+  // useQuery<{
+  //   health: string;
+  // }>(GET_HEALTH as DocumentNode, {}, {
+  //   fetchPolicy: 'network-only',
+  //   onResult: ({ data }) => {
+  //     console.log(data);
+  //   },
+  //   onError: (err: Error) => {
+  //     console.log(err);
+  //   },
+  // });
 
   // 查询权限列表
   const { loading: permissionsLoading, refetch: refetchPermissions } = useQuery<PermissionsData>(

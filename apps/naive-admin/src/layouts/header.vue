@@ -13,12 +13,17 @@
         <Icon icon="ion:search" width="20" height="20" class="cursor-pointer"></Icon>
         <Icon icon="ion:sunny-sharp" width="20" height="20" class="cursor-pointer" @click="handleChangeTheme" title="切换主题"></Icon>
         <Icon icon="ion:refresh" width="20" height="20" class="cursor-pointer animate-keyframes-spin" @click="handleRefresh" title="刷新"></Icon>
-        <n-avatar
-          class="ml-5"
-          round
-          size="small"
-          src="https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg"
-        />
+        <n-dropdown trigger="click" :options="userOptions" @select="handleUserAction">
+          <div class="flex-center cursor-pointer">
+            <n-avatar
+              class="mr-2"
+              round
+              size="small"
+              :src="userAvatar"
+            />
+            <span>{{ userInfo?.username || '未登录' }}</span>
+          </div>
+        </n-dropdown>
       </n-space>
     </div>
     <TabBar></TabBar>
@@ -26,19 +31,71 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, h } from 'vue'
 import { Icon } from '@iconify/vue'
 import TabBar from './tabBar.vue';
 import { useRouter } from 'vue-router';
 import { useMenuStore } from '@/store/modules/menu';
 import { useGlobalStore } from '@/store/modules/global';
 import { usePageLoading } from '@/hooks/usePageLoading';
+import { useUserStore } from '@/store/modules/user';
+import { api_logout } from '@/views/auth/graphql/auth';
 
 const router = useRouter()
 const globalStore = useGlobalStore()
+const userStore = useUserStore()
 const { refresh } = usePageLoading()
 const menuStore = useMenuStore()
 const menuRoutes = computed(() => menuStore.menuRoutes)
+
+// 用户信息
+const userInfo = computed(() => userStore.getUserInfo())
+// 用户头像
+const userAvatar = ref('https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg')
+
+// 用户下拉菜单选项
+const userOptions = [
+  {
+    label: '个人信息',
+    key: 'profile',
+    icon: () => h(Icon, { icon: 'ion:person' })
+  },
+  {
+    label: '修改密码',
+    key: 'password',
+    icon: () => h(Icon, { icon: 'ion:key' })
+  },
+  {
+    type: 'divider',
+    key: 'd1'
+  },
+  {
+    label: '退出登录',
+    key: 'logout',
+    icon: () => h(Icon, { icon: 'ion:exit' })
+  }
+]
+
+// 处理用户下拉菜单事件
+const handleUserAction = async (key: string) => {
+  if (key === 'logout') {
+    try {
+      await api_logout()
+      userStore.logout()
+      window.$message.success('退出登录成功')
+      router.push('/login')
+    } catch (error) {
+      console.error('退出登录失败', error)
+      window.$message.error('退出登录失败')
+    }
+  } else if (key === 'profile') {
+    // 跳转到个人信息页面
+    window.$message.info('功能开发中...')
+  } else if (key === 'password') {
+    // 跳转到修改密码页面
+    window.$message.info('功能开发中...')
+  }
+}
 
 // 跳转
 const handleLinkClick = (item: IMenuItem) => {

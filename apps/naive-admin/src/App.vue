@@ -3,7 +3,8 @@
     <n-dialog-provider>
       <n-message-provider>
         <n-loading-bar-provider>
-          <Layout>
+          <RouterView v-if="!showLayout"></RouterView>
+          <Layout v-else>
             <RouterView :key="fullPath + pageRefreshKey"></RouterView>
           </Layout>
         </n-loading-bar-provider>
@@ -25,6 +26,10 @@ const { fullPath } = toRefs(route)
 const { pageRefreshKey, theme } = storeToRefs(useGlobalStore())
 const themeVar = computed(() => {
   return theme.value === 'dark' ? darkTheme : null
+})
+
+const showLayout = computed(() => {
+  return route.path !== '/login' && route.path !== '/register'
 })
 
 </script>

@@ -101,14 +101,23 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 
 ```
 src/
-├── config/           # 配置文件
-├── modules/          # 功能模块
-├── common/           # 公共代码
+├── config/          # 配置文件
+├── modules/         # 功能模块
+│   ├── users/       # 用户相关接口
+│   ├── rbac/        # 权限相关接口
+├── common/          # 公共代码
 │   ├── decorators/  # 装饰器
 │   ├── filters/     # 异常过滤器
 │   ├── guards/      # 守卫
 │   ├── interceptors/# 拦截器
 │   └── pipes/       # 管道
 ├── database/        # 数据库相关
-└── utils/           # 工具函数
+├── health/          # 验证graphql是否健康，基础resolver
+├── migrations/      # typeorm数据库迁移文件
+├── utils/           # 工具函数
+├── app.module.ts    # 全局模块
+├── data-source/     # typeorm 数据库连接，用于迁移数据库
+└── main.ts          # 主服务入口
+
+
 ```

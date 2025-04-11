@@ -1,27 +1,23 @@
 <script setup lang="ts">
-import { usePermissionManagement } from '@/hooks/usePermission';
-import type { CreatePermissionInput, Permission, UpdatePermissionInput } from '@/types/rbac';
+import { usePermission } from '../../composables/usePermission';
+import type { CreatePermissionInput, Permission, UpdatePermissionInput } from '../../types';
 import { NForm, NFormItem, NInput, NModal, NSwitch, useMessage } from 'naive-ui';
 import { ref, watch } from 'vue';
 
 const props = defineProps<{
-  show: boolean;
   permission: Permission | null;
 }>();
 
-const emit = defineEmits<{
-  (e: 'update:show', value: boolean): void;
-}>();
+const show = defineModel<boolean>('show');
 
 const message = useMessage();
 const formRef = ref();
 
-const formModel = ref<CreatePermissionInput & UpdatePermissionInput>({
+const formModel = ref<CreatePermissionInput | UpdatePermissionInput>({
   name: '',
   resource: '',
   action: '',
-  description: '',
-  isActive: true,
+  description: ''
 });
 
 const rules = {
@@ -42,7 +38,7 @@ const rules = {
   },
 };
 
-const { createPermission, updatePermission } = usePermissionManagement();
+const { createPermission, updatePermission } = usePermission();
 
 // 监听编辑的权限数据变化
 watch(
@@ -80,7 +76,7 @@ const handleSubmit = async () => {
       message.success('创建成功');
     }
     
-    emit('update:show', false);
+    show.value = false;
   } catch (error) {
     if (error instanceof Error) {
       message.error(error.message);
@@ -97,7 +93,7 @@ const handleSubmit = async () => {
     positive-text="确认"
     negative-text="取消"
     @positive-click="handleSubmit"
-    @negative-click="() => emit('update:show', false)"
+    @negative-click="() => show = false"
   >
     <NForm
       ref="formRef"

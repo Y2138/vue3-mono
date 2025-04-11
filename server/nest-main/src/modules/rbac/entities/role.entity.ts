@@ -1,6 +1,6 @@
 import { Field, ObjectType } from '@nestjs/graphql';
 import { Column, CreateDateColumn, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
-import { User } from '../../../users/entities/user.entity';
+import { User } from '../../users/entities/user.entity';
 import { Permission } from './permission.entity';
 
 @ObjectType()

@@ -10,6 +10,7 @@ export default registerAs('database', (): DataSourceOptions => ({
   database: process.env.DB_DATABASE,
   entities: ['dist/**/*.entity{.ts,.js}'],
   migrations: ['dist/database/migrations/*{.ts,.js}'],
-  synchronize: process.env.APP_ENV === 'development',
+  // synchronize: process.env.APP_ENV === 'development',
+  synchronize: false,
   logging: process.env.APP_ENV === 'development',
 }));

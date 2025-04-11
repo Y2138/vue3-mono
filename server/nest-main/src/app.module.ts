@@ -8,8 +8,8 @@ import * as redisStore from 'cache-manager-redis-store';
 import { RedisClientOptions } from 'redis';
 import databaseConfig from './config/database.config';
 import { HealthResolver } from './health/health.resolver';
-import { User } from './users/entities/user.entity';
-import { UsersModule } from './users/users.module';
+import { User } from './modules/users/entities/user.entity';
+import { UsersModule } from './modules/users/users.module';
 import { RbacModule } from './modules/rbac/rbac.module';
 import { Role } from './modules/rbac/entities/role.entity';
 import { Permission } from './modules/rbac/entities/permission.entity';
@@ -51,6 +51,26 @@ import type { TypeOrmModuleOptions } from '@nestjs/typeorm';
       driver: ApolloDriver,
       autoSchemaFile: true,
       playground: process.env.APP_ENV === 'development',
+      formatError: (error) => {
+        const exception = error.extensions?.exception;
+        const isObject = (obj: unknown): obj is Record<string, unknown> => obj !== null && typeof obj === 'object';
+        const response = isObject(exception) && 'response' in exception ? exception.response : null;
+        const message = isObject(response) && 'message' in response ? response.message as string | string[] : error.message;
+        const graphQLFormattedError = {
+          message: Array.isArray(message) ? message.join(', ') : message,
+          code: error.extensions?.code || 'INTERNAL_SERVER_ERROR',
+          locations: error.locations,
+          path: error.path,
+          extensions: {
+            ...error.extensions,
+            exception: isObject(exception) ? {
+              ...exception,
+              response: undefined, // 移除原始响应以避免冗余
+            } : undefined,
+          },
+        };
+        return graphQLFormattedError;
+      },
     }),
     CacheModule.registerAsync<RedisClientOptions>({
       isGlobal: true,
