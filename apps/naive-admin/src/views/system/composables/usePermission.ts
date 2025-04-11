@@ -1,4 +1,4 @@
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useQuery, useMutation } from '@vue/apollo-composable';
 import { useMessage } from 'naive-ui';
 import type { CreatePermissionInput, CreateRoleInput, Permission, Role, UpdatePermissionInput, UpdateRoleInput, UsePermissionReturn } from '../types';
@@ -34,7 +34,6 @@ interface RolesData {
 export function usePermission(): UsePermissionReturn {
   const permissions = ref<Permission[]>([]);
   const roles = ref<Role[]>([]);
-  const isLoading = ref(false);
   const error = ref<Error | null>(null);
   const message = useMessage();
 
@@ -51,43 +50,61 @@ export function usePermission(): UsePermissionReturn {
   // });
 
   // 查询权限列表
-  const { loading: permissionsLoading, refetch: refetchPermissions } = useQuery<PermissionsData>(
+  const { 
+    loading: permissionsLoading, 
+    refetch: refetchPermissions,
+    onResult,
+    onError,
+  } = useQuery<PermissionsData>(
     GET_PERMISSIONS as DocumentNode,
     {},
     {
-      fetchPolicy: 'network-only',
-      update: (data: PermissionsData) => {
-        if (data?.permissions) {
-          permissions.value = data.permissions;
-        }
-      },
-      onError(err: Error) {
-        error.value = err;
-        message.error('获取权限列表失败');
-      },
+      fetchPolicy: 'network-only'
     } as UseQueryOptions<PermissionsData>
   );
 
+  // 监听权限查询结果
+  onResult(({ data }) => {
+    if (data?.permissions) {
+      permissions.value = data.permissions;
+    }
+  });
+
+  // 监听权限查询错误
+  onError((err) => {
+    error.value = err;
+    message.error('获取权限列表失败');
+  });
+
   // 查询角色列表
-  const { loading: rolesLoading, refetch: refetchRoles } = useQuery<RolesData>(
+  const { 
+    loading: rolesLoading, 
+    refetch: refetchRoles,
+    onResult: onRolesResult,
+    onError: onRolesError
+  } = useQuery<RolesData>(
     GET_ROLES as DocumentNode,
     {},
     {
-      fetchPolicy: 'network-only',
-      update: (data: RolesData) => {
-        if (data?.roles) {
-          roles.value = data.roles;
-        }
-      },
-      onError(err: Error) {
-        error.value = err;
-        message.error('获取角色列表失败');
-      },
+      fetchPolicy: 'network-only'
     } as UseQueryOptions<RolesData>
   );
 
+  // 监听角色查询结果
+  onRolesResult(({ data }) => {
+    if (data?.roles) {
+      roles.value = data.roles;
+    }
+  });
+
+  // 监听角色查询错误
+  onRolesError((err) => {
+    error.value = err;
+    message.error('获取角色列表失败');
+  });
+
   // 监听加载状态
-  isLoading.value = permissionsLoading.value || rolesLoading.value;
+  const isLoading = computed(() => permissionsLoading.value || rolesLoading.value);
 
   // 权限操作
   const { mutate: createPermissionMutation } = useMutation<{

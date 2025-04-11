@@ -3,11 +3,12 @@ import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { RequirePermissions } from '../decorators/require-permissions.decorator';
 import { CreatePermissionInput, UpdatePermissionInput } from '../dto/permission.input';
 import { Permission } from '../entities/permission.entity';
+import { GqlAuthGuard } from '../guards/gql-auth.guard';
 import { PermissionGuard } from '../guards/permission.guard';
 import { PermissionService } from '../services/permission.service';
 
 @Resolver(() => Permission)
-@UseGuards(PermissionGuard)
+@UseGuards(GqlAuthGuard, PermissionGuard)
 export class PermissionResolver {
   constructor(private readonly permissionService: PermissionService) {}
 

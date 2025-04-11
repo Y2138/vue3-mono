@@ -2,11 +2,15 @@ import { ValidationPipe, BadRequestException, Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { LoggingInterceptor } from './interceptors/logging.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const logger = new Logger('Bootstrap');
+
+  // 全局拦截器
+  app.useGlobalInterceptors(new LoggingInterceptor());
 
   // 全局管道
   app.useGlobalPipes(new ValidationPipe({

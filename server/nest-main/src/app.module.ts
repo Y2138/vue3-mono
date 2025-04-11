@@ -51,6 +51,7 @@ import type { TypeOrmModuleOptions } from '@nestjs/typeorm';
       driver: ApolloDriver,
       autoSchemaFile: true,
       playground: process.env.APP_ENV === 'development',
+      // context: ({ req }) => ({ req }),
       formatError: (error) => {
         const exception = error.extensions?.exception;
         const isObject = (obj: unknown): obj is Record<string, unknown> => obj !== null && typeof obj === 'object';
