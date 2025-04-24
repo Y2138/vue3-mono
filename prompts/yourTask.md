@@ -1,16 +1,8 @@
-curl 'http://localhost:3000/graphql' \
-  -H 'Accept-Language: zh-CN,zh;q=0.9,ko;q=0.8,en;q=0.7' \
-  -H 'Connection: keep-alive' \
-  -H 'Origin: http://localhost:6767' \
-  -H 'Referer: http://localhost:6767/' \
-  -H 'Sec-Fetch-Dest: empty' \
-  -H 'Sec-Fetch-Mode: cors' \
-  -H 'Sec-Fetch-Site: same-site' \
-  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36' \
-  -H 'accept: */*' \
-  -H 'authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNTMxNjEyMDU4MCIsInBob25lIjoiMTUzMTYxMjA1ODAiLCJpYXQiOjE3NDQzMzY5NjksImV4cCI6MTc0NDQyMzM2OX0.Rw_lS0sypnurA1RnV5O0dXSm2CCibmNEWkO6pANU-oA' \
-  -H 'content-type: application/json' \
-  -H 'sec-ch-ua: "Chromium";v="134", "Not:A-Brand";v="24", "Google Chrome";v="134"' \
-  -H 'sec-ch-ua-mobile: ?0' \
-  -H 'sec-ch-ua-platform: "macOS"' \
-  --data-raw '{"operationName":"GetRoles","variables":{},"query":"query GetRoles {\n  roles {\n    id\n    name\n    description\n    permissions {\n      id\n      name\n      resource\n      action\n      description\n      __typename\n    }\n    createdAt\n    updatedAt\n    __typename\n  }\n}"}'
+我想开发一个中间层node服务，用于拦截404接口请求并返回mock数据；以下是我的设想
+1. 前端发送接口请求，例如访问`https:/example/aaa`这个接口，请求会先发送到这个中间层
+2. 中间层去使用原始接口的请求头和请求体去发送实际请求到服务器
+3. 若服务器接口响应非404（请求码支持配置）则直接将请求响应返回给前端
+4. 若服务器接口返回404（请求码支持配置）则调用 api mcp 去获取这个接口的文档、返回值类型等信息
+5. AI（如cursor） 分析后根据这个文档信息mock一些数据，该数据满足接口的定义，并将这个mock数据返回前端，并在响应中添加标识表示这是一个mock数据
+6. 该过程中可能会出现错误，如获取不到这个接口的文档信息，需要处理好这些错误的情况
+请帮我分析下这个设想的可行性，如果可行则设计一个方案，如果不可行则提供一些其他思路

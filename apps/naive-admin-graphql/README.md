@@ -190,7 +190,6 @@ const formConfig = [
 
 ## 进度
 
-- [x] UnoCSS 封装
 - [x] 路由封装
 - [x] Pinia 封装
 - [x] 菜单管理

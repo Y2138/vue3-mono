@@ -39,6 +39,7 @@ import { useMenuStore } from '@/store/modules/menu';
 import { useGlobalStore } from '@/store/modules/global';
 import { usePageLoading } from '@/hooks/usePageLoading';
 import { useUserStore } from '@/store/modules/user';
+import { api_logout } from '@/views/auth/graphql/auth';
 
 const router = useRouter()
 const globalStore = useGlobalStore()

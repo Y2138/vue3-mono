@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from '@/hooks/useGraphQL';
-import type { LoginParams, LoginResponse, RegisterParams } from '@/types/user';
+import type { LoginParams, LoginResponse, RegisterParams } from '@/types/user.ts';
 
 /**
  * 登录接口

@@ -5,6 +5,7 @@ import { NaiveUiResolver } from 'unplugin-vue-components/resolvers';
 import Components from 'unplugin-vue-components/vite';
 import UnoCSS from 'unocss/vite';
 import path from 'path';
+// import vitePluginMockProxy from 'vite-plugin-mock-proxy';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -15,6 +16,9 @@ export default defineConfig({
       resolvers: [NaiveUiResolver()],
     }),
     UnoCSS(),
+    // vitePluginMockProxy({
+    //   debug: false,
+    // }),
   ],
   resolve: {
     alias: {
@@ -25,7 +29,7 @@ export default defineConfig({
     port: 6767,
     proxy: {
       '/api': {
-        target: 'https://guanli-platform.qimao.com',
+        target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, ''),

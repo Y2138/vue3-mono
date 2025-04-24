@@ -3,6 +3,7 @@ import { h, ref, onMounted } from 'vue'
 import { NDataTable, NButton, NSpace, NImage, NPopover, useMessage, useDialog } from 'naive-ui'
 import { api_getColumnList, api_editColumn, api_createColumn, api_deleteColumn, api_onlineColumn, api_offlineColumn } from '@/request/api/column'
 import type { ColumnItem } from '@/types/column'
+import type { DataTableColumns } from 'naive-ui/es/data-table'
 import ColumnForm from './components/ColumnForm.vue'
 
 const message = useMessage()
@@ -20,7 +21,7 @@ const pagination = ref({
 })
 
 // 表格列定义
-const columns = [
+const columns: DataTableColumns<ColumnItem> = [
     {
         title: '序号',
         key: 'index',
@@ -36,6 +37,7 @@ const columns = [
         render: (row: ColumnItem) => {
             return row.pcBanner ? h(NImage, {
                 width: 100,
+                height: 'auto',
                 src: row.pcBanner,
                 previewDisabled: false
             }) : '暂无图片'
@@ -44,11 +46,12 @@ const columns = [
     {
         title: '专栏名称',
         key: 'columnName',
-        width: 200
+        minWidth: 200
     },
     {
         title: '专栏简介',
         key: 'columnIntro',
+        minWidth: 200,
         render: (row: ColumnItem) => {
             return h(NPopover, {
                 trigger: 'hover'
@@ -61,6 +64,7 @@ const columns = [
     {
         title: '专栏链接',
         key: 'link',
+        width: 200,
         render: (row: ColumnItem) => {
             return h('a', {
                 href: row.link,
@@ -113,7 +117,7 @@ const columns = [
 const getList = async () => {
     try {
         loading.value = true
-        const res = await api_getColumnList({
+        const [res] = await api_getColumnList({
             page: pagination.value.page,
             pageSize: pagination.value.pageSize
         })

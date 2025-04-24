@@ -1,6 +1,8 @@
 import type { LoadingBarApi, MessageApi } from 'naive-ui'
 import type { Component } from 'vue'
 import type { RouteRecordRaw } from 'vue-router'
+import 'vue-router'
+import { Component } from 'vue'
 
 declare global {
   // 可选图标
@@ -65,10 +67,31 @@ declare global {
     $message: MessageApi
     $loadingBar: LoadingBarApi
   }
+  declare module '*.gql' {
+    import { DocumentNode } from 'graphql';
+    const content: DocumentNode;
+    export default content;
+  } 
   
   declare module '*.vue' {
     import type { DefineComponent } from 'vue';
     const component: DefineComponent<{}, {}, any>;
     export default component;
-  } 
+  }
+
+  declare module 'vue-router' {
+    interface RouteMeta {
+      title?: string
+      icon?: string
+      name?: string
+    }
 }
+}
+export interface CustomRouteRecord {
+  path: string
+  name?: string
+  component?: Component | (() => Promise<Component>)
+  meta?: RouteMeta
+  redirect?: string
+  children?: CustomRouteRecord[]
+} 

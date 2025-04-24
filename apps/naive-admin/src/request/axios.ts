@@ -107,11 +107,11 @@ const instance = axios.create({
 		'Content-Type': 'application/json;charset=UTF-8',
 	},
 	// 请求时长
-	timeout: 1000 * 10,
+	// timeout: 1000 * 10,
 	// 表示跨域请求时是否需要使用凭证
 	withCredentials: false,
   // 设置基础URL
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
+  // baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
 })
 
 /**

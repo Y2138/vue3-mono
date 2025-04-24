@@ -1,12 +1,12 @@
 <template>
   <div class="h-screen w-screen flex items-center justify-center bg-gray-100">
-    <n-card class="w-[420px]" title="注册账号" :bordered="false">
+    <n-card class="w-[420px]!" title="注册账号" :bordered="false">
       <n-form
         ref="formRef"
         :model="formModel"
         :rules="rules"
         label-placement="left"
-        label-width="80"
+        label-width="100"
         require-mark-placement="right-hanging"
         size="large"
       >
@@ -100,20 +100,18 @@ const handleRegister = () => {
     if (errors) return
 
     try {
-      const [res, err] = await api_register({
+      const res = await api_register({
         phone: formModel.value.phone,
         username: formModel.value.username,
         password: formModel.value.password,
       })
 
-      if (res?.data) {
+      if (res?.user) {
         message.success('注册成功')
         // 保存用户信息和token
-        userStore.setUserInfo(res.data.user)
-        userStore.setToken(res.data.token)
+        userStore.setUserInfo(res.user)
+        userStore.setToken(res.token)
         router.push('/login')
-      } else {
-        message.error(err?.message || '注册失败')
       }
     } catch (error: any) {
       message.error(error.message || '注册失败')

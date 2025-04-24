@@ -1,4 +1,4 @@
-import { ref, Ref } from 'vue';
+import { ref } from 'vue';
 import { apolloClient } from '@/plugins/apollo';
 import type { DocumentNode } from 'graphql';
 import { gql } from '@apollo/client/core';

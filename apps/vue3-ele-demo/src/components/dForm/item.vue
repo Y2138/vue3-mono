@@ -4,26 +4,12 @@
       <div class="flex-row-center">
         <slot name="formPrefix"></slot>
         <span v-if="props.isTxt">{{ textDesc }}</span>
-        <component
-          v-else
-          :is="componentsName[props.comp || 'ElInput']"
-          class="d-form-item"
-          :class="{ 'is-error': props.showValid && validMsg }"
-          :style="{ width: props.width || '100%' }"
-          v-model="bindValue"
-          :options="curOptions"
-          :placeholder="placeholder"
-          v-bind="props.props"
-          @change="handleChange"
-          @blur="handleBlur"
-          @input="handleInput"
-        >
+        <component v-else :is="componentsName[props.comp || 'ElInput']" class="d-form-item"
+          :class="{ 'is-error': props.showValid && validMsg }" :style="{ width: props.width || '100%' }"
+          v-model="bindValue" :options="curOptions" :placeholder="placeholder" v-bind="props.props"
+          @change="handleChange" @blur="handleBlur" @input="handleInput">
           <!-- 支持自定义插槽 -->
-          <template
-            v-for="iSlot in (props.innerSlots || [])"
-            :key="iSlot"
-            v-slot:[`${iSlot}`]
-          >
+          <template v-for="iSlot in (props.innerSlots || [])" :key="iSlot" v-slot:[`${iSlot}`]>
             <slot :name="iSlot"></slot>
           </template>
         </component>
@@ -35,7 +21,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, shallowReactive, ref, watch, useAttrs, defineEmits } from 'vue'
+import {
+  computed,
+  inject,
+  shallowReactive,
+  ref,
+  watch,
+  useAttrs,
+  defineEmits,
+} from 'vue'
 import type { FormItemProps, FormModelContext } from './types'
 import { FormModelContextKey, FORMVALIDREGEXPS } from './types'
 import { selComps } from './constant'
@@ -47,7 +41,7 @@ const componentsName = shallowReactive<Record<string, any>>({
   ElSelect,
   ElInput,
   SimpleSelect,
-	SimpleDateTimePicker
+  SimpleDateTimePicker,
 })
 const attrs = useAttrs()
 const props = defineProps<FormItemProps>()
@@ -64,8 +58,8 @@ watch(
     bindValue.value = newVal as string
   },
   {
-    immediate: true
-  }
+    immediate: true,
+  },
 )
 // 仅展示文本
 const textDesc = computed(() => {
@@ -74,8 +68,11 @@ const textDesc = computed(() => {
 })
 
 const placeholder = computed(() => {
-  if (props.props && props.props.placeholder) return props.props.placeholder;
-  return attrs.placeholder || `${(selComps.includes(props.comp || '') ? '请选择' : '请填写') + props.label}`;
+  if (props.props && props.props.placeholder) return props.props.placeholder
+  return (
+    attrs.placeholder ||
+    `${(selComps.includes(props.comp || '') ? '请选择' : '请填写') + props.label}`
+  )
 })
 
 type modelValueType = string | number // | string[] | number[] | string[][] | number[][]
@@ -83,18 +80,18 @@ const handleChange = (val: modelValueType) => {
   console.log('comp bind value change===>', val)
   updateFormModel(props.valueKey, val)
   if (props.checkTrigger?.includes('change')) {
-    checkValid();
+    checkValid()
   }
 }
 const handleBlur = () => {
   if (props.checkTrigger?.includes('blur')) {
-    checkValid();
+    checkValid()
   }
 }
 const handleInput = (val: string | number) => {
   emit('input', val)
   if (props.checkTrigger?.includes('blur')) {
-    checkValid();
+    checkValid()
   }
 }
 const showComp = computed(() => {
@@ -123,9 +120,10 @@ const showComp = computed(() => {
 const validMsg = ref('')
 const checkValid = () => {
   if (!props.rule && !props.required) validMsg.value = ''
-  if (props.required && !bindValue.value) return validMsg.value = '该项必填'
-	if (props.rule) {
-    let ruleReg: RegExp = typeof props.rule === 'string' ? FORMVALIDREGEXPS[props.rule] : props.rule
+  if (props.required && !bindValue.value) return (validMsg.value = '该项必填')
+  if (props.rule) {
+    let ruleReg: RegExp =
+      typeof props.rule === 'string' ? FORMVALIDREGEXPS[props.rule] : props.rule
     if (!ruleReg.test(bindValue.value)) {
       validMsg.value = props.validTips || '不符合规则'
     }
@@ -139,32 +137,36 @@ const curOptions = computed(() => {
   if (optionsKey) {
     return selectOptions.value[optionsKey as string] || []
   }
-  return options || [];
+  return options || []
 })
 </script>
 
 <style scoped lang="scss">
 .d-form-item {
-	width: 100%;
+  width: 100%;
   flex: 1;
 }
+
 .flex-column {
   display: flex;
   flex-direction: column;
-	align-items: flex-start;
+  align-items: flex-start;
 }
+
 .flex-row-center {
   display: flex;
-	align-items: center;
+  align-items: center;
   width: 100%;
 }
+
 p {
-	&.is-error{
-		color: red;
-		font-size: 13px;
-		margin: 5px 0 0 0;
-	}
+  &.is-error {
+    color: red;
+    font-size: 13px;
+    margin: 5px 0 0 0;
+  }
 }
+
 .is-error {
   :deep(.el-input__wrapper) {
     box-shadow: 0 0 0 1px red;
