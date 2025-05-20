@@ -1,0 +1,9 @@
+{
+  "version": "v1",
+  "packages": {
+    "vite-plugin-mock-proxy": {
+      "signature": "38847edb29b8da6bb3d77a29a224c1a0",
+      "file": true
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "name": "@mono-packages/sw",
+  "version": "0.1.0",
+  "description": "Service Worker 工具，基于workbox提供缓存优化能力",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "template"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "service-worker",
+    "workbox",
+    "cache"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "tsup": "^7.2.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "workbox-window": "^7.3.0"
+  },
+  "peerDependencies": {
+    "workbox-core": "^7.3.0",
+    "workbox-expiration": "^7.3.0",
+    "workbox-precaching": "^7.3.0",
+    "workbox-routing": "^7.3.0",
+    "workbox-strategies": "^7.3.0",
+    "workbox-window": "^7.3.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

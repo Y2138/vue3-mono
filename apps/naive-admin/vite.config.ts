@@ -6,6 +6,7 @@ import Components from 'unplugin-vue-components/vite';
 import UnoCSS from 'unocss/vite';
 import path from 'path';
 // import vitePluginMockProxy from 'vite-plugin-mock-proxy';
+import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -17,8 +18,29 @@ export default defineConfig({
     }),
     UnoCSS(),
     // vitePluginMockProxy({
-    //   debug: false,
+    //   port: 6768,
+    //   debug: true,
+    //   include: ['/api/column/column/index'],
     // }),
+    VitePWA({
+      srcDir: 'src',
+      filename: 'sw.ts',
+      strategies: 'injectManifest',
+      injectRegister: false,
+      manifest: false,
+      injectManifest: {
+        injectionPoint: undefined,
+      },
+      registerType: 'autoUpdate',
+      workbox: {
+        cleanupOutdatedCaches: true,
+      },
+      /* 开发环境启用sw */
+      devOptions: {
+        enabled: true,
+        navigateFallbackAllowlist: [/^index.html$/]
+      },
+    }),
   ],
   resolve: {
     alias: {

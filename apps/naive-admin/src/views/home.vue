@@ -14,7 +14,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { Icon } from '@iconify/vue';
-
 const loading = ref(true)
 const currentIcon = ref('ion:accessibility')
 

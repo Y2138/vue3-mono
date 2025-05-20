@@ -14,6 +14,7 @@ declare module 'vue' {
     DRadio: typeof import('./src/components/dForm/components/dRadio.vue')['default']
     DUpload: typeof import('./src/components/dForm/components/dUpload.vue')['default']
     Item: typeof import('./src/components/dForm/item.vue')['default']
+    LexicalEditor: typeof import('./src/components/lexicalEditor/index.vue')['default']
     NAvatar: typeof import('naive-ui')['NAvatar']
     NBreadcrumb: typeof import('naive-ui')['NBreadcrumb']
     NBreadcrumbItem: typeof import('naive-ui')['NBreadcrumbItem']

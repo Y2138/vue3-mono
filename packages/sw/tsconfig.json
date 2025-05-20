@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "outDir": "dist",
+    "module": "esnext",
+    "target": "es2020",
+    "moduleResolution": "node",
+    "lib": ["esnext", "dom", "webworker"],
+    "types": ["node"],
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "isolatedModules": true,
+    "declaration": true,
+    "rootDir": "src"
+  },
+  "include": ["src", "shims.d.ts", "template/sw.js"],
+  "exclude": ["node_modules", "dist"]
+} 

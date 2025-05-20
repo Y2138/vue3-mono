@@ -25,7 +25,7 @@ const isDisabled = ref(false)
 const test = () => {
   isDisabled.value = !isDisabled.value
 }
-const handleSubmit = (val) => {
+const handleSubmit = (val: any) => {
   console.log('2502===> ', val)
 }
 
