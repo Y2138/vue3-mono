@@ -1,0 +1,228 @@
+syntax = "proto3";
+
+package rbac;
+
+import "common.proto";
+
+option go_package = "./rbac";
+
+// 权限信息
+message Permission {
+  // 权限ID
+  string id = 1;
+  // 权限名称
+  string name = 2;
+  // 权限动作
+  string action = 3;
+  // 权限资源
+  string resource = 4;
+  // 权限描述
+  string description = 5;
+  // 是否激活
+  bool is_active = 6;
+  // 创建时间
+  common.Timestamp created_at = 7;
+  // 更新时间
+  common.Timestamp updated_at = 8;
+}
+
+// 角色信息
+message Role {
+  // 角色ID
+  string id = 1;
+  // 角色名称
+  string name = 2;
+  // 角色描述
+  string description = 3;
+  // 是否激活
+  bool is_active = 4;
+  // 创建时间
+  common.Timestamp created_at = 5;
+  // 更新时间
+  common.Timestamp updated_at = 6;
+  // 权限列表
+  repeated Permission permissions = 7;
+}
+
+// 获取权限请求
+message GetPermissionRequest {
+  // 权限ID
+  string id = 1;
+}
+
+// 获取权限列表请求
+message GetPermissionsRequest {
+  // 分页信息
+  common.PaginationRequest pagination = 1;
+  // 搜索关键词（可选）
+  optional string search = 2;
+  // 是否激活过滤（可选）
+  optional bool is_active = 3;
+  // 权限动作过滤（可选）
+  optional string action = 4;
+  // 权限资源过滤（可选）
+  optional string resource = 5;
+}
+
+// 权限列表响应
+message GetPermissionsResponse {
+  // 权限列表
+  repeated Permission permissions = 1;
+  // 分页信息
+  common.PaginationResponse pagination = 2;
+}
+
+// 创建权限请求
+message CreatePermissionRequest {
+  // 权限名称
+  string name = 1;
+  // 权限动作
+  string action = 2;
+  // 权限资源
+  string resource = 3;
+  // 权限描述
+  string description = 4;
+}
+
+// 更新权限请求
+message UpdatePermissionRequest {
+  // 权限ID
+  string id = 1;
+  // 权限名称（可选）
+  optional string name = 2;
+  // 权限动作（可选）
+  optional string action = 3;
+  // 权限资源（可选）
+  optional string resource = 4;
+  // 权限描述（可选）
+  optional string description = 5;
+  // 是否激活（可选）
+  optional bool is_active = 6;
+}
+
+// 获取角色请求
+message GetRoleRequest {
+  // 角色ID
+  string id = 1;
+}
+
+// 获取角色列表请求
+message GetRolesRequest {
+  // 分页信息
+  common.PaginationRequest pagination = 1;
+  // 搜索关键词（可选）
+  optional string search = 2;
+  // 是否激活过滤（可选）
+  optional bool is_active = 3;
+}
+
+// 角色列表响应
+message GetRolesResponse {
+  // 角色列表
+  repeated Role roles = 1;
+  // 分页信息
+  common.PaginationResponse pagination = 2;
+}
+
+// 创建角色请求
+message CreateRoleRequest {
+  // 角色名称
+  string name = 1;
+  // 角色描述
+  string description = 2;
+  // 权限ID列表
+  repeated string permission_ids = 3;
+}
+
+// 更新角色请求
+message UpdateRoleRequest {
+  // 角色ID
+  string id = 1;
+  // 角色名称（可选）
+  optional string name = 2;
+  // 角色描述（可选）
+  optional string description = 3;
+  // 是否激活（可选）
+  optional bool is_active = 4;
+  // 权限ID列表（可选）
+  repeated string permission_ids = 5;
+}
+
+// 分配角色权限请求
+message AssignRolePermissionsRequest {
+  // 角色ID
+  string role_id = 1;
+  // 权限ID列表
+  repeated string permission_ids = 2;
+}
+
+// 移除角色权限请求
+message RemoveRolePermissionsRequest {
+  // 角色ID
+  string role_id = 1;
+  // 权限ID列表
+  repeated string permission_ids = 2;
+}
+
+// 检查权限请求
+message CheckPermissionRequest {
+  // 用户手机号
+  string user_phone = 1;
+  // 权限动作
+  string action = 2;
+  // 权限资源
+  string resource = 3;
+}
+
+// 检查权限响应
+message CheckPermissionResponse {
+  // 是否有权限
+  bool has_permission = 1;
+  // 权限详情
+  repeated Permission matched_permissions = 2;
+}
+
+// 权限服务定义
+service PermissionService {
+  // 获取权限信息
+  rpc GetPermission(GetPermissionRequest) returns (Permission);
+  
+  // 获取权限列表
+  rpc GetPermissions(GetPermissionsRequest) returns (GetPermissionsResponse);
+  
+  // 创建权限
+  rpc CreatePermission(CreatePermissionRequest) returns (Permission);
+  
+  // 更新权限
+  rpc UpdatePermission(UpdatePermissionRequest) returns (Permission);
+  
+  // 删除权限
+  rpc DeletePermission(GetPermissionRequest) returns (common.ResponseStatus);
+  
+  // 检查用户权限
+  rpc CheckPermission(CheckPermissionRequest) returns (CheckPermissionResponse);
+}
+
+// 角色服务定义
+service RoleService {
+  // 获取角色信息
+  rpc GetRole(GetRoleRequest) returns (Role);
+  
+  // 获取角色列表
+  rpc GetRoles(GetRolesRequest) returns (GetRolesResponse);
+  
+  // 创建角色
+  rpc CreateRole(CreateRoleRequest) returns (Role);
+  
+  // 更新角色
+  rpc UpdateRole(UpdateRoleRequest) returns (Role);
+  
+  // 删除角色
+  rpc DeleteRole(GetRoleRequest) returns (common.ResponseStatus);
+  
+  // 分配角色权限
+  rpc AssignRolePermissions(AssignRolePermissionsRequest) returns (common.ResponseStatus);
+  
+  // 移除角色权限
+  rpc RemoveRolePermissions(RemoveRolePermissionsRequest) returns (common.ResponseStatus);
+} 

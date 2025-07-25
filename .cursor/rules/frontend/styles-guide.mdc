@@ -3,5 +3,5 @@ description:
 globs: *.vue,*.css
 alwaysApply: false
 ---
-使用 unocss 来构建样式，请参考 unocss.config.ts 的配置
-- 如果有必要，将通用的样式提取到 unocss 的配置中
+使用 tailwindcss 来构建样式
+- 如果有必要，将常用的样式组提取成一个class

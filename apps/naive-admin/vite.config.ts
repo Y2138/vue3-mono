@@ -3,9 +3,7 @@ import vue from '@vitejs/plugin-vue';
 import vueJsx from '@vitejs/plugin-vue-jsx';
 import { NaiveUiResolver } from 'unplugin-vue-components/resolvers';
 import Components from 'unplugin-vue-components/vite';
-import UnoCSS from 'unocss/vite';
 import path from 'path';
-// import vitePluginMockProxy from 'vite-plugin-mock-proxy';
 import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vitejs.dev/config/
@@ -16,12 +14,6 @@ export default defineConfig({
     Components({
       resolvers: [NaiveUiResolver()],
     }),
-    UnoCSS(),
-    // vitePluginMockProxy({
-    //   port: 6768,
-    //   debug: true,
-    //   include: ['/api/column/column/index'],
-    // }),
     VitePWA({
       srcDir: 'src',
       filename: 'sw.ts',

@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package common;
+
+option go_package = "./common";
+
+// 通用时间戳消息
+message Timestamp {
+  // 时间戳（ISO 8601 格式字符串）
+  string value = 1;
+}
+
+// 通用分页请求
+message PaginationRequest {
+  // 页码，从1开始
+  int32 page = 1;
+  // 每页大小，默认20
+  int32 page_size = 2;
+}
+
+// 通用分页响应
+message PaginationResponse {
+  // 当前页码
+  int32 page = 1;
+  // 每页大小
+  int32 page_size = 2;
+  // 总记录数
+  int64 total = 3;
+  // 总页数
+  int32 total_pages = 4;
+}
+
+// 通用响应状态
+message ResponseStatus {
+  // 状态码
+  int32 code = 1;
+  // 状态消息
+  string message = 2;
+  // 是否成功
+  bool success = 3;
+}
+
+// 通用错误信息
+message ErrorDetail {
+  // 错误码
+  string code = 1;
+  // 错误消息
+  string message = 2;
+  // 错误字段（用于表单验证错误）
+  string field = 3;
+} 
