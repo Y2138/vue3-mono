@@ -7,16 +7,16 @@ export class Permission {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
+  @Column({ type: 'varchar', unique: true })
   name: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   description: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   resource: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   action: string;
 
   @CreateDateColumn()

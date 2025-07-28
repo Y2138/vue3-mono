@@ -1,105 +1,185 @@
-import { CanActivate, ExecutionContext, Injectable, Logger } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { User } from '../../users/entities/user.entity';
 
+/**
+ * 优化的权限守卫
+ * 配合认证守卫使用，专注于权限验证逻辑
+ * 支持 HTTP 和 gRPC 双协议，提供高性能的权限检查
+ */
 @Injectable()
 export class PermissionGuard implements CanActivate {
   private readonly logger = new Logger(PermissionGuard.name);
+  
+  // 权限缓存，避免重复计算（可选）
+  private readonly permissionCache = new Map<string, Set<string>>();
+  private readonly cacheMaxSize = 1000;
+  private readonly cacheExpiry = 5 * 60 * 1000; // 5分钟
 
-  constructor(private reflector: Reflector) {}
+  constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    // 获取需要的权限
-    const requiredPermissions = this.reflector.get<string[]>('permissions', context.getHandler());
-    this.logger.log(`Required permissions: ${JSON.stringify(requiredPermissions)}`);
+    // 检查是否有公开访问标记
+    const isPublic = this.reflector.get<boolean>('isPublic', context.getHandler()) ||
+                     this.reflector.get<boolean>('isPublic', context.getClass());
     
-    if (!requiredPermissions) {
-      this.logger.log('No permissions required for this endpoint');
+    if (isPublic) {
       return true;
     }
 
-    let request;
-    const contextType = context.getType();
+    // 获取需要的权限
+    const requiredPermissions = this.reflector.get<string[]>('permissions', context.getHandler()) ||
+                                this.reflector.get<string[]>('permissions', context.getClass());
+    
+    if (!requiredPermissions || requiredPermissions.length === 0) {
+      this.logger.debug('No permissions required for this endpoint');
+      return true;
+    }
 
-    // 根据协议类型获取请求对象
+    // 获取用户信息（由认证守卫提供）
+    const user = this.extractUser(context);
+    
+    if (!user) {
+      this.logger.warn('No user found in request context - authentication required');
+      throw new ForbiddenException('认证信息缺失，请先登录');
+    }
+
+    if (!user.roles || user.roles.length === 0) {
+      this.logger.warn(`User ${user.phone} has no roles assigned`);
+      throw new ForbiddenException('用户未分配角色，无法访问');
+    }
+
+    // 检查权限
+    const hasPermission = this.checkUserPermissions(user, requiredPermissions);
+    
+    if (!hasPermission) {
+      this.logger.warn(
+        `User ${user.phone} denied access - Required: [${requiredPermissions.join(', ')}]`
+      );
+      throw new ForbiddenException('权限不足，无法执行此操作');
+    }
+
+    this.logger.debug(`User ${user.phone} granted access to ${requiredPermissions.join(', ')}`);
+    return true;
+  }
+
+  /**
+   * 从执行上下文中提取用户信息
+   */
+  private extractUser(context: ExecutionContext): User | null {
+    const contextType = context.getType();
+    let request: any;
+
     if (contextType === 'http') {
-      // HTTP请求
       request = context.switchToHttp().getRequest();
-      this.logger.log(`HTTP Request: ${request.method} ${request.url}`);
     } else if (contextType === 'rpc') {
-      // gRPC请求
-      const rpcContext = context.switchToRpc();
-      request = rpcContext.getContext();
-      this.logger.log(`gRPC Request: ${context.getHandler().name}`);
+      request = context.switchToRpc().getContext();
     } else {
       this.logger.error(`Unsupported context type: ${contextType}`);
-      return false;
-    }
-    
-    // 记录请求头信息，便于调试
-    if (request.headers) {
-      this.logger.log(`Request headers: ${JSON.stringify(request.headers)}`);
-      this.logger.log(`Authorization header: ${request.headers.authorization}`);
-    }
-    
-    // 尝试从多个可能的位置获取用户信息
-    let user: User | undefined;
-    
-    // 1. 检查request.user
-    if (request.user) {
-      this.logger.log('User found in request.user');
-      user = request.user;
-    } 
-    // 2. 检查request中的其他可能位置
-    else if (request.auth && request.auth.user) {
-      this.logger.log('User found in request.auth.user');
-      user = request.auth.user;
-    }
-    
-    this.logger.log(`User object found: ${Boolean(user)}`);
-
-    if (!user) {
-      this.logger.error('User object is undefined - authentication failed');
-      return false;
+      return null;
     }
 
-    if (!user.roles) {
-      this.logger.error('User roles are undefined');
-      return false;
+    return request?.user || null;
+  }
+
+  /**
+   * 检查用户权限
+   */
+  private checkUserPermissions(user: User, requiredPermissions: string[]): boolean {
+    // 检查超级管理员权限
+    if (this.isSuperAdmin(user)) {
+      this.logger.debug(`User ${user.phone} is super admin - granting access`);
+      return true;
     }
 
-    // 检查用户是否具有超级管理员角色
-    const isSuperAdmin = user.roles.some(role => role.name === '超级管理员');
-    if (isSuperAdmin) {
-      this.logger.log('User is a super admin - granting access');
-      return true; // 超级管理员拥有所有权限，直接返回true
+    // 获取用户权限集合
+    const userPermissions = this.getUserPermissions(user);
+    
+    // 检查是否拥有所有需要的权限
+    const hasAllPermissions = requiredPermissions.every(permission => 
+      userPermissions.has(permission)
+    );
+
+    if (process.env.NODE_ENV === 'development') {
+      this.logger.debug(`Permission check for ${user.phone}:`);
+      this.logger.debug(`  Required: [${requiredPermissions.join(', ')}]`);
+      this.logger.debug(`  User has: [${Array.from(userPermissions).join(', ')}]`);
+      this.logger.debug(`  Result: ${hasAllPermissions ? 'GRANTED' : 'DENIED'}`);
     }
 
-    // 收集用户所有权限
-    const userPermissions = new Set<string>();
+    return hasAllPermissions;
+  }
+
+  /**
+   * 检查是否为超级管理员
+   */
+  private isSuperAdmin(user: User): boolean {
+    return user.roles.some(role => 
+      role.name === '超级管理员' || role.name === 'super_admin'
+    );
+  }
+
+  /**
+   * 获取用户所有权限（带缓存）
+   */
+  private getUserPermissions(user: User): Set<string> {
+    const cacheKey = `user_${user.phone}_permissions`;
+    
+    // 尝试从缓存获取
+    if (this.permissionCache.has(cacheKey)) {
+      return this.permissionCache.get(cacheKey)!;
+    }
+
+    // 计算用户权限
+    const permissions = new Set<string>();
+    
     user.roles.forEach(role => {
-      if (role.permissions) {
+      if (role.permissions && Array.isArray(role.permissions)) {
         role.permissions.forEach(permission => {
           const permKey = `${permission.resource}:${permission.action}`;
-          userPermissions.add(permKey);
-          this.logger.log(`Added permission: ${permKey}`);
+          permissions.add(permKey);
         });
-      } else {
-        this.logger.warn(`Role ${role.name} has no permissions`);
       }
     });
 
-    this.logger.log(`User permissions: ${Array.from(userPermissions)}`);
-    this.logger.log(`Required permissions: ${requiredPermissions}`);
+    // 添加到缓存
+    this.addToCache(cacheKey, permissions);
+    
+    return permissions;
+  }
 
-    // 检查用户是否拥有所有需要的权限
-    const hasAllPermissions = requiredPermissions.every(permission => {
-      const has = userPermissions.has(permission);
-      this.logger.log(`Checking permission ${permission}: ${has ? 'GRANTED' : 'DENIED'}`);
-      return has;
-    });
+  /**
+   * 添加到权限缓存
+   */
+  private addToCache(key: string, permissions: Set<string>): void {
+    // 限制缓存大小
+    if (this.permissionCache.size >= this.cacheMaxSize) {
+      const firstKey = this.permissionCache.keys().next().value;
+      this.permissionCache.delete(firstKey);
+    }
 
-    this.logger.log(`Access ${hasAllPermissions ? 'GRANTED' : 'DENIED'}`);
-    return hasAllPermissions;
+    this.permissionCache.set(key, permissions);
+    
+    // 设置过期清理（简单实现）
+    setTimeout(() => {
+      this.permissionCache.delete(key);
+    }, this.cacheExpiry);
+  }
+
+  /**
+   * 清理权限缓存（可用于用户权限变更时）
+   */
+  clearUserPermissionCache(userPhone: string): void {
+    const cacheKey = `user_${userPhone}_permissions`;
+    this.permissionCache.delete(cacheKey);
+    this.logger.debug(`Cleared permission cache for user ${userPhone}`);
+  }
+
+  /**
+   * 清理所有权限缓存
+   */
+  clearAllPermissionCache(): void {
+    this.permissionCache.clear();
+    this.logger.debug('Cleared all permission cache');
   }
 } 

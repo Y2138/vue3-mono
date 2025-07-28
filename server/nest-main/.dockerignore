@@ -1,0 +1,74 @@
+# 依赖目录
+node_modules
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 构建产物
+dist
+build
+*.tsbuildinfo
+
+# 测试文件和覆盖报告
+coverage
+*.lcov
+test-results
+*.test.ts
+*.spec.ts
+
+# 日志文件
+logs
+*.log
+
+# 环境变量文件
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# IDE 配置
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# Git 相关
+.git
+.gitignore
+README.md
+
+# Docker 相关
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# 临时文件
+*.tmp
+*.temp
+
+# 开发工具
+.nyc_output
+.eslintcache
+
+# 性能报告
+performance-report-*.json
+
+# 备份文件
+*.bak
+*.backup
+
+# 文档
+docs/
+*.md
+
+# CI/CD 配置
+.github/
+.gitlab-ci.yml
+.travis.yml 

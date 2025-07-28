@@ -4,16 +4,16 @@ import { Role } from '../../rbac/entities/role.entity';
 
 @Entity('users')
 export class User {
-  @PrimaryColumn()
+  @PrimaryColumn({ type: 'varchar' })
   phone: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   username: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   password: string;
 
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   isActive: boolean;
 
   @CreateDateColumn()

@@ -1,5 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { MonitoringService } from './monitoring.service';
+import { GrpcHealthController } from './grpc-health.controller';
 
 interface HealthStatus {
   status: string;
@@ -16,6 +18,10 @@ interface HealthStatus {
 @ApiTags('Health Check')
 @Controller('health')
 export class HealthController {
+  constructor(
+    private readonly monitoringService: MonitoringService,
+    private readonly grpcHealthController: GrpcHealthController,
+  ) {}
   @Get()
   @ApiOperation({ summary: '健康检查', description: '检查应用程序和各服务状态' })
   @ApiResponse({ 
@@ -67,5 +73,69 @@ export class HealthController {
   })
   getSimpleHealth(): { message: string } {
     return { message: 'Service is healthy' };
+  }
+
+  @Get('metrics')
+  @ApiOperation({ summary: '性能指标', description: '获取服务性能指标' })
+  @ApiResponse({ 
+    status: 200, 
+    description: '性能指标获取成功',
+  })
+  getMetrics() {
+    return this.monitoringService.getPerformanceReport();
+  }
+
+  @Get('grpc-status')
+  @ApiOperation({ summary: 'gRPC服务状态', description: '获取gRPC服务健康状态' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'gRPC状态获取成功',
+  })
+  getGrpcStatus() {
+    const statuses = this.grpcHealthController.getAllServiceStatuses();
+    const result: Record<string, any> = {};
+    
+    for (const [serviceName, status] of statuses) {
+      result[serviceName || 'server'] = {
+        status: status.status,
+        lastCheck: status.lastCheck,
+        error: status.error,
+      };
+    }
+    
+    return result;
+  }
+
+  @Get('connections')
+  @ApiOperation({ summary: '连接状态', description: '获取连接状态信息' })
+  @ApiResponse({ 
+    status: 200, 
+    description: '连接状态获取成功',
+  })
+  getConnections() {
+    return this.monitoringService.getConnectionStatus();
+  }
+
+  @Get('errors')
+  @ApiOperation({ summary: '错误统计', description: '获取错误统计信息' })
+  @ApiResponse({ 
+    status: 200, 
+    description: '错误统计获取成功',
+  })
+  getErrors() {
+    return this.monitoringService.getErrorStats();
+  }
+
+  @Get('recent-requests')
+  @ApiOperation({ summary: '最近请求', description: '获取最近的请求记录' })
+  @ApiResponse({ 
+    status: 200, 
+    description: '最近请求获取成功',
+  })
+  getRecentRequests() {
+    return {
+      requests: this.monitoringService.getRecentRequests(20),
+      timestamp: new Date(),
+    };
   }
 } 

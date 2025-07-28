@@ -1,16 +1,22 @@
 import { CacheModule } from '@nestjs/cache-manager';
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { APP_INTERCEPTOR, APP_GUARD, APP_FILTER } from '@nestjs/core';
 import * as redisStore from 'cache-manager-redis-store';
 import { RedisClientOptions } from 'redis';
 import databaseConfig from './config/database.config';
-import { HealthController } from './health/health.controller';
 import { User } from './modules/users/entities/user.entity';
 import { UsersModule } from './modules/users/users.module';
 import { RbacModule } from './modules/rbac/rbac.module';
 import { Role } from './modules/rbac/entities/role.entity';
 import { Permission } from './modules/rbac/entities/permission.entity';
+import { HealthModule } from './health/health.module';
+import { MonitoringInterceptor } from './interceptors/monitoring.interceptor';
+import { HybridAuthGuard } from './common/guards/hybrid-auth.guard';
+import { PermissionGuard } from './modules/rbac/guards/permission.guard';
+import { HttpExceptionFilter, GrpcExceptionFilter } from './common/filters';
+import { SecurityMiddleware } from './common/middleware/security.middleware';
 import type { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 @Module({
@@ -58,8 +64,41 @@ import type { TypeOrmModuleOptions } from '@nestjs/typeorm';
     }),
     UsersModule,
     RbacModule,
+    HealthModule,
   ],
-  controllers: [HealthController],
-  providers: [],
+  controllers: [],
+  providers: [
+    // 全局拦截器
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: MonitoringInterceptor,
+    },
+    // 全局认证守卫
+    {
+      provide: APP_GUARD,
+      useClass: HybridAuthGuard,
+    },
+    // 全局权限守卫
+    {
+      provide: APP_GUARD,
+      useClass: PermissionGuard,
+    },
+    // 全局异常过滤器
+    {
+      provide: APP_FILTER,
+      useClass: HttpExceptionFilter,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: GrpcExceptionFilter,
+    },
+  ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    // 配置安全中间件，应用于所有路由
+    consumer
+      .apply(SecurityMiddleware)
+      .forRoutes('*');
+  }
+}
