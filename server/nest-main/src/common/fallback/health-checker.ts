@@ -1,0 +1,370 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { SchedulerRegistry } from '@nestjs/schedule';
+import { CronJob } from 'cron';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+
+/**
+ * 服务健康状态枚举
+ */
+export enum HealthStatus {
+  HEALTHY = 'healthy',
+  UNHEALTHY = 'unhealthy',
+  UNKNOWN = 'unknown',
+}
+
+/**
+ * 健康检查结果接口
+ */
+export interface HealthCheckResult {
+  status: HealthStatus;
+  timestamp: Date;
+  responseTime?: number;
+  error?: string;
+  details?: Record<string, any>;
+}
+
+/**
+ * 健康检查配置接口
+ */
+export interface HealthCheckConfig {
+  /** 检查间隔（毫秒） */
+  interval: number;
+  /** 超时时间（毫秒） */
+  timeout: number;
+  /** 失败重试次数 */
+  retryAttempts: number;
+  /** 重试间隔（毫秒） */
+  retryDelay: number;
+  /** 健康阈值（连续成功次数） */
+  healthyThreshold: number;
+  /** 不健康阈值（连续失败次数） */
+  unhealthyThreshold: number;
+}
+
+/**
+ * 服务信息接口
+ */
+export interface ServiceInfo {
+  name: string;
+  host: string;
+  port: number;
+  protocol: 'grpc' | 'http';
+}
+
+/**
+ * 健康检查器
+ * 监控 gRPC 和其他服务的健康状态
+ */
+@Injectable()
+export class HealthChecker {
+  private readonly logger = new Logger(HealthChecker.name);
+  private readonly services = new Map<string, ServiceInfo>();
+  private readonly healthStatus = new Map<string, HealthStatus>();
+  private readonly healthHistory = new Map<string, HealthCheckResult[]>();
+  private readonly consecutiveFailures = new Map<string, number>();
+  private readonly consecutiveSuccesses = new Map<string, number>();
+  private readonly config: HealthCheckConfig;
+
+  constructor(
+    private readonly schedulerRegistry: SchedulerRegistry,
+    private readonly eventEmitter: EventEmitter2,
+    config?: Partial<HealthCheckConfig>
+  ) {
+    this.config = {
+      interval: 30000, // 30秒
+      timeout: 5000,   // 5秒
+      retryAttempts: 3,
+      retryDelay: 1000, // 1秒
+      healthyThreshold: 2,
+      unhealthyThreshold: 3,
+      ...config,
+    };
+  }
+
+  /**
+   * 注册需要监控的服务
+   */
+  registerService(service: ServiceInfo): void {
+    const serviceKey = this.getServiceKey(service);
+    this.services.set(serviceKey, service);
+    this.healthStatus.set(serviceKey, HealthStatus.UNKNOWN);
+    this.healthHistory.set(serviceKey, []);
+    this.consecutiveFailures.set(serviceKey, 0);
+    this.consecutiveSuccesses.set(serviceKey, 0);
+
+    this.logger.log(`Registered service for health check: ${serviceKey}`);
+    this.scheduleHealthCheck(serviceKey);
+  }
+
+  /**
+   * 注销服务监控
+   */
+  unregisterService(service: ServiceInfo): void {
+    const serviceKey = this.getServiceKey(service);
+    
+    // 移除定时任务
+    try {
+      this.schedulerRegistry.deleteCronJob(`health-check-${serviceKey}`);
+    } catch (error) {
+      // 任务可能不存在，忽略错误
+    }
+
+    // 清理数据
+    this.services.delete(serviceKey);
+    this.healthStatus.delete(serviceKey);
+    this.healthHistory.delete(serviceKey);
+    this.consecutiveFailures.delete(serviceKey);
+    this.consecutiveSuccesses.delete(serviceKey);
+
+    this.logger.log(`Unregistered service: ${serviceKey}`);
+  }
+
+  /**
+   * 获取服务健康状态
+   */
+  getHealthStatus(service: ServiceInfo): HealthStatus {
+    const serviceKey = this.getServiceKey(service);
+    return this.healthStatus.get(serviceKey) || HealthStatus.UNKNOWN;
+  }
+
+  /**
+   * 获取所有服务的健康状态
+   */
+  getAllHealthStatus(): Record<string, HealthStatus> {
+    const status: Record<string, HealthStatus> = {};
+    for (const [serviceKey, healthStatus] of this.healthStatus) {
+      status[serviceKey] = healthStatus;
+    }
+    return status;
+  }
+
+  /**
+   * 获取服务健康历史
+   */
+  getHealthHistory(service: ServiceInfo, limit = 10): HealthCheckResult[] {
+    const serviceKey = this.getServiceKey(service);
+    const history = this.healthHistory.get(serviceKey) || [];
+    return history.slice(-limit);
+  }
+
+  /**
+   * 手动执行健康检查
+   */
+  async performHealthCheck(service: ServiceInfo): Promise<HealthCheckResult> {
+    const serviceKey = this.getServiceKey(service);
+    const startTime = Date.now();
+
+    try {
+      this.logger.debug(`Performing health check for ${serviceKey}`);
+
+      const result = await this.executeHealthCheck(service);
+      const responseTime = Date.now() - startTime;
+
+      const healthResult: HealthCheckResult = {
+        status: HealthStatus.HEALTHY,
+        timestamp: new Date(),
+        responseTime,
+        details: result,
+      };
+
+      this.updateHealthStatus(serviceKey, healthResult);
+      return healthResult;
+
+    } catch (error) {
+      const responseTime = Date.now() - startTime;
+      const healthResult: HealthCheckResult = {
+        status: HealthStatus.UNHEALTHY,
+        timestamp: new Date(),
+        responseTime,
+        error: error.message,
+      };
+
+      this.updateHealthStatus(serviceKey, healthResult);
+      return healthResult;
+    }
+  }
+
+  /**
+   * 执行实际的健康检查
+   */
+  private async executeHealthCheck(service: ServiceInfo): Promise<any> {
+    if (service.protocol === 'grpc') {
+      return this.checkGrpcHealth(service);
+    } else if (service.protocol === 'http') {
+      return this.checkHttpHealth(service);
+    } else {
+      throw new Error(`Unsupported protocol: ${service.protocol}`);
+    }
+  }
+
+  /**
+   * 检查 gRPC 服务健康状态
+   */
+  private async checkGrpcHealth(service: ServiceInfo): Promise<any> {
+    // 这里可以使用 gRPC 健康检查协议
+    // 或者简单的连接测试
+    return new Promise((resolve, reject) => {
+      // 简单的连接测试实现
+      const timeout = setTimeout(() => {
+        reject(new Error('Health check timeout'));
+      }, this.config.timeout);
+
+      try {
+        // 这里应该实现实际的 gRPC 健康检查
+        // 例如调用 grpc.health.v1.Health/Check
+        // 目前使用模拟实现
+        setTimeout(() => {
+          clearTimeout(timeout);
+          resolve({ status: 'SERVING' });
+        }, 100);
+      } catch (error) {
+        clearTimeout(timeout);
+        reject(error);
+      }
+    });
+  }
+
+  /**
+   * 检查 HTTP 服务健康状态
+   */
+  private async checkHttpHealth(service: ServiceInfo): Promise<any> {
+    const url = `http://${service.host}:${service.port}/health`;
+    
+    // 这里可以使用 fetch 或 axios 进行 HTTP 健康检查
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('HTTP health check timeout'));
+      }, this.config.timeout);
+
+      // 模拟 HTTP 健康检查
+      setTimeout(() => {
+        clearTimeout(timeout);
+        resolve({ status: 'ok' });
+      }, 100);
+    });
+  }
+
+  /**
+   * 更新健康状态
+   */
+  private updateHealthStatus(serviceKey: string, result: HealthCheckResult): void {
+    const currentStatus = this.healthStatus.get(serviceKey);
+    const newStatus = result.status;
+
+    // 更新历史记录
+    const history = this.healthHistory.get(serviceKey) || [];
+    history.push(result);
+    if (history.length > 100) { // 保留最近100条记录
+      history.shift();
+    }
+    this.healthHistory.set(serviceKey, history);
+
+    // 更新连续成功/失败计数
+    if (newStatus === HealthStatus.HEALTHY) {
+      this.consecutiveSuccesses.set(serviceKey, (this.consecutiveSuccesses.get(serviceKey) || 0) + 1);
+      this.consecutiveFailures.set(serviceKey, 0);
+    } else {
+      this.consecutiveFailures.set(serviceKey, (this.consecutiveFailures.get(serviceKey) || 0) + 1);
+      this.consecutiveSuccesses.set(serviceKey, 0);
+    }
+
+    // 判断是否需要更新状态
+    const shouldUpdateStatus = this.shouldUpdateStatus(serviceKey, currentStatus, newStatus);
+
+    if (shouldUpdateStatus) {
+      this.healthStatus.set(serviceKey, newStatus);
+      
+      // 发送事件
+      this.eventEmitter.emit('health.status.changed', {
+        service: serviceKey,
+        oldStatus: currentStatus,
+        newStatus,
+        timestamp: result.timestamp,
+      });
+
+      this.logger.log(`Health status changed for ${serviceKey}: ${currentStatus} -> ${newStatus}`);
+    }
+  }
+
+  /**
+   * 判断是否应该更新状态
+   */
+  private shouldUpdateStatus(
+    serviceKey: string,
+    currentStatus: HealthStatus | undefined,
+    newStatus: HealthStatus
+  ): boolean {
+    if (currentStatus === newStatus) {
+      return false;
+    }
+
+    if (newStatus === HealthStatus.HEALTHY) {
+      const successCount = this.consecutiveSuccesses.get(serviceKey) || 0;
+      return successCount >= this.config.healthyThreshold;
+    } else if (newStatus === HealthStatus.UNHEALTHY) {
+      const failureCount = this.consecutiveFailures.get(serviceKey) || 0;
+      return failureCount >= this.config.unhealthyThreshold;
+    }
+
+    return true; // UNKNOWN 状态总是更新
+  }
+
+  /**
+   * 调度健康检查
+   */
+  private scheduleHealthCheck(serviceKey: string): void {
+    const cronExpression = this.intervalToCron(this.config.interval);
+    const jobName = `health-check-${serviceKey}`;
+
+    const job = new CronJob(cronExpression, async () => {
+      const service = this.services.get(serviceKey);
+      if (service) {
+        try {
+          await this.performHealthCheck(service);
+        } catch (error) {
+          this.logger.error(`Scheduled health check failed for ${serviceKey}:`, error);
+        }
+      }
+    });
+
+    this.schedulerRegistry.addCronJob(jobName, job);
+    job.start();
+
+    this.logger.debug(`Scheduled health check for ${serviceKey} with interval ${this.config.interval}ms`);
+  }
+
+  /**
+   * 将间隔时间转换为 cron 表达式
+   */
+  private intervalToCron(intervalMs: number): string {
+    const seconds = Math.floor(intervalMs / 1000);
+    
+    if (seconds < 60) {
+      return `*/${seconds} * * * * *`;
+    } else {
+      const minutes = Math.floor(seconds / 60);
+      return `0 */${minutes} * * * *`;
+    }
+  }
+
+  /**
+   * 获取服务唯一标识
+   */
+  private getServiceKey(service: ServiceInfo): string {
+    return `${service.protocol}://${service.host}:${service.port}`;
+  }
+
+  /**
+   * 停止所有健康检查
+   */
+  async onModuleDestroy(): Promise<void> {
+    for (const [serviceKey] of this.services) {
+      try {
+        this.schedulerRegistry.deleteCronJob(`health-check-${serviceKey}`);
+      } catch (error) {
+        // 忽略删除失败的错误
+      }
+    }
+    this.logger.log('Health checker stopped');
+  }
+} 
