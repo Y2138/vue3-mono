@@ -112,16 +112,13 @@ export const initialRoles: Partial<Role>[] = [
   {
     name: '超级管理员',
     description: '系统超级管理员，拥有所有权限',
-    isActive: true,
   },
   {
     name: '管理员',
     description: '系统管理员，拥有大部分管理权限',
-    isActive: true,
   },
   {
     name: '普通用户',
     description: '普通用户，拥有基本操作权限',
-    isActive: true,
   },
 ]; 

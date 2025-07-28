@@ -1,6 +1,5 @@
 import { CanActivate, ExecutionContext, Injectable, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { GqlExecutionContext } from '@nestjs/graphql';
 import { User } from '../../users/entities/user.entity';
 
 @Injectable()
@@ -19,14 +18,29 @@ export class PermissionGuard implements CanActivate {
       return true;
     }
 
-    // 从GraphQL上下文获取请求对象和上下文
-    const ctx = GqlExecutionContext.create(context);
-    const gqlContext = ctx.getContext();
-    const request = gqlContext.req;
+    let request;
+    const contextType = context.getType();
+
+    // 根据协议类型获取请求对象
+    if (contextType === 'http') {
+      // HTTP请求
+      request = context.switchToHttp().getRequest();
+      this.logger.log(`HTTP Request: ${request.method} ${request.url}`);
+    } else if (contextType === 'rpc') {
+      // gRPC请求
+      const rpcContext = context.switchToRpc();
+      request = rpcContext.getContext();
+      this.logger.log(`gRPC Request: ${context.getHandler().name}`);
+    } else {
+      this.logger.error(`Unsupported context type: ${contextType}`);
+      return false;
+    }
     
     // 记录请求头信息，便于调试
-    this.logger.log(`Request headers: ${JSON.stringify(request.headers)}`);
-    this.logger.log(`Authorization header: ${request.headers.authorization}`);
+    if (request.headers) {
+      this.logger.log(`Request headers: ${JSON.stringify(request.headers)}`);
+      this.logger.log(`Authorization header: ${request.headers.authorization}`);
+    }
     
     // 尝试从多个可能的位置获取用户信息
     let user: User | undefined;
@@ -36,30 +50,16 @@ export class PermissionGuard implements CanActivate {
       this.logger.log('User found in request.user');
       user = request.user;
     } 
-    // 2. 检查GQL上下文中的user
-    else if (gqlContext.user) {
-      this.logger.log('User found in GQL context.user');
-      user = gqlContext.user;
-    }
-    // 3. 检查request中的其他可能位置
+    // 2. 检查request中的其他可能位置
     else if (request.auth && request.auth.user) {
       this.logger.log('User found in request.auth.user');
       user = request.auth.user;
     }
     
     this.logger.log(`User object found: ${Boolean(user)}`);
-    // this.logger.log(`User details: ${JSON.stringify(user, null, 2)}`);
 
     if (!user) {
       this.logger.error('User object is undefined - authentication failed');
-      // 打印完整的上下文信息以便调试
-      this.logger.log(`Complete GQL context: ${JSON.stringify(gqlContext, (key, value) => {
-        if (key === 'req' && typeof value === 'object') {
-          const { headers, ...rest } = value;
-          return { headers, ...rest };
-        }
-        return value;
-      }, 2)}`);
       return false;
     }
 

@@ -1,0 +1,24 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "extends": ["../../.oxlintrc.json"],
+  "categories": {
+    "suspicious": "error"
+  },
+  "rules": {
+    "no-var": "error",
+    "object-shorthand": "error",
+    "unicorn/consistent-destructuring": "warn",
+    "unicorn/prefer-module": "off"
+  },
+  "ignorePatterns": [
+    "test/**",
+    "coverage/**",
+    "*.spec.ts",
+    "*.e2e-spec.ts",
+    "src/shared/**",
+    "migrations/**"
+  ],
+  "env": {
+    "node": true
+  }
+} 

@@ -3,11 +3,10 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcryptjs';
 import { Repository } from 'typeorm';
-import { CreateUserInput } from './dto/create-user.input';
-import { LoginInput } from './dto/login.input';
+
 import { User } from './entities/user.entity';
 import { Role } from '../rbac/entities/role.entity';
-import { RegisterInput } from './dto/register.input';
+
 
 @Injectable()
 export class AuthService {
@@ -21,7 +20,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async register(registerInput: RegisterInput) {
+  async register(registerInput: { phone: string; username: string; password: string }) {
     // 检查手机号是否已存在
     const existingUser = await this.userRepository.findOne({
       where: { phone: registerInput.phone },
@@ -62,7 +61,7 @@ export class AuthService {
     };
   }
 
-  async login(loginInput: LoginInput) {
+  async login(loginInput: { phone: string; password: string }) {
     const user = await this.userRepository.findOne({
       where: { phone: loginInput.phone },
       relations: ['roles'],

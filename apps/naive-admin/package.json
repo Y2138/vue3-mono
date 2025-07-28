@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "vite --open",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "oxlint src/",
+    "lint:fix": "oxlint src/ --fix"
   },
   "dependencies": {
     "@vueuse/core": "^13.0.0",
