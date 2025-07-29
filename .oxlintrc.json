@@ -8,7 +8,7 @@
   },
   "rules": {
     "no-unused-vars": "error",
-    "no-console": "warn",
+    "no-console": "off",
     "prefer-const": "error",
     "eqeqeq": "error",
     "unicorn/filename-case": "off",

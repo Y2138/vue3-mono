@@ -34,6 +34,12 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
+      // v4新增：明确指定需要包含在覆盖率中的文件
+      include: [
+        'src/**/*.{js,ts}',
+        '!src/**/*.{spec,test}.{js,ts}',
+        '!src/**/*.d.ts'
+      ],
       exclude: [
         'coverage/**',
         'dist/**',
@@ -75,12 +81,6 @@ export default defineConfig({
     
     // 静默输出（减少日志）
     silent: false,
-    
-    // 监听模式配置
-    watch: {
-      // 忽略文件变化的目录
-      ignored: ['**/node_modules/**', '**/dist/**']
-    },
     
     // 序列化配置
     sequence: {
