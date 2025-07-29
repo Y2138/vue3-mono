@@ -1,10 +1,10 @@
 import { createApp } from 'vue';
 import App from './App.vue';
+import 'uno.css'; // UnoCSS 样式
 import '@/assets/css/reset.css';
 import '@/assets/css/global.css';
 import router from '@/router';
 import Pinia from '@/store';
-import 'virtual:uno.css'
 // import { registerSW } from '@mono-packages/sw';
 
 const app = createApp(App);

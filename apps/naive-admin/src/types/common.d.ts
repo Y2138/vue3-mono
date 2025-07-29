@@ -28,7 +28,7 @@ declare global {
   }
   // 全局通用类型
   interface IObj {
-    [key: string | number | Symbol]: any
+    [key: string | number | symbol]: any
   }
 
   // 请求返回类型

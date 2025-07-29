@@ -9,6 +9,12 @@
           </n-breadcrumb-item>
         </n-breadcrumb>
       </div>
+      
+      <!-- 开发模式：协议状态显示 -->
+      <div v-if="globalStore.isDevelopment" class="api-status-container">
+        <ApiStatus />
+      </div>
+      
       <n-space size="large" class="mr-5" align="center" item-class="flex">
         <Icon icon="ion:search" width="20" height="20" class="cursor-pointer"></Icon>
         <Icon icon="ion:sunny-sharp" width="20" height="20" class="cursor-pointer" @click="handleChangeTheme" title="切换主题"></Icon>
@@ -34,6 +40,7 @@
 import { computed, ref, h } from 'vue'
 import { Icon } from '@iconify/vue'
 import TabBar from './tabBar.vue';
+import ApiStatus from '@/components/api-status/index.vue'
 import { useRouter } from 'vue-router';
 import { useMenuStore } from '@/store/modules/menu';
 import { useGlobalStore } from '@/store/modules/global';
@@ -48,7 +55,7 @@ const menuStore = useMenuStore()
 const menuRoutes = computed(() => menuStore.menuRoutes)
 
 // 用户信息
-const userInfo = computed(() => userStore.getUserInfo())
+const userInfo = computed(() => userStore.userInfo)
 // 用户头像
 const userAvatar = ref('https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg')
 
@@ -79,8 +86,7 @@ const userOptions = [
 const handleUserAction = async (key: string) => {
   if (key === 'logout') {
     try {
-      await api_logout()
-      userStore.logout()
+      await userStore.logout()
       window.$message.success('退出登录成功')
       router.push('/login')
     } catch (error) {
@@ -97,7 +103,7 @@ const handleUserAction = async (key: string) => {
 }
 
 // 跳转
-const handleLinkClick = (item: IMenuItem) => {
+const handleLinkClick = (item: any) => {
   router.push(item.path)
 }
 const handleToggleMenu = () => {
@@ -107,10 +113,14 @@ const handleRefresh = () => {
   refresh()
 }
 const handleChangeTheme = () => {
-  globalStore.changeTheme()
+  globalStore.toggleTheme()
 }
 </script>
 
 <style scoped>
-
+.api-status-container {
+  margin-right: 16px;
+  display: flex;
+  align-items: center;
+}
 </style>

@@ -1,0 +1,7 @@
+# 忽略生成的 TypeScript 类型文件
+*.ts
+*.js
+*.d.ts
+
+# 保留 index.ts 用于导出
+!index.ts 

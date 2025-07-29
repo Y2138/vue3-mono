@@ -4,12 +4,8 @@ import Cookies from 'js-cookie';
 
 let domain = document.domain;
 if (!window.location.port || process.env.NODE_ENV !== 'development') {
-	try {
-		// TODO: domain 接环境
-		domain = ``;
-	} catch (error) {
-		domain = ``;
-	}
+	// TODO: domain 接环境
+	domain = ``;
 }
 const cookie = {
 	get(key: string) {

@@ -1,8 +1,20 @@
 // index.ts
-import axios, { isCancel } from 'axios'
-import type { AxiosRequestConfig, AxiosRequestHeaders, AxiosResponse, RawAxiosRequestHeaders } from 'axios'
+import axios from 'axios'
+import type { AxiosRequestConfig, AxiosRequestHeaders, RawAxiosRequestHeaders } from 'axios'
 import { PendingMap } from './cancelToken'
 import { useUserStore } from '@/store/modules/user'
+import { UnifiedErrorHandler } from './error-handler'
+// Protobuf 数据类型判断和转换工具
+interface ProtobufTransformConfig {
+  /** 是否启用 Protobuf 处理 */
+  useProtobuf?: boolean
+  /** 请求消息类型名称（用于调试和日志） */
+  requestMessageType?: string
+  /** 响应消息类型名称（用于调试和日志） */
+  responseMessageType?: string
+  /** 是否强制使用二进制格式（gRPC-Web） */
+  forceBinary?: boolean
+}
 
 interface ICustomAxiosConfig<T> extends AxiosRequestConfig<T> {
   /* 是否不需要错误信息提示，默认有 */
@@ -19,6 +31,141 @@ interface ICustomAxiosConfig<T> extends AxiosRequestConfig<T> {
 	__retryCount?: number
   /* 是否不需要拼接时间戳，默认拼接 */
   noTimestamp?: boolean
+  /* Protobuf 配置 */
+  protobuf?: ProtobufTransformConfig
+}
+
+// Protobuf 数据转换工具类
+class ProtobufTransformers {
+  /**
+   * 检查数据是否为 ts-proto 生成的 Protobuf 接口对象
+   * ts-proto 生成的对象是普通的 JS 对象，我们通过一些启发式方法来判断
+   */
+  static isProtobufInterface(data: any): boolean {
+    // 检查是否为普通对象且不是 FormData、Date 等特殊类型
+    return data && 
+           typeof data === 'object' && 
+           !(data instanceof FormData) && 
+           !(data instanceof Date) && 
+           !(data instanceof File) && 
+           !(data instanceof Blob) &&
+           !Array.isArray(data)
+  }
+
+  /**
+   * 将 Protobuf 接口对象序列化为 JSON
+   * 对于 ts-proto 生成的接口，直接使用 JSON 序列化
+   */
+  static serializeToJson(data: any): string {
+    return JSON.stringify(data)
+  }
+
+  /**
+   * 将 Protobuf 接口对象序列化为二进制格式（用于 gRPC-Web）
+   * 注意：这里需要实际的 protobuf 编码库支持
+   */
+  static serializeToBinary(data: any, messageType?: string): Uint8Array {
+    // 暂时降级为 JSON 字符串的二进制表示
+    // 实际应用中需要根据具体的 protobuf 库进行编码
+    console.warn(`二进制序列化暂未完全实现，消息类型: ${messageType}，降级为 JSON`)
+    const jsonString = ProtobufTransformers.serializeToJson(data)
+    return new TextEncoder().encode(jsonString)
+  }
+
+  /**
+   * 请求数据转换器
+   */
+  static requestTransformer(data: any, _headers: any): any {
+    // 基础的 JSON 转换
+    if (data && typeof data === 'object' && !(data instanceof FormData)) {
+      return JSON.stringify(data)
+    }
+    return data
+  }
+
+  /**
+   * 响应数据转换器
+   */
+  static responseTransformer(data: any): any {
+    // JSON 数据处理
+    try {
+      return typeof data === 'string' ? JSON.parse(data) : data
+    } catch {
+      return data
+    }
+  }
+
+  /**
+   * Protobuf 请求数据处理（在拦截器中使用）
+   */
+  static processProtobufRequest(data: any, config: ICustomAxiosConfig<any>): any {
+    const protobufConfig = config.protobuf
+
+    if (!protobufConfig?.useProtobuf || !ProtobufTransformers.isProtobufInterface(data)) {
+      return data
+    }
+
+    // 根据配置选择序列化方式
+    if (protobufConfig.forceBinary) {
+      return ProtobufTransformers.serializeToBinary(data, protobufConfig.requestMessageType)
+    } else {
+      // 默认使用 JSON 序列化（适用于 REST API）
+      return ProtobufTransformers.serializeToJson(data)
+    }
+  }
+
+  /**
+   * Protobuf 响应数据处理（在拦截器中使用）
+   */
+  static processProtobufResponse(data: any, headers: any, config: ICustomAxiosConfig<any>): any {
+    const protobufConfig = config.protobuf
+    const contentType = headers['content-type'] || ''
+
+    // 处理二进制 Protobuf 响应
+    if (contentType.includes('application/x-protobuf') && protobufConfig?.responseMessageType) {
+      try {
+        if (data instanceof Uint8Array || data instanceof ArrayBuffer) {
+          // 暂时降级为文本解码
+          const decoder = new TextDecoder()
+          const jsonString = decoder.decode(data instanceof ArrayBuffer ? new Uint8Array(data) : data)
+          return {
+            data: JSON.parse(jsonString),
+            messageType: protobufConfig.responseMessageType,
+            encoding: 'protobuf-binary'
+          }
+        }
+      } catch (error) {
+        console.warn('Protobuf 二进制反序列化失败，降级为 JSON 处理:', error)
+      }
+    }
+
+    // 处理 JSON 格式的 Protobuf 响应
+    if (contentType.includes('application/json') && protobufConfig?.responseMessageType) {
+      return {
+        data: data,
+        messageType: protobufConfig.responseMessageType,
+        encoding: 'json'
+      }
+    }
+
+    return data
+  }
+
+  /**
+   * 创建 Protobuf 配置的辅助方法
+   */
+  static createConfig(options: {
+    requestType?: string
+    responseType?: string
+    useBinary?: boolean
+  }): ProtobufTransformConfig {
+    return {
+      useProtobuf: true,
+      requestMessageType: options.requestType,
+      responseMessageType: options.responseType,
+      forceBinary: options.useBinary || false
+    }
+  }
 }
 
 
@@ -28,78 +175,7 @@ const loginUrls = ['/auth/v3/login', '/auth/v3/sendSmsCode', '/auth/v3/logout', 
 // const { CancelToken, isCancel } = axios
 const pendingMap = new PendingMap()
 
-/**
- * 请求失败后的错误统一处理
- * @param {Number} status 请求失败的状态码
- */
-const errorHandle = (status: number, other?: string, errorCode?: string) => {
-	// 状态码判断
-	switch (status) {
-		case 302:
-			console.error('接口重定向了！')
-			break
-		case 400:
-			console.error(`发出的请求有错误，服务器没有进行新建或修改数据的操作:${status}`)
-			break
-		// 401: 未登录
-		// 未登录则跳转登录页面，并携带当前页面的路径
-		// 在登录成功后返回当前页面，这一步需要在登录页操作。
-		case 401: //重定向
-			console.error(`token:登录失效:${errorCode}`)
-			// 清除token并跳转到登录页
-			const userStore = useUserStore();
-			userStore.logout();
-			window.location.href = '/login';
-			break
-		// 403 token过期
-		// 清除token并跳转登录页
-		case 403:
-			console.error(`${other}:${status}`)
-			if (!isCancel(other)) {
-				// Emitter.emit(MITT_GLOBAL_MSG, {
-				// 	msg: `${errorCode || status}，${other || '鉴权失败，无权限访问该接口'}`,
-				// 	type: 'alert',
-				// })
-			}
-			break
-		case 404:
-			console.error(`网络请求不存在:${status}`)
-			break
-		case 406:
-			console.error(`请求的格式不可得:${status}`)
-			break
-		case 408:
-			console.error(' 请求超时！')
-			if (!isCancel(other)) {
-				// Emitter.emit(MITT_GLOBAL_MSG, {
-				// 	msg: '请求超时！' + other,
-				// 	type: 'alert',
-				// })
-			}
-
-			break
-		case 410:
-			console.error(`请求的资源被永久删除，且不会再得到的:${status}`)
-			break
-		case 422:
-			console.error(`当创建一个对象时，发生一个验证错误:${status}`)
-			break
-		case 500:
-			console.error(`服务器发生错误，请检查服务器:${status}`)
-			break
-		case 502:
-			console.error(`网关错误:${status}`)
-			break
-		case 503:
-			console.error(`服务不可用，服务器暂时过载或维护:${status}`)
-			break
-		case 504:
-			console.error(`网关超时:${status}`)
-			break
-		default:
-			console.error(`其他错误错误:${status}`)
-	}
-}
+// 注意：原有的 errorHandle 函数已被 UnifiedErrorHandler 替代
 
 /* 实例化请求配置 */
 const instance = axios.create({
@@ -112,6 +188,15 @@ const instance = axios.create({
 	withCredentials: false,
   // 设置基础URL
   // baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
+  // 添加数据转换器
+  transformRequest: [
+    ProtobufTransformers.requestTransformer,
+    ...(Array.isArray(axios.defaults.transformRequest) ? axios.defaults.transformRequest : [])
+  ],
+  transformResponse: [
+    ...(Array.isArray(axios.defaults.transformResponse) ? axios.defaults.transformResponse : []),
+    ProtobufTransformers.responseTransformer
+  ]
 })
 
 /**
@@ -131,7 +216,19 @@ instance.interceptors.request.use(
       headers['Authorization'] = `Bearer ${token}`;
     }
     
-		if (config.data instanceof FormData && config.url) {
+    // Protobuf 请求特殊处理
+    const protobufConfig = (config as ICustomAxiosConfig<any>).protobuf
+    if (protobufConfig?.useProtobuf && ProtobufTransformers.isProtobufInterface(config.data)) {
+      if (protobufConfig.forceBinary) {
+        headers['Content-Type'] = 'application/x-protobuf'
+        headers['Accept'] = 'application/x-protobuf'
+      } else {
+        headers['Content-Type'] = 'application/json;charset=UTF-8'
+        headers['Accept'] = 'application/json'
+      }
+      // 处理 Protobuf 数据
+      config.data = ProtobufTransformers.processProtobufRequest(config.data, config as ICustomAxiosConfig<any>)
+    } else if (config.data instanceof FormData && config.url) {
 			headers['Content-Type'] = 'multipart/form-data'
 		}
 
@@ -168,56 +265,67 @@ instance.interceptors.response.use(
 		const { config } = response
     pendingMap.removePending(config);
 
+    // Protobuf 响应处理
+    const protobufConfig = (config as ICustomAxiosConfig<any>).protobuf
+    if (protobufConfig?.useProtobuf) {
+      response.data = ProtobufTransformers.processProtobufResponse(
+        response.data, 
+        response.headers, 
+        config as ICustomAxiosConfig<any>
+      )
+    }
+
     return response
 	},
 	(error) => {
-		const { response }: {response: AxiosResponse} = error
-
-		if (response) {
-      const { config, status, data = {} } = response
-			/**
-       * 接口抛出异常时，从错误信息中解析出请求唯一标志，并从请求队列中将其删除
-      */
-      pendingMap.removePending(config)
-			const { errorMessage = '', errorCode = '' } = data
-			errorHandle(status, errorMessage, errorCode)
-
-			const _config = response.config as ICustomAxiosConfig<any>
-			if (![401, 403, 404].includes(status)) {
-				// 超时重新请求
-				// 全局的请求次数,请求的间隙
-				if (_config?.retry && (_config.retryMaxCount || 0) > 0) {
-					// 设置用于跟踪重试计数的变量
-					_config.__retryCount = _config.__retryCount || 0
-					// 检查是否已经把重试的总数用完
-					if (_config.__retryCount >= (_config.retryMaxCount || 0)) {
-						return Promise.reject(response || { message: error.message || '网络异常' })
-					}
-					// 增加重试计数
-					_config.__retryCount++
-
-					// 创造新的Promise来处理计数后退
-					const backoff = new Promise<void>(resolve => {
-						setTimeout(() => {
-							resolve()
-						}, _config.retryRelay || 1)
-					})
-
-					// instance重试请求的Promise
-					return backoff.then(() => {
-						return instance(config)
-					})
-				}
-			}
-			return Promise.reject(response)
+		// 从请求队列中移除当前请求
+		if (error.response?.config) {
+			pendingMap.removePending(error.response.config)
 		}
-		// 处理断网的情况 || 超时 || 接口跨域
-		// eg:请求超时或断网时，更新state的network状态
-		// network状态在app.vue中控制着一个全局的断网提示组件的显示隐藏
-		// 后续增加断网情况下做的一些操作
-		// store.commit('networkState', false);
-		errorHandle(408, error)
-		return Promise.reject(error)
+
+		// 使用统一错误处理器处理错误
+		const unifiedError = UnifiedErrorHandler.handleError(error, {
+			protobuf: (error.config as ICustomAxiosConfig<any>)?.protobuf
+		})
+
+		// 保留重试逻辑
+		if (error.response) {
+			const _config = error.response.config as ICustomAxiosConfig<any>
+			const status = error.response.status
+
+			// 对于非认证/权限错误，尝试重试
+			if (![401, 403, 404].includes(status) && _config?.retry && (_config.retryMaxCount || 0) > 0) {
+				// 设置用于跟踪重试计数的变量
+				_config.__retryCount = _config.__retryCount || 0
+				// 检查是否已经把重试的总数用完
+				if (_config.__retryCount >= (_config.retryMaxCount || 0)) {
+					return Promise.reject(unifiedError)
+				}
+				// 增加重试计数
+				_config.__retryCount++
+
+				console.log(`请求重试 ${_config.__retryCount}/${_config.retryMaxCount}: ${error.config?.url}`)
+
+				// 创造新的Promise来处理计数后退
+				const backoff = new Promise<void>(resolve => {
+					setTimeout(() => {
+						resolve()
+					}, _config.retryRelay || 1000)
+				})
+
+				// instance重试请求的Promise
+				return backoff.then(() => {
+					return instance(_config)
+				})
+			}
+		}
+
+		// 显示用户友好的错误提示（在非调试模式下）
+		if ((import.meta as any).env.VITE_PROTO_DEBUG !== 'true') {
+			UnifiedErrorHandler.showUserFriendlyError(unifiedError)
+		}
+
+		return Promise.reject(unifiedError)
 	},
 )
 
@@ -255,7 +363,7 @@ function handleResponseResult<Q = any, R = any>(data: ResResult<R>, config: ICus
 
 export async function get<Q = any, R = any>(url: string, options: ICustomAxiosConfig<Q>): Promise<[ResResult<R>, null] | [null, any]> {
     try {
-        const response = await request<Q, R>(url, { method: 'GET', ...(options || {}) })
+        const response = await request<Q, R>(url, { method: 'GET', ...options })
         // console.log('2501 response===>', response)
         const { data, config } = response
         handleResponseResult<Q, R>(data, config)
@@ -268,7 +376,7 @@ export async function get<Q = any, R = any>(url: string, options: ICustomAxiosCo
 
 export async function post<Q = any, R = any>(url: string, options: ICustomAxiosConfig<Q>):  Promise<[ResResult<R>, null] | [null, any]> {
     try {
-        const response = await request<Q, R>(url, { method: 'POST', ...(options || {}) })
+        const response = await request<Q, R>(url, { method: 'POST', ...options })
         const { data, config } = response
         handleResponseResult<Q, R>(data, config)
 
@@ -280,6 +388,10 @@ export async function post<Q = any, R = any>(url: string, options: ICustomAxiosC
 // const api_example2 = (data: string) => post('/api/example2', { data: 'aaa' })
 // const api_example = (req: 'name') => post<'string'>('api/example', { data: 'name' })
 // const [res, err] = await api_example('name')
+
+// 导出 Protobuf 工具类和错误处理器供外部使用
+export { ProtobufTransformers }
+export { UnifiedErrorHandler, handleApiError } from './error-handler'
 
 // 只需要考虑单一职责，这块只封装axios
 export default instance
