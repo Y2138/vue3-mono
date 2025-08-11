@@ -16,27 +16,6 @@ export const routes: CustomRouteRecord[] = [
 			title: '首页'
 		}
 	},
-	{
-		path: '/operation',
-		// component: () => import('@/views/home.vue'),
-		meta: {
-			title: '运营管理',
-			icon: 'material-symbols:menu'
-		},
-		name: '运营管理',
-		redirect: '/operation/column',
-		children: [
-			{
-				path: 'column',
-				name: '专栏管理',
-				meta: {
-					title: '专栏管理',
-					icon: 'mdi:account'
-				},
-				component: () => import('@/views/operation-manage/column.vue')
-			}
-		]
-	},
 	// systemRoutes,
 	...testRouters
 ];

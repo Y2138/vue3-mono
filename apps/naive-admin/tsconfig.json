@@ -7,6 +7,7 @@
     "skipLibCheck": true,
     "jsxImportSource": "vue",
     "useDefineForClassFields": true,
+    "types": [],
 
     /* modules */
     "module": "ESNext",

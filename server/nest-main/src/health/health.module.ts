@@ -3,6 +3,7 @@ import { HealthController } from './health.controller';
 import { GrpcHealthController } from './grpc-health.controller';
 import { MetricsController } from './metrics.controller';
 import { MonitoringService } from './monitoring.service';
+import { GrpcHealthService } from './grpc-health.service';
 
 @Module({
   controllers: [
@@ -12,10 +13,11 @@ import { MonitoringService } from './monitoring.service';
   ],
   providers: [
     MonitoringService,
+    GrpcHealthService,
   ],
   exports: [
     MonitoringService,
-    GrpcHealthController,
+    GrpcHealthService,
   ],
 })
 export class HealthModule {} 

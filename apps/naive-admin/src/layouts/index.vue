@@ -23,6 +23,9 @@
         <Footer></Footer>
       </n-layout-footer>
     </n-layout>
+    
+    <!-- 悬浮的 API 状态组件 -->
+    <ApiStatus />
   </n-layout>
 </template>
 
@@ -31,6 +34,7 @@ import { computed } from 'vue'
 import Menu from './menu.vue'
 import Header from './header.vue'
 import Footer from './footer.vue'
+import ApiStatus from '@/components/api-status/index.vue'
 import { useMenuStore } from '@/store/modules/menu'
 import { useMessage, useLoadingBar } from 'naive-ui'
 import { usePageLoading } from '@/hooks/usePageLoading'

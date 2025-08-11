@@ -3,5 +3,6 @@ description:
 globs: *.vue,*.css
 alwaysApply: false
 ---
-使用 tailwindcss 来构建样式
+使用 unocss 来构建样式
+- 了解项目用的 preset，然后再编写样式
 - 如果有必要，将常用的样式组提取成一个class

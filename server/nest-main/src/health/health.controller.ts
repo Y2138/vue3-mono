@@ -1,7 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { MonitoringService } from './monitoring.service';
-import { GrpcHealthController } from './grpc-health.controller';
+import { GrpcHealthService } from './grpc-health.service';
 
 interface HealthStatus {
   status: string;
@@ -20,7 +20,7 @@ interface HealthStatus {
 export class HealthController {
   constructor(
     private readonly monitoringService: MonitoringService,
-    private readonly grpcHealthController: GrpcHealthController,
+    private readonly grpcHealthService: GrpcHealthService,
   ) {}
   @Get()
   @ApiOperation({ summary: '健康检查', description: '检查应用程序和各服务状态' })
@@ -92,7 +92,7 @@ export class HealthController {
     description: 'gRPC状态获取成功',
   })
   getGrpcStatus() {
-    const statuses = this.grpcHealthController.getAllServiceStatuses();
+    const statuses = this.grpcHealthService.getAllServiceStatuses();
     const result: Record<string, any> = {};
     
     for (const [serviceName, status] of statuses) {

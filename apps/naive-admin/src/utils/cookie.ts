@@ -3,7 +3,7 @@ import Cookies from 'js-cookie';
 // import { getEnv } from "./utils";
 
 let domain = document.domain;
-if (!window.location.port || process.env.NODE_ENV !== 'development') {
+if (!window.location.port || import.meta.env.MODE !== 'development') {
 	// TODO: domain 接环境
 	domain = ``;
 }

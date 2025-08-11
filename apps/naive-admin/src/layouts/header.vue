@@ -10,11 +10,6 @@
         </n-breadcrumb>
       </div>
       
-      <!-- 开发模式：协议状态显示 -->
-      <div v-if="globalStore.isDevelopment" class="api-status-container">
-        <ApiStatus />
-      </div>
-      
       <n-space size="large" class="mr-5" align="center" item-class="flex">
         <Icon icon="ion:search" width="20" height="20" class="cursor-pointer"></Icon>
         <Icon icon="ion:sunny-sharp" width="20" height="20" class="cursor-pointer" @click="handleChangeTheme" title="切换主题"></Icon>
@@ -40,7 +35,6 @@
 import { computed, ref, h } from 'vue'
 import { Icon } from '@iconify/vue'
 import TabBar from './tabBar.vue';
-import ApiStatus from '@/components/api-status/index.vue'
 import { useRouter } from 'vue-router';
 import { useMenuStore } from '@/store/modules/menu';
 import { useGlobalStore } from '@/store/modules/global';
@@ -117,10 +111,4 @@ const handleChangeTheme = () => {
 }
 </script>
 
-<style scoped>
-.api-status-container {
-  margin-right: 16px;
-  display: flex;
-  align-items: center;
-}
-</style>
+

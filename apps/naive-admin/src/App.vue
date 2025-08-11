@@ -29,6 +29,10 @@ const themeVar = computed(() => {
 })
 
 const showLayout = computed(() => {
+  // 安全检查：确保 route 和 route.path 存在
+  if (!route || !route.path) {
+    return false
+  }
   return route.path !== '/login' && route.path !== '/register'
 })
 

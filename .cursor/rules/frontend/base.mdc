@@ -7,9 +7,11 @@ alwaysApply: false
 ## 样式书写规范
 样式相关遵守 [styles-guide.mdc](mdc:.cursor/rules/frontend/styles-guide.mdc) 规范
 ## ts代码规范
-ts代码书写遵守 [ts-standards.mdc](mdc:.cursor/rules/frontend/ts-standards.mdc.mdc) 规范
+ts代码书写遵守 [ts-standards.mdc](mdc:.cursor/rules/frontend/ts-standards.mdc) 规范
 ## vue3代码规范
 vue代码书写遵守 [vue3-guide.mdc](mdc:.cursor/rules/frontend/vue3-guide.mdc) 规范
+## 动画规范
+动画需求请先用 context7 查询 Montion for vue 的文档
 
 ## 命名约定
 - 对于目录使用小写字母和横杠（例如：components/auth-wizard），对于变量使用驼峰命名法。

@@ -29,6 +29,7 @@ export const useGlobalStore = defineStore('global', () => {
   
   // 页面刷新控制
   const pageRefreshKey = ref(1);
+  const refreshStatus = ref(false);
   
   // 主题管理
   const theme = ref<'light' | 'dark'>('light');
@@ -166,6 +167,25 @@ export const useGlobalStore = defineStore('global', () => {
   // ========================================
   
   /**
+   * 设置刷新状态
+   * @param status 刷新状态
+   * @param options 可选配置
+   */
+  function setRefreshStatus(status: boolean, options?: { from?: string }) {
+    refreshStatus.value = status;
+    if (options?.from && isDebugEnabled.value) {
+      console.log(`[Global Store] Refresh status set to ${status} from ${options.from}`);
+    }
+  }
+  
+  /**
+   * 执行刷新
+   */
+  function refresh() {
+    refreshPage();
+  }
+  
+  /**
    * 刷新页面内容
    */
   function refreshPage() {
@@ -212,12 +232,8 @@ export const useGlobalStore = defineStore('global', () => {
    */
   async function checkApiHealth(): Promise<void> {
     try {
-      const [healthData, error] = await healthCheck();
-      if (error) {
-        healthStatus.value.api = 'unhealthy';
-      } else {
-        healthStatus.value.api = healthData?.status === 'healthy' ? 'healthy' : 'unhealthy';
-      }
+      const healthData = await healthCheck();
+      healthStatus.value.api = healthData.status;
     } catch (error) {
       healthStatus.value.api = 'unhealthy';
       console.warn('[Global Store] API health check failed:', error);
@@ -413,6 +429,7 @@ export const useGlobalStore = defineStore('global', () => {
   return {
     // 状态
     pageRefreshKey: readonly(pageRefreshKey),
+    refreshStatus: readonly(refreshStatus),
     theme: readonly(theme),
     appConfig: readonly(appConfig),
     protocolConfig: readonly(protocolConfig),
@@ -436,6 +453,8 @@ export const useGlobalStore = defineStore('global', () => {
     restoreTheme,
     
     // 页面控制
+    setRefreshStatus,
+    refresh,
     refreshPage,
     forceRefresh,
     

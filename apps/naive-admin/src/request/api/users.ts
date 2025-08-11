@@ -5,6 +5,7 @@
 
 import { apiCall } from '../api-adapter'
 import type { UnifiedApiResponse } from './common'
+import type { User, AuthResponse, CreateUserRequest } from '@/shared/users'
 
 // ========================================
 // 🔐 用户认证相关类型
@@ -15,40 +16,21 @@ export interface LoginParams {
   password: string
 }
 
-export interface UserInfo {
-  id: string
-  username: string
-  phone: string
-  email?: string
-  avatar?: string
-  roles: string[]
-  permissions: string[]
-  createTime: string
-  updateTime: string
-}
+// 使用 Protobuf 生成的 User 类型，保持兼容性
+export type UserInfo = User
 
-export interface LoginResponse {
-  token: string
-  refreshToken: string
-  user: UserInfo
-  expiresIn: number
-}
+// 使用 Protobuf 生成的 AuthResponse
+export type LoginResponse = AuthResponse
 
-export interface CreateUserParams {
-  username: string
-  phone: string
-  email?: string
-  password: string
-  roles?: string[]
-}
+// 使用 Protobuf 生成的类型
+export type CreateUserParams = CreateUserRequest
 
+// 为兼容性，定义更灵活的更新参数类型
 export interface UpdateUserParams {
-  id: string
+  id: string  // 用于路径参数
   username?: string
-  email?: string
-  phone?: string
-  avatar?: string
-  roles?: string[]
+  isActive?: boolean
+  roleIds?: string[]
 }
 
 // ========================================
@@ -82,9 +64,10 @@ export async function userLogin(
   if (data && data.token) {
     localStorage.setItem('token', data.token)
     localStorage.setItem('user', JSON.stringify(data.user))
-    if (data.refreshToken) {
-      localStorage.setItem('refreshToken', data.refreshToken)
-    }
+    // AuthResponse 中没有 refreshToken，暂时注释
+    // if (data.refreshToken) {
+    //   localStorage.setItem('refreshToken', data.refreshToken)
+    // }
   }
 
   return result
@@ -254,16 +237,19 @@ export async function updateUserAvatar(userId: string, avatar: string): Promise<
 export function hasRole(role: string, userInfo?: UserInfo): boolean {
   const user = userInfo || getLocalUserInfo()
   if (!user) return false
-  return user.roles.includes(role)
+  return user.roleIds.includes(role)
 }
 
 /**
  * 检查用户是否有指定权限
+ * 注意：User 类型中没有 permissions 字段，需要通过角色系统获取权限
  */
 export function hasPermission(permission: string, userInfo?: UserInfo): boolean {
   const user = userInfo || getLocalUserInfo()
   if (!user) return false
-  return user.permissions.includes(permission)
+  // TODO: 实现通过角色获取权限的逻辑
+  // 暂时返回 false，需要配合权限管理模块
+  return false
 }
 
 /**
@@ -291,7 +277,7 @@ export function isAdmin(userInfo?: UserInfo): boolean {
  * 格式化用户显示名称
  */
 export function formatUserDisplayName(user: UserInfo): string {
-  return user.username || user.phone || user.email || '未知用户'
+  return user.username || user.phone || '未知用户'
 }
 
 /**
@@ -333,4 +319,85 @@ export function validatePassword(password: string): {
   }
   
   return { isValid: true, message: '密码强度合格' }
-} 
+}
+
+// ========================================
+// 🎯 用户 API 统一对象（供 Store 使用）
+// ========================================
+
+/**
+ * 用户 API 统一调用对象
+ * 为 store 提供一致的调用接口
+ */
+export const userApi = {
+  /**
+   * 用户登录
+   * @param phone 手机号
+   * @param password 密码
+   * @returns Promise<[AuthResponse | null, string | null]> - 返回完整的认证信息
+   */
+  async login(phone: string, password: string): Promise<[AuthResponse | null, string | null]> {
+    const [data, error] = await userLogin(phone, password);
+    if (error) {
+      return [null, error.message || '登录失败'];
+    }
+    if (data) {
+      return [data, null];
+    }
+    return [null, '登录失败，请重试'];
+  },
+
+  /**
+   * 用户登出
+   * @returns Promise<[void | null, string | null]>
+   */
+  async logout(): Promise<[void | null, string | null]> {
+    const [, error] = await userLogout();
+    if (error) {
+      return [null, error.message || '登出失败'];
+    }
+    return [null, null];
+  },
+
+  /**
+   * 获取用户信息
+   * @param userId 用户ID（可选，默认获取当前用户）
+   * @returns Promise<[User | null, string | null]>
+   */
+  async getUserInfo(userId?: string): Promise<[User | null, string | null]> {
+    if (userId) {
+      const [data, error] = await getUserById(userId);
+      if (error) {
+        return [null, error.message || '获取用户信息失败'];
+      }
+      return [data, null];
+    } else {
+      const [data, error] = await getCurrentUser();
+      if (error) {
+        return [null, error.message || '获取当前用户信息失败'];
+      }
+      return [data, null];
+    }
+  },
+
+  /**
+   * 更新用户信息
+   * @param userId 用户ID（使用 phone 作为标识）
+   * @param updateData 更新数据
+   * @returns Promise<[User | null, string | null]>
+   */
+  async updateUser(userId: string, updateData: Partial<User>): Promise<[User | null, string | null]> {
+    const params: UpdateUserParams = {
+      id: userId,
+      username: updateData.username,
+      isActive: updateData.isActive,
+      roleIds: updateData.roleIds
+    };
+    
+    const [data, error] = await updateUser(params);
+    if (error) {
+      return [null, error.message || '更新用户信息失败'];
+    }
+    return [data, null];
+  }
+}; 

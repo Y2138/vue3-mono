@@ -129,17 +129,16 @@ export const useUserStore = defineStore('user', () => {
       isLoginLoading.value = true;
       loginError.value = null;
       
-      const [user, error] = await userApi.login(phone, password);
+      const [authResponse, error] = await userApi.login(phone, password);
       
       if (error) {
         loginError.value = error;
         return false;
       }
       
-      if (user) {
-        userInfo.value = user;
-        // 从用户信息中获取token（如果API返回了token）
-        authToken.value = user.token || 'authenticated';
+      if (authResponse && authResponse.user) {
+        userInfo.value = authResponse.user;
+        authToken.value = authResponse.token;
         
         // 刷新权限缓存
         await refreshUserPermissions();
