@@ -2,6 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { MonitoringService } from './monitoring.service';
 import { GrpcHealthService } from './grpc-health.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 interface HealthStatus {
   status: string;
@@ -21,6 +22,7 @@ export class HealthController {
   constructor(
     private readonly monitoringService: MonitoringService,
     private readonly grpcHealthService: GrpcHealthService,
+    private readonly prismaService: PrismaService,
   ) {}
   @Get()
   @ApiOperation({ summary: '健康检查', description: '检查应用程序和各服务状态' })
@@ -45,16 +47,23 @@ export class HealthController {
       }
     }
   })
-  getHealth(): HealthStatus {
+  async getHealth(): Promise<HealthStatus> {
+    // 检查 Prisma 连接状态
+    const isPrismaHealthy = await this.prismaService.healthCheck();
+    
+    // 检查 gRPC 服务状态
+    const grpcStatuses = this.grpcHealthService.getAllServiceStatuses();
+    const isGrpcHealthy = Array.from(grpcStatuses.values()).every(status => status.status === 'SERVING');
+    
     return {
-      status: 'ok',
+      status: isPrismaHealthy && isGrpcHealthy ? 'ok' : 'degraded',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       environment: process.env.NODE_ENV || 'development',
       services: {
-        database: 'connected', // 实际应用中可以检查数据库连接状态
+        database: isPrismaHealthy ? 'connected' : 'error',
         redis: 'connected',    // 实际应用中可以检查Redis连接状态
-        grpc: 'running'        // 实际应用中可以检查gRPC服务状态
+        grpc: isGrpcHealthy ? 'running' : 'degraded'
       }
     };
   }

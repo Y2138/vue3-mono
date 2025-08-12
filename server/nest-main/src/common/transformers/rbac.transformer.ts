@@ -1,5 +1,4 @@
-import { Role as RoleEntity } from '../../modules/rbac/entities/role.entity';
-import { Permission as PermissionEntity } from '../../modules/rbac/entities/permission.entity';
+import { Role as RoleEntity, Permission as PermissionEntity } from '@prisma/client';
 import { 
   Role as RoleProto, 
   Permission as PermissionProto,

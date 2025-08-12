@@ -1,53 +1,54 @@
-import { Injectable, ConflictException, UnauthorizedException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, UnauthorizedException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { InjectRepository } from '@nestjs/typeorm';
-import * as bcrypt from 'bcryptjs';
-import { Repository } from 'typeorm';
 
-import { User } from './entities/user.entity';
-import { Role } from '../rbac/entities/role.entity';
-
+import { UserService } from './user.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-    @InjectRepository(Role)
-    private readonly roleRepository: Repository<Role>,
+    private readonly userService: UserService,
+    private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
   ) {}
 
   async register(registerInput: { phone: string; username: string; password: string }) {
     // 检查手机号是否已存在
-    const existingUser = await this.userRepository.findOne({
-      where: { phone: registerInput.phone },
-    });
-
-    if (existingUser) {
+    try {
+      await this.userService.findOne(registerInput.phone);
       throw new ConflictException('该手机号已被注册');
+    } catch (error) {
+      // 如果是 NotFoundException，说明用户不存在，可以继续注册
+      if (!(error instanceof NotFoundException)) {
+        throw error;
+      }
+    }
+
+    // 获取普通用户角色
+    const normalRole = await this.prisma.client.role.findFirst({
+        where: { name: '普通用户' },
+      });
+
+    if (!normalRole) {
+      throw new Error('普通用户角色不存在');
     }
 
     // 创建新用户
-    const user = new User();
-    user.phone = registerInput.phone;
-    user.username = registerInput.username;
-    user.password = await bcrypt.hash(registerInput.password, 10);
-
-    // 获取普通用户角色
-    const normalRole = await this.roleRepository.findOne({ where: { name: '普通用户' } });
-    if (!normalRole) {
-      throw new Error('Normal user role not found');
-    }
-
-    // 设置用户角色
-    user.roles = [normalRole];
-    user.isActive = true;
-
-    // 保存用户
-    const savedUser = await this.userRepository.save(user);
+    const savedUser = await this.userService.create({
+      phone: registerInput.phone,
+      username: registerInput.username,
+      password: registerInput.password,
+      isActive: true,
+      userRoles: {
+        create: [{
+          role: {
+            connect: { id: normalRole.id }
+          }
+        }]
+      },
+    });
 
     // 生成 token
     const token = this.jwtService.sign({
@@ -62,42 +63,59 @@ export class AuthService {
   }
 
   async login(loginInput: { phone: string; password: string }) {
-    const user = await this.userRepository.findOne({
-      where: { phone: loginInput.phone },
-      relations: ['roles'],
-    });
+    try {
+      // 验证用户密码
+      const isPasswordValid = await this.userService.validatePassword(
+        loginInput.phone,
+        loginInput.password,
+      );
 
-    if (!user) {
-      throw new UnauthorizedException('手机号或密码错误');
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('手机号或密码错误');
+      }
+
+      // 获取用户信息
+      const user = await this.userService.findOne(loginInput.phone);
+
+      // 生成 token
+      const token = this.jwtService.sign({
+        sub: user?.phone || '',
+        phone: user?.phone || '',
+      });
+
+      return {
+        user,
+        token,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new UnauthorizedException('手机号或密码错误');
+      }
+      throw error;
     }
-
-    const isPasswordValid = await bcrypt.compare(
-      loginInput.password,
-      user.password,
-    );
-
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('手机号或密码错误');
-    }
-
-    const token = this.jwtService.sign({
-      sub: user.phone,
-      phone: user.phone,
-    });
-
-    return {
-      user,
-      token,
-    };
   }
 
-  async validateUser(userPhone: string): Promise<User> {
+  async validateUser(userPhone: string): Promise<any> {
     this.logger.log(`验证用户: ${userPhone}`);
     
     try {
-      const user = await this.userRepository.findOne({ 
+      const user = await this.prisma.client.user.findUnique({
         where: { phone: userPhone },
-        relations: ['roles', 'roles.permissions']
+        include: {
+          userRoles: {
+            include: {
+              role: {
+                include: {
+                  rolePermissions: {
+                    include: {
+                      permission: true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
       });
       
       if (!user) {
@@ -110,13 +128,13 @@ export class AuthService {
         throw new UnauthorizedException('用户未激活');
       }
       
-      this.logger.log(`用户验证成功: ${userPhone}, 角色数: ${user.roles?.length || 0}`);
+      // 通过中间件转换后，user应该有roles属性
+      const roles = (user as any).roles || [];
+      this.logger.log(`用户验证成功: ${userPhone}, 角色数: ${roles.length || 0}`);
       
-      if (user.roles) {
-        user.roles.forEach(role => {
-          this.logger.log(`角色 ${role.name} 拥有 ${role.permissions?.length || 0} 个权限`);
-        });
-      }
+      roles.forEach((role: any) => {
+        this.logger.log(`角色 ${role.name} 拥有 ${role.permissions?.length || 0} 个权限`);
+      });
       
       return user;
     } catch (error) {
@@ -135,37 +153,45 @@ export class AuthService {
     username: string;
     phone: string;
     password: string;
-  }): Promise<{ user: User; token: string }> {
+  }): Promise<{ user: any; token: string }> {
     this.logger.log(`创建超级管理员: ${input.username}, ${input.phone}`);
     
     // 检查手机号是否已存在
-    const existingUser = await this.userRepository.findOne({
-      where: { phone: input.phone },
-    });
-
-    if (existingUser) {
+    try {
+      await this.userService.findOne(input.phone);
       throw new ConflictException('该手机号已被注册');
+    } catch (error) {
+      // 如果是 NotFoundException，说明用户不存在，可以继续注册
+      if (!(error instanceof NotFoundException)) {
+        throw error;
+      }
     }
 
-    // 创建新用户
-    const user = new User();
-    user.phone = input.phone;
-    user.username = input.username;
-    user.password = await bcrypt.hash(input.password, 10);
-
     // 获取超级管理员角色
-    const superAdminRole = await this.roleRepository.findOne({ where: { name: '超级管理员' } });
+    const superAdminRole = await this.prisma.client.role.findFirst({
+        where: { name: '超级管理员' },
+      });
+
     if (!superAdminRole) {
       this.logger.error('超级管理员角色不存在，请先初始化RBAC数据');
       throw new Error('超级管理员角色不存在，请先初始化RBAC数据');
     }
 
-    // 设置用户角色
-    user.roles = [superAdminRole];
-    user.isActive = true;
+    // 创建新用户
+    const savedUser = await this.userService.create({
+      phone: input.phone,
+      username: input.username,
+      password: input.password,
+      isActive: true,
+      userRoles: {
+        create: [{
+          role: {
+            connect: { id: superAdminRole.id }
+          }
+        }]
+      },
+    });
 
-    // 保存用户
-    const savedUser = await this.userRepository.save(user);
     this.logger.log(`超级管理员创建成功: ${savedUser.phone}`);
 
     // 生成 token
@@ -183,38 +209,53 @@ export class AuthService {
   /**
    * 将现有用户提升为超级管理员
    */
-  async promoteToSuperAdmin(userPhone: string): Promise<User> {
+  async promoteToSuperAdmin(userPhone: string): Promise<any> {
     this.logger.log(`提升用户为超级管理员: ${userPhone}`);
     
-    const user = await this.userRepository.findOne({
-      where: { phone: userPhone },
-      relations: ['roles'],
-    });
+    try {
+      // 检查用户是否存在
+      const user = await this.userService.findOne(userPhone);
 
-    if (!user) {
-      this.logger.error(`用户不存在: ${userPhone}`);
-      throw new UnauthorizedException('用户不存在');
+      // 获取超级管理员角色
+      const superAdminRole = await this.prisma.client.role.findFirst({
+        where: { name: '超级管理员' },
+      });
+      if (!superAdminRole) {
+        this.logger.error('超级管理员角色不存在，请先初始化RBAC数据');
+        throw new Error('超级管理员角色不存在，请先初始化RBAC数据');
+      }
+
+      // 检查用户是否已经是超级管理员
+      const roles = (user as any).roles || [];
+      const isSuperAdmin = roles.some((role: any) => role.name === '超级管理员') || false;
+      if (isSuperAdmin) {
+        this.logger.log(`用户已经是超级管理员: ${userPhone}`);
+        return user; // 用户已经是超级管理员，无需更改
+      }
+
+      // 添加超级管理员角色
+      const updatedUser = await this.prisma.client.user.update({
+        where: { phone: userPhone },
+        data: {
+          userRoles: {
+            create: [{
+              role: {
+                connect: { id: superAdminRole.id }
+              }
+            }]
+          }
+        },
+        include: { userRoles: { include: { role: true } } }
+      });
+
+      // 中间件会自动处理数据转换
+
+      this.logger.log(`用户已成功提升为超级管理员: ${userPhone}`);
+      
+      return updatedUser;
+    } catch (error) {
+      this.logger.error(`提升用户为超级管理员失败: ${userPhone}, ${error.message}`);
+      throw error;
     }
-
-    // 获取超级管理员角色
-    const superAdminRole = await this.roleRepository.findOne({ where: { name: '超级管理员' } });
-    if (!superAdminRole) {
-      this.logger.error('超级管理员角色不存在，请先初始化RBAC数据');
-      throw new Error('超级管理员角色不存在，请先初始化RBAC数据');
-    }
-
-    // 检查用户是否已经是超级管理员
-    const isSuperAdmin = user.roles.some(role => role.name === '超级管理员');
-    if (isSuperAdmin) {
-      this.logger.log(`用户已经是超级管理员: ${userPhone}`);
-      return user; // 用户已经是超级管理员，无需更改
-    }
-
-    // 添加超级管理员角色
-    user.roles.push(superAdminRole);
-    const updatedUser = await this.userRepository.save(user);
-    this.logger.log(`用户已成功提升为超级管理员: ${userPhone}`);
-    
-    return updatedUser;
   }
-} 
+}

@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { User } from '../../users/entities/user.entity';
+import { User } from '@prisma/client';
 
 /**
  * 优化的权限守卫
@@ -44,7 +44,7 @@ export class PermissionGuard implements CanActivate {
       throw new ForbiddenException('认证信息缺失，请先登录');
     }
 
-    if (!user.roles || user.roles.length === 0) {
+    if (!user.roles || !Array.isArray(user.roles) || user.roles.length === 0) {
       this.logger.warn(`User ${user.phone} has no roles assigned`);
       throw new ForbiddenException('用户未分配角色，无法访问');
     }
@@ -66,7 +66,7 @@ export class PermissionGuard implements CanActivate {
   /**
    * 从执行上下文中提取用户信息
    */
-  private extractUser(context: ExecutionContext): User | null {
+  private extractUser(context: ExecutionContext): (User & { roles?: any[] }) | null {
     const contextType = context.getType();
     let request: any;
 
@@ -85,7 +85,7 @@ export class PermissionGuard implements CanActivate {
   /**
    * 检查用户权限
    */
-  private checkUserPermissions(user: User, requiredPermissions: string[]): boolean {
+  private checkUserPermissions(user: User & { roles?: any[] }, requiredPermissions: string[]): boolean {
     // 检查超级管理员权限
     if (this.isSuperAdmin(user)) {
       this.logger.debug(`User ${user.phone} is super admin - granting access`);
@@ -113,16 +113,16 @@ export class PermissionGuard implements CanActivate {
   /**
    * 检查是否为超级管理员
    */
-  private isSuperAdmin(user: User): boolean {
-    return user.roles.some(role => 
+  private isSuperAdmin(user: User & { roles?: any[] }): boolean {
+    return user.roles && user.roles.some(role => 
       role.name === '超级管理员' || role.name === 'super_admin'
-    );
+    ) || false;
   }
 
   /**
    * 获取用户所有权限（带缓存）
    */
-  private getUserPermissions(user: User): Set<string> {
+  private getUserPermissions(user: User & { roles?: any[] }): Set<string> {
     const cacheKey = `user_${user.phone}_permissions`;
     
     // 尝试从缓存获取
@@ -133,14 +133,16 @@ export class PermissionGuard implements CanActivate {
     // 计算用户权限
     const permissions = new Set<string>();
     
-    user.roles.forEach(role => {
-      if (role.permissions && Array.isArray(role.permissions)) {
-        role.permissions.forEach(permission => {
-          const permKey = `${permission.resource}:${permission.action}`;
-          permissions.add(permKey);
-        });
-      }
-    });
+    if (user.roles && Array.isArray(user.roles)) {
+      user.roles.forEach(role => {
+        if (role.permissions && Array.isArray(role.permissions)) {
+          role.permissions.forEach(permission => {
+            const permKey = `${permission.resource}:${permission.action}`;
+            permissions.add(permKey);
+          });
+        }
+      });
+    }
 
     // 添加到缓存
     this.addToCache(cacheKey, permissions);

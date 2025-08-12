@@ -1,5 +1,15 @@
-import { Permission } from '../entities/permission.entity';
-import { Role } from '../entities/role.entity';
+// 使用类型定义而非实体导入
+type Permission = {
+  name: string;
+  resource: string;
+  action: string;
+  description?: string;
+};
+
+type Role = {
+  name: string;
+  description?: string;
+};
 
 // 基础资源类型
 export const RESOURCES = {

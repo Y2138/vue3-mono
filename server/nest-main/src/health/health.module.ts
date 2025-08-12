@@ -4,8 +4,12 @@ import { GrpcHealthController } from './grpc-health.controller';
 import { MetricsController } from './metrics.controller';
 import { MonitoringService } from './monitoring.service';
 import { GrpcHealthService } from './grpc-health.service';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
+  imports: [
+    PrismaModule,
+  ],
   controllers: [
     HealthController,
     GrpcHealthController,

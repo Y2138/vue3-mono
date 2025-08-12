@@ -1,7 +1,5 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { Permission } from './entities/permission.entity';
-import { Role } from './entities/role.entity';
+import { PrismaModule } from '../../prisma/prisma.module';
 import { RbacSeedService } from './seeds/rbac-seed.service';
 import { PermissionService } from './services/permission.service';
 import { RbacInitService } from './services/rbac-init.service';
@@ -14,7 +12,7 @@ import { RbacTransformer } from '../../common/transformers/rbac.transformer';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Role, Permission]),
+    PrismaModule,
   ],
   controllers: [
     PermissionGrpcController,

@@ -70,7 +70,7 @@ export class MonitoringService {
    * 初始化指标
    */
   private initializeMetrics(): void {
-    const services = ['UserService', 'PermissionService', 'RoleService', 'Health'];
+    const services = ['UserService', 'PermissionService', 'RoleService', 'Health', 'PrismaService'];
     
     for (const service of services) {
       this.metrics.set(service, {
@@ -131,6 +131,7 @@ export class MonitoringService {
     if (method.includes('PermissionService')) return 'PermissionService';
     if (method.includes('RoleService')) return 'RoleService';
     if (method.includes('Health')) return 'Health';
+    if (method.includes('Prisma')) return 'PrismaService';
     return 'Unknown';
   }
 

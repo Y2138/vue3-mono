@@ -22,12 +22,8 @@ GRPC_PORT=50051
 # 前端地址配置
 FRONTEND_URL=http://localhost:6767
 
-# 数据库配置
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_DB=nest_main
+# 数据库配置 (Prisma)
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/nest_main?schema=public"
 
 # Redis 配置
 REDIS_HOST=localhost
@@ -40,8 +36,8 @@ JWT_EXPIRES_IN=7d
 
 # 日志配置
 LOG_LEVEL=debug
-ENABLE_QUERY_LOGGING=true
 ENABLE_REQUEST_LOGGING=true
+# Prisma 日志配置通过 schema.prisma 的 generator 块或 PrismaClient 初始化时设置
 
 # gRPC 配置
 GRPC_MAX_RECEIVE_MESSAGE_LENGTH=4194304
@@ -57,6 +53,7 @@ ENABLE_CORS=true
 # 性能监控
 ENABLE_PERFORMANCE_MONITORING=true
 REQUEST_TIMEOUT=30000
+# Prisma 查询性能监控通过 Client Extensions 实现
 
 # 安全配置
 BCRYPT_ROUNDS=10
@@ -78,12 +75,8 @@ GRPC_PORT=50051
 # 前端地址配置（生产环境需要设置真实域名）
 FRONTEND_URL=https://your-frontend-domain.com
 
-# 数据库配置（生产环境需要设置真实数据库连接）
-POSTGRES_HOST=your-production-db-host
-POSTGRES_PORT=5432
-POSTGRES_USER=your-production-db-user
-POSTGRES_PASSWORD=your-production-db-password
-POSTGRES_DB=nest_main_prod
+# 数据库配置 (Prisma)（生产环境需要设置真实数据库连接）
+DATABASE_URL="postgresql://user:password@your-production-db-host:5432/nest_main_prod?schema=public"
 
 # Redis 配置（生产环境需要设置真实Redis连接）
 REDIS_HOST=your-production-redis-host
@@ -96,8 +89,8 @@ JWT_EXPIRES_IN=24h
 
 # 日志配置
 LOG_LEVEL=warn
-ENABLE_QUERY_LOGGING=false
 ENABLE_REQUEST_LOGGING=true
+# Prisma 日志配置通过 schema.prisma 的 generator 块或 PrismaClient 初始化时设置
 
 # gRPC 配置
 GRPC_MAX_RECEIVE_MESSAGE_LENGTH=4194304
@@ -113,6 +106,7 @@ ENABLE_CORS=true
 # 性能监控
 ENABLE_PERFORMANCE_MONITORING=true
 REQUEST_TIMEOUT=30000
+# Prisma 查询性能监控通过 Client Extensions 实现
 
 # 安全配置
 BCRYPT_ROUNDS=12
@@ -143,7 +137,7 @@ HEALTH_CHECK_INTERVAL=30000
 - `GRPC_PORT`: gRPC 服务端口
 
 ### 数据库配置
-- `POSTGRES_*`: PostgreSQL 数据库连接配置
+- `DATABASE_URL`: Prisma 数据库连接字符串，包含所有连接信息
 - `REDIS_*`: Redis 缓存连接配置
 
 ### 安全配置
@@ -153,8 +147,8 @@ HEALTH_CHECK_INTERVAL=30000
 
 ### 日志配置
 - `LOG_LEVEL`: 日志级别 (`debug` | `info` | `warn` | `error`)
-- `ENABLE_QUERY_LOGGING`: 是否启用数据库查询日志
 - `ENABLE_REQUEST_LOGGING`: 是否启用请求日志
+- Prisma 日志配置在 `prisma.module.ts` 中通过 PrismaClient 初始化选项设置
 
 ### gRPC 配置
 - `GRPC_MAX_RECEIVE_MESSAGE_LENGTH`: gRPC 最大接收消息长度
