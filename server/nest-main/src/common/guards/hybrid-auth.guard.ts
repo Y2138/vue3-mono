@@ -140,7 +140,7 @@ export class HybridAuthGuard implements CanActivate {
         throw new UnauthorizedException('用户不存在或未激活');
       }
 
-      this.logger.debug(`User validated: ${user.phone}, roles: ${user.roles?.map(r => r.name).join(', ')}`);
+      this.logger.debug(`User validated: ${user.phone}, roles: ${user.userRoles?.map(r => r.role.name).join(', ')}`);
       
       return user;
     } catch (error) {

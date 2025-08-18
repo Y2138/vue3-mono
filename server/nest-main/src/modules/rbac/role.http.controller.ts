@@ -123,11 +123,29 @@ export class RoleHttpController {
   ) {
     this.logger.log(`Assigning permissions to role ${roleId}: ${JSON.stringify(assignDto)}`);
     
-    const role = await this.roleService.addPermissions(roleId, assignDto.permissionIds);
-    return {
-      data: RoleTransformer.toProtobuf(role),
-      message: `Permissions assigned to role ${roleId} successfully`,
-    };
+    try {
+      const role = await this.roleService.addPermissions(roleId, assignDto.permissionIds);
+      if (!role) {
+        return {
+          success: false,
+          code: 404,
+          message: '角色不存在，无法分配权限',
+          data: null,
+        };
+      }
+      return {
+        data: RoleTransformer.toProtobuf(role),
+        message: `权限已成功分配给角色 ${roleId}`,
+      };
+    } catch (error) {
+      // 返回用户友好的错误响应
+      return {
+        success: false,
+        code: 500,
+        message: '分配权限时发生错误',
+        data: null,
+      };
+    }
   }
 
   @Delete(':id/permissions')

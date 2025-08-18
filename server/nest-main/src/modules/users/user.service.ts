@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma, User } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
@@ -12,7 +12,7 @@ export class UserService {
   /**
    * 获取所有用户
    */
-  async findAll(): Promise<User[]> {
+  async findAll() {
     this.logger.log('获取所有用户');
     return this.prisma.client.user.findMany({
       include: { userRoles: { include: { role: true } } },
@@ -22,7 +22,7 @@ export class UserService {
   /**
    * 根据手机号获取用户
    */
-  async findOne(phone: string): Promise<User | null> {
+  async findOne(phone: string) {
     this.logger.log(`根据手机号 ${phone} 获取用户`);
 
     // 验证手机号格式
@@ -44,7 +44,7 @@ export class UserService {
   /**
    * 创建用户
    */
-  async create(data: Prisma.UserCreateInput): Promise<User> {
+  async create(data: Prisma.UserCreateInput) {
     this.logger.log(`创建用户: ${data.phone}`);
 
     // 验证手机号格式
@@ -86,7 +86,7 @@ export class UserService {
   /**
    * 更新用户
    */
-  async update(phone: string, data: Prisma.UserUpdateInput): Promise<User> {
+  async update(phone: string, data: Prisma.UserUpdateInput) {
     this.logger.log(`更新用户: ${phone}`);
 
     // 验证手机号格式
@@ -134,7 +134,7 @@ export class UserService {
   /**
    * 删除用户
    */
-  async remove(phone: string): Promise<User> {
+  async remove(phone: string) {
     this.logger.log(`删除用户: ${phone}`);
 
     // 验证手机号格式
@@ -152,7 +152,7 @@ export class UserService {
   /**
    * 验证用户密码
    */
-  async validatePassword(phone: string, password: string): Promise<boolean> {
+  async validatePassword(phone: string, password: string) {
     this.logger.log(`验证用户 ${phone} 的密码`);
 
     // 验证手机号格式

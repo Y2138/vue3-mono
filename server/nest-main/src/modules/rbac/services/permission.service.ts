@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { Permission } from '@prisma/client';
 
 @Injectable()
 export class PermissionService {
@@ -10,12 +9,12 @@ export class PermissionService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async findAll(): Promise<Permission[]> {
+  async findAll() {
     this.logger.log('获取所有权限');
     return this.prisma.client.permission.findMany();
   }
 
-  async findById(id: string): Promise<Permission> {
+  async findById(id: string) {
     this.logger.log(`根据ID ${id} 获取权限`);
     const permission = await this.prisma.client.permission.findUnique({
       where: { id },
@@ -36,7 +35,7 @@ export class PermissionService {
     return permission;
   }
 
-  async findByName(name: string): Promise<Permission> {
+  async findByName(name: string) {
     this.logger.log(`根据名称 ${name} 获取权限`);
     const permission = await this.prisma.client.permission.findUnique({
       where: { name },
@@ -62,7 +61,7 @@ export class PermissionService {
     action: string;
     resource: string;
     description?: string;
-  }): Promise<Permission> {
+  }) {
     this.logger.log(`创建权限: ${data.name}`);
     return this.prisma.client.permission.create({
       data
@@ -78,7 +77,7 @@ export class PermissionService {
       description?: string;
       isActive?: boolean;
     },
-  ): Promise<Permission> {
+  ) {
     this.logger.log(`更新权限: ${id}`);
     
     // 确保权限存在
@@ -107,7 +106,7 @@ export class PermissionService {
     });
   }
 
-  async findByResourceAndAction(resource: string, action: string): Promise<Permission> {
+  async findByResourceAndAction(resource: string, action: string) {
     this.logger.log(`根据资源 ${resource} 和操作 ${action} 获取权限`);
     const permission = await this.prisma.client.permission.findFirst({
       where: { 

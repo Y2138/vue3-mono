@@ -95,7 +95,7 @@ export class AuthService {
     }
   }
 
-  async validateUser(userPhone: string): Promise<any> {
+  async validateUser(userPhone: string) {
     this.logger.log(`验证用户: ${userPhone}`);
     
     try {
@@ -153,7 +153,7 @@ export class AuthService {
     username: string;
     phone: string;
     password: string;
-  }): Promise<{ user: any; token: string }> {
+  }) {
     this.logger.log(`创建超级管理员: ${input.username}, ${input.phone}`);
     
     // 检查手机号是否已存在
@@ -209,7 +209,7 @@ export class AuthService {
   /**
    * 将现有用户提升为超级管理员
    */
-  async promoteToSuperAdmin(userPhone: string): Promise<any> {
+  async promoteToSuperAdmin(userPhone: string) {
     this.logger.log(`提升用户为超级管理员: ${userPhone}`);
     
     try {

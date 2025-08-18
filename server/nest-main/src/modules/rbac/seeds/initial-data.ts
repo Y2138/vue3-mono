@@ -29,7 +29,7 @@ export const ACTIONS = {
 } as const;
 
 // 初始权限列表
-export const initialPermissions: Partial<Permission>[] = [
+export const initialPermissions: Permission[] = [
   // 用户管理权限
   {
     name: '查看用户',
@@ -118,7 +118,7 @@ export const initialPermissions: Partial<Permission>[] = [
 ];
 
 // 初始角色列表
-export const initialRoles: Partial<Role>[] = [
+export const initialRoles: Role[] = [
   {
     name: '超级管理员',
     description: '系统超级管理员，拥有所有权限',
@@ -131,4 +131,4 @@ export const initialRoles: Partial<Role>[] = [
     name: '普通用户',
     description: '普通用户，拥有基本操作权限',
   },
-]; 
+];

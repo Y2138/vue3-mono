@@ -1,4 +1,5 @@
-import { Role as RoleEntity, Permission as PermissionEntity } from '@prisma/client';
+import { Role as RoleEntity, Permission as PermissionEntity, RolePermission, Prisma } from '@prisma/client';
+// 导入Prisma客户端类型
 import { 
   Role as RoleProto, 
   Permission as PermissionProto,
@@ -10,6 +11,27 @@ import {
   GetPermissionRequest
 } from '../../shared/rbac';
 import { TimestampTransformer, ArrayTransformer, StringTransformer } from './common.transformer';
+
+type RoleWithPermissions = Prisma.RoleGetPayload<{
+  include: {
+    rolePermissions: {
+      include: {
+        permission: true
+      }
+    }
+  }
+}>;
+
+type RoleBasic = Prisma.RoleGetPayload<{
+  select: {
+    id: true;
+    name: true;
+    description: true;
+    createdAt: true;
+    updatedAt: true;
+  }
+}>;
+
 
 /**
  * 权限数据转换器
@@ -143,7 +165,7 @@ export const RoleTransformer = {
   /**
    * 将 Role Entity 转换为 Protobuf Role
    */
-  toProtobuf(entity: RoleEntity): RoleProto {
+  toProtobuf(entity: RoleWithPermissions): RoleProto {
     return {
       id: entity.id,
       name: entity.name,
@@ -151,7 +173,10 @@ export const RoleTransformer = {
       isActive: true, // Entity 没有此字段，默认为 true
       createdAt: TimestampTransformer.toProtobuf(entity.createdAt),
       updatedAt: TimestampTransformer.toProtobuf(entity.updatedAt),
-      permissions: ArrayTransformer.toArray(entity.permissions || []).map(p => PermissionTransformer.toProtobuf(p)),
+      // 使用可选链操作符安全访问rolePermissions属性，避免类型错误
+      permissions: ArrayTransformer.toArray(entity.rolePermissions || [])
+        .filter(rp => rp.permission) // 确保permission存在
+        .map(rp => PermissionTransformer.toProtobuf(rp.permission)),
     };
   },
 
@@ -238,30 +263,54 @@ export const RoleTransformer = {
     // }
 
     if (request.permissionIds !== undefined) {
-      // 注意：这里需要根据实际需求处理权限关联
-      // Entity 中是 permissions 字段，不是 permissionIds
-      // result.permissionIds = ArrayTransformer.filterNulls(request.permissionIds || []);
+      // 处理权限ID列表
+      result.permissionIds = ArrayTransformer.filterNulls(request.permissionIds || []);
     }
 
     return result;
   },
 
   /**
-   * 批量转换角色列表
+   * 批量转换角色列表（包含权限）
    */
-  toProtobufList(entities: RoleEntity[]): RoleProto[] {
+  toProtobufList(entities: RoleWithPermissions[]): RoleProto[] {
     return ArrayTransformer.toArray(entities).map(entity => this.toProtobuf(entity));
+  },
+  
+  /**
+   * 将 Role Entity 转换为不包含权限的 Protobuf Role
+   */
+  toBasicProto(entity: RoleBasic | RoleEntity): RoleProto {
+    return {
+      id: entity.id,
+      name: entity.name,
+      description: entity.description || '',
+      isActive: true, // Entity 没有此字段，默认为 true
+      createdAt: TimestampTransformer.toProtobuf(entity.createdAt),
+      updatedAt: TimestampTransformer.toProtobuf(entity.updatedAt),
+      permissions: [], // 不包含权限信息
+    };
+  },
+  
+  /**
+   * 批量转换角色列表（不包含权限）
+   */
+  toBasicProtobufList(entities: (RoleBasic | RoleEntity)[]): RoleProto[] {
+    return ArrayTransformer.toArray(entities).map(entity => this.toBasicProto(entity));
   },
 
   /**
    * 为列表查询准备角色数据（包含权限信息）
    */
-  toDetailedProtobuf(entity: RoleEntity): RoleProto & { permissions?: PermissionProto[] } {
+  toDetailedProtobuf(entity: RoleWithPermissions): RoleProto {
     return {
       ...this.toProtobuf(entity),
-      permissions: entity.permissions 
-        ? PermissionTransformer.toProtobufList(entity.permissions)
-        : undefined,
+      // 使用可选链操作符安全访问rolePermissions属性，避免类型错误
+      permissions: entity.rolePermissions 
+        ? entity.rolePermissions
+            .filter(rp => rp.permission) // 确保permission存在
+            .map(rp => PermissionTransformer.toProtobuf(rp.permission))
+        : [],
     };
   },
 };
@@ -328,7 +377,8 @@ export const RbacTransformer = {
     return {
       id: entity.id,
       name: entity.name,
-      permissionCount: entity.permissions?.length || 0,
+      // 由于基础 RoleEntity 类型没有 rolePermissions 属性，默认为 0
+      permissionCount: 0,
     };
   },
 };
@@ -340,4 +390,4 @@ export const RbacTransformers = {
   permission: PermissionTransformer,
   role: RoleTransformer,
   common: RbacTransformer,
-}; 
+};

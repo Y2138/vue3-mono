@@ -6,7 +6,7 @@ import { ProtocolType } from '../middleware/protocol-detection.middleware';
  */
 export const UnifiedStatusCode = {
   // 成功状态
-  SUCCESS: 0,
+  SUCCESS: 200,
   
   // 客户端错误 (4xx)
   BAD_REQUEST: 400,

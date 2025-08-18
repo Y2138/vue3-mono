@@ -1,6 +1,16 @@
-import { User as UserEntity } from '../../modules/users/entities/user.entity';
+import { User as UserEntity, Prisma } from '@prisma/client';
 import { User as UserProto, LoginRequest, RegisterRequest, AuthResponse } from '../../shared/users';
 import { TimestampTransformer, ArrayTransformer, StringTransformer } from './common.transformer';
+
+type UserWithRoles = Prisma.UserGetPayload<{
+  include: {
+    userRoles: {
+      include: {
+        role: true
+      }
+    }
+  }
+}>;
 
 /**
  * 用户数据转换器
@@ -9,14 +19,15 @@ export const UserTransformer = {
   /**
    * 将 User Entity 转换为 Protobuf User
    */
-  toProtobuf(entity: UserEntity): UserProto {
+  toProtobuf(entity: UserWithRoles): UserProto {
     return {
       phone: entity.phone,
       username: entity.username || '',
       isActive: entity.isActive,
       createdAt: TimestampTransformer.toProtobuf(entity.createdAt),
       updatedAt: TimestampTransformer.toProtobuf(entity.updatedAt),
-      roleIds: ArrayTransformer.toArray(entity.roles?.map(role => role.name) || []),
+      // 使用userRoles关联表获取角色ID
+      roleIds: ArrayTransformer.toArray(entity.userRoles?.map(ur => ur.role?.id) || []),
     };
   },
 
@@ -119,16 +130,9 @@ export const UserTransformer = {
   /**
    * 为列表查询准备用户数据
    */
-  toListItem(entity: UserEntity): UserProto {
+  toListItem(entity: UserWithRoles): UserProto {
     // 列表项可能不需要敏感信息
-    return {
-      phone: entity.phone,
-      username: entity.username || '',
-      isActive: entity.isActive,
-      createdAt: TimestampTransformer.toProtobuf(entity.createdAt),
-      updatedAt: TimestampTransformer.toProtobuf(entity.updatedAt),
-      roleIds: ArrayTransformer.toArray(entity.roles?.map(role => role.name) || []),
-    };
+    return this.toProtobuf(entity);
   },
 
   /**
@@ -148,4 +152,4 @@ export const UserTransformer = {
       isActive: entity.isActive,
     };
   },
-}; 
+};

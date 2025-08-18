@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { Role } from '@prisma/client';
 
 @Injectable()
 export class RoleService {
@@ -10,7 +9,7 @@ export class RoleService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async findAll(): Promise<Role[]> {
+  async findAll() {
     this.logger.log('获取所有角色');
     return this.prisma.client.role.findMany({
       include: { 
@@ -23,7 +22,20 @@ export class RoleService {
     });
   }
 
-  async findById(id: string): Promise<Role> {
+  async findAllBasic() {
+    this.logger.log('获取所有角色（基础信息）');
+    return this.prisma.client.role.findMany({
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  async findById(id: string) {
     this.logger.log(`根据ID ${id} 获取角色`);
     const role = await this.prisma.client.role.findUnique({
       where: { id },
@@ -49,7 +61,7 @@ export class RoleService {
     return role;
   }
 
-  async findByName(name: string): Promise<Role> {
+  async findByName(name: string) {
     this.logger.log(`根据名称 ${name} 获取角色`);
     const role = await this.prisma.client.role.findUnique({
       where: { name },
@@ -79,7 +91,7 @@ export class RoleService {
     name: string;
     description?: string;
     permissionIds?: string[];
-  }): Promise<Role> {
+  }) {
     this.logger.log(`创建角色: ${data.name}`);
     const { permissionIds, ...roleData } = data;
 
@@ -119,7 +131,7 @@ export class RoleService {
       isActive?: boolean;
       permissionIds?: string[];
     },
-  ): Promise<Role> {
+  ) {
     this.logger.log(`更新角色: ${id}`);
     const { permissionIds, ...roleData } = data;
     
@@ -180,7 +192,7 @@ export class RoleService {
     });
   }
 
-  async addPermissions(roleId: string, permissionIds: string[]): Promise<Role> {
+  async addPermissions(roleId: string, permissionIds: string[]) {
     this.logger.log(`添加权限到角色 ${roleId}`);
     
     // 确保角色存在
@@ -217,10 +229,10 @@ export class RoleService {
           }
         }
       }
-    }) as Promise<Role>;
+    });
   }
 
-  async removePermissions(roleId: string, permissionIds: string[]): Promise<Role> {
+  async removePermissions(roleId: string, permissionIds: string[]) {
     this.logger.log(`从角色 ${roleId} 移除权限`);
     
     // 确保角色存在
@@ -246,10 +258,10 @@ export class RoleService {
           }
         }
       }
-    }) as Promise<Role>;
+    });
   }
 
-  async setPermissions(roleId: string, permissionIds: string[]): Promise<Role> {
+  async setPermissions(roleId: string, permissionIds: string[]) {
     this.logger.log(`设置角色 ${roleId} 的权限`);
     
     // 确保角色存在
@@ -280,6 +292,6 @@ export class RoleService {
           }
         }
       }
-    }) as Promise<Role>;
+    });
   }
 } 

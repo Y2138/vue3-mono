@@ -3,6 +3,9 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { MonitoringService } from './monitoring.service';
 import { GrpcHealthService } from './grpc-health.service';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  HealthCheckResponse_ServingStatus as ServingStatus,
+} from '../shared/health';
 
 interface HealthStatus {
   status: string;
@@ -53,7 +56,7 @@ export class HealthController {
     
     // 检查 gRPC 服务状态
     const grpcStatuses = this.grpcHealthService.getAllServiceStatuses();
-    const isGrpcHealthy = Array.from(grpcStatuses.values()).every(status => status.status === 'SERVING');
+    const isGrpcHealthy = Array.from(grpcStatuses.values()).every(status => status.status === ServingStatus.SERVING);
     
     return {
       status: isPrismaHealthy && isGrpcHealthy ? 'ok' : 'degraded',
