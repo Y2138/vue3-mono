@@ -69,7 +69,8 @@ export class ResponseBuilder {
   }
 
   /**
-   * 创建"未找到"错误响应构建器
+   * 创建“未找到”错误响应构建器
+   * 仅用于表示路由或API端点不存在的情况
    * @param resource 资源名称
    */
   static notFound(resource: string): ResponseBuilderChain<null> {
@@ -77,6 +78,19 @@ export class ResponseBuilder {
     return new ErrorResponseBuilder(message, RESPONSE_CODES.NOT_FOUND)
       .withErrorType(ERROR_TYPES.NOT_FOUND)
       .withErrorDetails({ resource });
+  }
+  
+  /**
+   * 创建“数据不存在”错误响应构建器
+   * 用于表示数据库中的记录不存在，如用户、角色等
+   * @param entityType 实体类型名称（如：用户、角色、权限等）
+   * @param identifier 标识符（如：ID、名称、手机号等）
+   */
+  static dataNotFound(entityType: string, identifier: string | number): ResponseBuilderChain<null> {
+    const message = `${entityType} ${identifier} 不存在`;
+    return new ErrorResponseBuilder(message, RESPONSE_CODES.BAD_REQUEST)
+      .withErrorType(ERROR_TYPES.DATA_ERROR)
+      .withErrorDetails({ entityType, identifier });
   }
 
   /**
@@ -197,9 +211,7 @@ class ErrorResponseBuilder extends BaseResponseBuilder<null> {
     type: ERROR_TYPES.BUSINESS
   };
 
-  constructor(message: string, code: number) {
-    super(message, code);
-  }
+  // 继承父类构造函数
 
   /**
    * 设置错误类型

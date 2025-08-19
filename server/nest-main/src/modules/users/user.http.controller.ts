@@ -1,8 +1,8 @@
-import { Controller, Post, Get, Put, Delete, Body, Param, Query, HttpCode, HttpStatus, NotFoundException } from '@nestjs/common';
+import { Controller, Post, Get, Put, Delete, Body, Param, Query, HttpCode, HttpStatus, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse as SwaggerApiResponse } from '@nestjs/swagger';
-import { UserGrpcController } from './user.grpc.controller';
 import { BaseController } from '../../common/controllers/base.controller';
-import { ApiResponse, ApiPaginatedResponse } from '../../common/response/types';
+import { ApiResponse } from '../../common/response/types';
+import { UserService } from './user.service';
 
 /**
  * 登录请求 DTO
@@ -68,7 +68,7 @@ export class GetUsersQueryDto {
 @ApiTags('用户管理')
 @Controller('users')
 export class UserHttpController extends BaseController {
-  constructor(private readonly userGrpcController: UserGrpcController) {
+  constructor(private readonly userService: UserService) {
     super(UserHttpController.name);
   }
 
@@ -83,20 +83,33 @@ export class UserHttpController extends BaseController {
   async login(@Body() loginDto: LoginDto): Promise<ApiResponse<any>> {
     return this.safeExecute(
       async () => {
-        // 复用 gRPC Controller 的逻辑
-        const result = await this.userGrpcController.login(
-          {
+        try {
+          // 调用 UserService 登录方法
+          const result = await this.userService.login({
             phone: loginDto.phone,
             password: loginDto.password,
-          },
-          {} as any // 创建空的 metadata，实际项目中可能需要从 HTTP headers 转换
-        );
-        
-        if (!result.success) {
-          throw new Error(result.message || '登录失败');
+          });
+          
+          // 返回用户信息和令牌
+          return {
+            user: {
+              phone: result.user.phone,
+              username: result.user.username,
+              isActive: result.user.isActive,
+              roles: result.user.userRoles?.map(ur => ({
+                id: ur.role.id,
+                name: ur.role.name,
+              })) || [],
+            },
+            token: result.token,
+            expiresIn: result.expiresIn,
+          };
+        } catch (error) {
+          if (error instanceof UnauthorizedException) {
+            throw error;
+          }
+          throw new Error('登录失败: ' + error.message);
         }
-        
-        return result.data;
       },
       '登录成功'
     );
@@ -112,21 +125,35 @@ export class UserHttpController extends BaseController {
   async register(@Body() registerDto: RegisterDto): Promise<ApiResponse<any>> {
     return this.safeExecute(
       async () => {
-        const result = await this.userGrpcController.register(
-          {
+        try {
+          // 调用 UserService 注册方法
+          const result = await this.userService.register({
             phone: registerDto.phone,
             username: registerDto.username,
             password: registerDto.password,
-            verificationCode: registerDto.verificationCode || '',
-          },
-          {} as any
-        );
-        
-        if (!result.success) {
-          throw new Error(result.message || '注册失败');
+            verificationCode: registerDto.verificationCode,
+          });
+          
+          // 返回用户信息和令牌
+          return {
+            user: {
+              phone: result.user.phone,
+              username: result.user.username,
+              isActive: result.user.isActive,
+              roles: result.user.userRoles?.map(ur => ({
+                id: ur.role.id,
+                name: ur.role.name,
+              })) || [],
+            },
+            token: result.token,
+            expiresIn: result.expiresIn,
+          };
+        } catch (error) {
+          if (error instanceof ConflictException) {
+            throw error;
+          }
+          throw new Error('注册失败: ' + error.message);
         }
-        
-        return result.data;
       },
       '注册成功'
     );
@@ -141,25 +168,40 @@ export class UserHttpController extends BaseController {
   @SwaggerApiResponse({ status: 200, description: '获取成功' })
   @SwaggerApiResponse({ status: 401, description: '未授权' })
   async getProfile(@Query('phone') phone: string): Promise<ApiResponse<any>> {
-    return this.safeExecute(
-      async () => {
-        // 临时实现：通过查询参数获取用户手机号
-        // TODO: 从认证用户信息创建 metadata
-        const metadata = this.createMetadataFromPhone(phone);
-        
-        const result = await this.userGrpcController.getProfile(
-          { phone },
-          metadata
-        );
-        
-        if (!result.success) {
-          throw new Error(result.message || '获取用户信息失败');
-        }
-        
-        return result.data;
-      },
-      '获取用户信息成功'
-    );
+    try {
+      // 临时实现：通过查询参数获取用户手机号
+      // TODO: 从 JWT 中获取用户信息
+      
+      // 获取用户信息
+      const user = await this.userService.getUserWithRoles(phone);
+      
+      // 转换为 HTTP 响应格式
+      const userData = {
+        phone: user.phone,
+        username: user.username,
+        isActive: user.isActive,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        roles: user.userRoles?.map(ur => ({
+          id: ur.role.id,
+          name: ur.role.name,
+                      permissions: ur.role.rolePermissions?.map(rp => ({
+              id: rp.permission.id,
+              name: rp.permission.name,
+              resource: rp.permission.resource,
+              action: rp.permission.action,
+          })) || [],
+        })) || [],
+      };
+      
+      return this.success(userData, '获取用户信息成功');
+    } catch (error) {
+      this.logger.error('获取用户信息失败', error);
+      if (error.entityType === '用户') {
+        return this.dataNotFound('用户', phone);
+      }
+      return this.serverError('获取用户信息失败', error);
+    }
   }
 
   /**
@@ -171,26 +213,34 @@ export class UserHttpController extends BaseController {
   @SwaggerApiResponse({ status: 200, description: '获取成功' })
   @SwaggerApiResponse({ status: 404, description: '用户不存在' })
   async getUser(@Param('phone') phone: string, @Query('currentUserPhone') currentUserPhone: string): Promise<ApiResponse<any>> {
-    return this.safeExecute(
-      async () => {
-        const metadata = this.createMetadataFromPhone(currentUserPhone);
-        
-        const result = await this.userGrpcController.getUser(
-          { phone },
-          metadata
-        );
-        
-        if (!result.success) {
-          if (result.code === 404) {
-            throw new NotFoundException('用户不存在');
-          }
-          throw new Error(result.message || '获取用户信息失败');
-        }
-        
-        return result.data;
-      },
-      '获取用户信息成功'
-    );
+    try {
+      // 验证当前用户权限
+      await this.userService.getUserWithRoles(currentUserPhone);
+      
+      // 获取目标用户信息
+      const user = await this.userService.getUserWithRoles(phone);
+      
+      // 转换为 HTTP 响应格式
+      const userData = {
+        phone: user.phone,
+        username: user.username,
+        isActive: user.isActive,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        roles: user.userRoles?.map(ur => ({
+          id: ur.role.id,
+          name: ur.role.name,
+        })) || [],
+      };
+      
+      return this.success(userData, '获取用户信息成功');
+    } catch (error) {
+      this.logger.error('获取用户信息失败', error);
+      if (error.entityType === '用户') {
+        return this.dataNotFound('用户', phone);
+      }
+      return this.serverError('获取用户信息失败', error);
+    }
   }
 
   /**
@@ -200,36 +250,42 @@ export class UserHttpController extends BaseController {
   @Get('list')
   @ApiOperation({ summary: '获取用户列表' })
   @SwaggerApiResponse({ status: 200, description: '获取成功' })
-  async getUsers(@Query() query: GetUsersQueryDto, @Query('currentUserPhone') currentUserPhone: string): Promise<ApiPaginatedResponse<any>> {
-    return this.safePaginatedExecute(
-      async () => {
-        const metadata = this.createMetadataFromPhone(currentUserPhone);
-        
-        const result = await this.userGrpcController.getUsers(
-          {
-            pagination: {
-              page: query.page || 1,
-              pageSize: query.pageSize || 10,
-            },
-            search: query.search,
-            isActive: query.isActive,
-          },
-          metadata
-        );
-        
-        if (!result.success) {
-          throw new Error(result.message || '获取用户列表失败');
-        }
-        
-        return {
-          data: result.data || [],
-          total: result.pagination?.total || 0
-        };
-      },
-      query.page || 1,
-      query.pageSize || 10,
-      '获取用户列表成功'
-    );
+  async getUsers(@Query() query: GetUsersQueryDto, @Query('currentUserPhone') currentUserPhone: string): Promise<ApiResponse<any>> {
+    try {
+      // 验证当前用户权限
+      await this.userService.getUserWithRoles(currentUserPhone);
+      
+      // 获取用户列表
+      const result = await this.userService.findAll({
+        page: query.page,
+        pageSize: query.pageSize,
+        search: query.search,
+        isActive: query.isActive
+      });
+      
+      // 转换用户列表为 HTTP 响应格式
+      const users = result.data.map(user => ({
+        phone: user.phone,
+        username: user.username,
+        isActive: user.isActive,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        roles: user.userRoles?.map(ur => ({
+          id: ur.role.id,
+          name: ur.role.name,
+        })) || [],
+      }));
+      
+      // 返回成功响应
+      return this.success({
+        users,
+        pagination: result.pagination
+      }, '获取用户列表成功');
+    } catch (error) {
+      // 处理错误
+      this.logger.error('获取用户列表失败', error);
+      return this.serverError('获取用户列表失败', error);
+    }
   }
 
   /**
@@ -243,23 +299,41 @@ export class UserHttpController extends BaseController {
   async createUser(@Body() createUserDto: CreateUserDto, @Query('currentUserPhone') currentUserPhone: string): Promise<ApiResponse<any>> {
     return this.safeExecute(
       async () => {
-        const metadata = this.createMetadataFromPhone(currentUserPhone);
+        // 验证当前用户权限
+        await this.userService.getUserWithRoles(currentUserPhone);
         
-        const result = await this.userGrpcController.createUser(
-          {
-            phone: createUserDto.phone,
-            username: createUserDto.username,
-            password: createUserDto.password,
-            roleIds: createUserDto.roleIds || [],
-          },
-          metadata
-        );
+        // 准备用户数据
+        const userData = {
+          phone: createUserDto.phone,
+          username: createUserDto.username,
+          password: createUserDto.password,
+          isActive: true,
+        };
         
-        if (!result.success) {
-          throw new Error(result.message || '创建用户失败');
+        // 如果有角色ID，添加角色关联
+        if (createUserDto.roleIds && createUserDto.roleIds.length > 0) {
+          userData['userRoles'] = {
+            create: createUserDto.roleIds.map(roleId => ({
+              role: { connect: { id: roleId } }
+            }))
+          };
         }
         
-        return result.data;
+        // 创建用户
+        const user = await this.userService.create(userData);
+        
+        // 转换为 HTTP 响应格式
+        return {
+          phone: user.phone,
+          username: user.username,
+          isActive: user.isActive,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          roles: user.userRoles?.map(ur => ({
+            id: ur.role.id,
+            name: ur.role.name,
+          })) || [],
+        };
       },
       '创建用户成功'
     );
@@ -280,26 +354,46 @@ export class UserHttpController extends BaseController {
   ): Promise<ApiResponse<any>> {
     return this.safeExecute(
       async () => {
-        const metadata = this.createMetadataFromPhone(currentUserPhone);
+        // 验证当前用户权限
+        await this.userService.getUserWithRoles(currentUserPhone);
         
-        const result = await this.userGrpcController.updateUser(
-          {
-            phone,
-            username: updateUserDto.username,
-            isActive: updateUserDto.isActive,
-            roleIds: updateUserDto.roleIds || [],
-          },
-          metadata
-        );
+        // 准备更新数据
+        const updateData: any = {};
         
-        if (!result.success) {
-          if (result.code === 404) {
-            throw new NotFoundException('用户不存在');
-          }
-          throw new Error(result.message || '更新用户失败');
+        if (updateUserDto.username !== undefined) {
+          updateData.username = updateUserDto.username;
         }
         
-        return result.data;
+        if (updateUserDto.isActive !== undefined) {
+          updateData.isActive = updateUserDto.isActive;
+        }
+        
+        // 如果有角色ID，更新角色关联
+        if (updateUserDto.roleIds && updateUserDto.roleIds.length > 0) {
+          // 先删除现有角色关联，然后创建新的
+          updateData.userRoles = {
+            deleteMany: {},
+            create: updateUserDto.roleIds.map(roleId => ({
+              role: { connect: { id: roleId } }
+            }))
+          };
+        }
+        
+        // 更新用户
+        const user = await this.userService.update(phone, updateData);
+        
+        // 转换为 HTTP 响应格式
+        return {
+          phone: user.phone,
+          username: user.username,
+          isActive: user.isActive,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          roles: user.userRoles?.map(ur => ({
+            id: ur.role.id,
+            name: ur.role.name,
+          })) || [],
+        };
       },
       '更新用户成功'
     );
@@ -316,19 +410,11 @@ export class UserHttpController extends BaseController {
   async deleteUser(@Param('phone') phone: string, @Query('currentUserPhone') currentUserPhone: string): Promise<ApiResponse<null>> {
     return this.safeExecute(
       async () => {
-        const metadata = this.createMetadataFromPhone(currentUserPhone);
+        // 验证当前用户权限
+        await this.userService.getUserWithRoles(currentUserPhone);
         
-        const result = await this.userGrpcController.deleteUser(
-          { phone },
-          metadata
-        );
-        
-        if (!result.success) {
-          if (result.code === 404) {
-            throw new NotFoundException('用户不存在');
-          }
-          throw new Error(result.message || '删除用户失败');
-        }
+        // 删除用户
+        await this.userService.remove(phone);
         
         return null;
       },
@@ -346,44 +432,32 @@ export class UserHttpController extends BaseController {
   async createSuperAdmin(@Body() createSuperAdminDto: CreateSuperAdminDto): Promise<ApiResponse<any>> {
     return this.safeExecute(
       async () => {
-        const result = await this.userGrpcController.createSuperAdmin(
-          {
-            phone: createSuperAdminDto.phone,
-            username: createSuperAdminDto.username,
-            password: createSuperAdminDto.password,
-            adminKey: createSuperAdminDto.adminKey,
+        // 创建超级管理员
+        const result = await this.userService.createSuperAdmin({
+          phone: createSuperAdminDto.phone,
+          username: createSuperAdminDto.username,
+          password: createSuperAdminDto.password,
+          adminKey: createSuperAdminDto.adminKey,
+        });
+        
+        // 转换为 HTTP 响应格式
+        return {
+          user: {
+            phone: result.user.phone,
+            username: result.user.username,
+            isActive: result.user.isActive,
+            roles: result.user.userRoles?.map(ur => ({
+              id: ur.role.id,
+              name: ur.role.name,
+            })) || [],
           },
-          {} as any
-        );
-        
-        if (!result.success) {
-          throw new Error(result.message || '创建超级管理员失败');
-        }
-        
-        return result.data;
+          token: result.token,
+          expiresIn: result.expiresIn,
+        };
       },
       '创建超级管理员成功'
     );
   }
 
-  /**
-   * 从手机号创建 gRPC metadata
-   * TODO: 完善 metadata 创建逻辑
-   */
-  private createMetadataFromPhone(phone: string): any {
-    // 这里需要根据实际的 gRPC metadata 格式来实现
-    // 可能包含用户认证信息、请求ID等
-    const metadata = {
-      user: {
-        phone: phone,
-        username: 'temp-user',
-      },
-      headers: {
-        'user-phone': phone,
-        'authorization': 'Bearer temp-token', // 临时token
-      },
-    };
-
-    return metadata;
-  }
+  // 删除 createMetadataFromPhone 方法，因为不再需要调用 gRPC 控制器
 } 

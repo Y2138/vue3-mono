@@ -142,6 +142,7 @@ export abstract class BaseController {
 
   /**
    * 创建资源未找到错误响应
+   * 仅用于表示路由或API端点不存在的情况
    * @param resource 资源名称
    * @returns 资源未找到错误响应
    */
@@ -155,6 +156,29 @@ export abstract class BaseController {
     return {
       success: false,
       code: RESPONSE_CODES.NOT_FOUND,
+      message,
+      data: null,
+      error
+    };
+  }
+  
+  /**
+   * 创建数据不存在错误响应
+   * 用于表示数据库中的记录不存在，如用户、角色等
+   * @param entityType 实体类型名称（如：用户、角色、权限等）
+   * @param identifier 标识符（如：ID、名称、手机号等）
+   * @returns 数据不存在错误响应
+   */
+  protected dataNotFound(entityType: string, identifier: string | number): ApiErrorResponse {
+    const message = `${entityType} ${identifier} 不存在`;
+    const error: ErrorInfo = {
+      type: ERROR_TYPES.DATA_ERROR,
+      details: { entityType, identifier }
+    };
+
+    return {
+      success: false,
+      code: RESPONSE_CODES.BAD_REQUEST,
       message,
       data: null,
       error
@@ -290,8 +314,17 @@ export abstract class BaseController {
    */
   private handleOperationError(error: any): ApiErrorResponse {
     // 根据错误类型返回不同的错误响应
-    if (error.status === 404 || error.message?.includes('not found')) {
-      return this.notFound(error.resource || '资源');
+    if (error.status === 404) {
+      // 判断是资源不存在还是数据不存在
+      if (error.entityType && error.identifier) {
+        return this.dataNotFound(error.entityType, error.identifier);
+      } else if (error.message?.includes('不存在') && error.message?.includes('用户')) {
+        // 如果是用户不存在的错误，则使用数据错误
+        return this.dataNotFound('用户', error.resource || '');
+      } else {
+        // 其他资源不存在的错误
+        return this.notFound(error.resource || '资源');
+      }
     }
     
     if (error.status === 403 || error.message?.includes('forbidden')) {
@@ -300,6 +333,11 @@ export abstract class BaseController {
     
     if (error.status === 400 || error.message?.includes('validation')) {
       return this.validationError(error.message, error.errors);
+    }
+    
+    // 检查是否是 NotFoundException 实例，但实际上是数据错误
+    if (error.name === 'NotFoundException' && error.message?.includes('用户')) {
+      return this.dataNotFound('用户', error.message.replace(/.*\s([^\s]+)\s不存在.*/, '$1'));
     }
     
     // 默认返回服务器错误

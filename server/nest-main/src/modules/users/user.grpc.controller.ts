@@ -16,7 +16,7 @@ import {
 import { ResponseStatus } from '../../shared/common';
 import { BaseGrpcService } from '../../common/grpc/base-grpc.service';
 import { UserTransformer } from '../../common/transformers/user.transformer';
-import { AuthService } from './auth.service';
+import { UserService } from './user.service';
 
 /**
  * 用户服务 gRPC Controller
@@ -24,7 +24,7 @@ import { AuthService } from './auth.service';
  */
 @Controller()
 export class UserGrpcController extends BaseGrpcService {
-  constructor(private readonly authService: AuthService) {
+  constructor(private readonly userService: UserService) {
     super('UserGrpcController');
   }
 
@@ -40,7 +40,7 @@ export class UserGrpcController extends BaseGrpcService {
       this.validatePhone(request.phone);
 
       // 调用业务服务
-      const result = await this.authService.login({
+      const result = await this.userService.login({
         phone: request.phone,
         password: request.password,
       });
@@ -66,10 +66,11 @@ export class UserGrpcController extends BaseGrpcService {
       this.validatePhone(request.phone);
 
       // 调用业务服务
-      const result = await this.authService.register({
+      const result = await this.userService.register({
         phone: request.phone,
         username: request.username,
         password: request.password,
+        verificationCode: request.verificationCode,
       });
 
       // 转换响应数据
@@ -89,8 +90,8 @@ export class UserGrpcController extends BaseGrpcService {
       // 从元数据中提取认证用户信息
       const authUser = this.extractAuthUser(metadata);
       
-      // 验证用户身份
-      const user = await this.authService.validateUser(authUser.userPhone);
+      // 获取用户信息
+      const user = await this.userService.getUserWithRoles(authUser.userPhone);
       
       // 转换响应数据
       return UserTransformer.toProtobuf(user);
@@ -109,10 +110,10 @@ export class UserGrpcController extends BaseGrpcService {
 
       // 验证调用者权限
       const authUser = this.extractAuthUser(metadata);
-      await this.authService.validateUser(authUser.userPhone);
+      await this.userService.getUserWithRoles(authUser.userPhone);
 
       // 获取目标用户
-      const user = await this.authService.validateUser(request.phone);
+      const user = await this.userService.getUserWithRoles(request.phone);
       
       // 转换响应数据
       return UserTransformer.toProtobuf(user);
@@ -127,19 +128,24 @@ export class UserGrpcController extends BaseGrpcService {
     return this.executeGrpcMethod('GetUsers', metadata, async () => {
       // 验证调用者权限
       const authUser = this.extractAuthUser(metadata);
-      await this.authService.validateUser(authUser.userPhone);
+      await this.userService.getUserWithRoles(authUser.userPhone);
 
-      // TODO: 需要在 AuthService 中实现 getUserList 方法
-      // 这里临时返回空列表
-      this.logger.warn('GetUsers method not fully implemented - getUserList method needed in AuthService');
+      // 获取用户列表
+      const result = await this.userService.findAll({
+        page: request.pagination?.page,
+        pageSize: request.pagination?.pageSize,
+        search: request.search,
+        isActive: request.isActive
+      });
       
+      // 转换响应数据
       return {
-        users: [],
+        users: UserTransformer.toProtobufList(result.data),
         pagination: {
-          page: request.pagination?.page || 1,
-          pageSize: request.pagination?.pageSize || 10,
-          total: 0,
-          totalPages: 0,
+          page: result.pagination.page,
+          pageSize: result.pagination.pageSize,
+          total: result.pagination.total,
+          totalPages: result.pagination.totalPages,
         },
       };
     });
@@ -159,19 +165,27 @@ export class UserGrpcController extends BaseGrpcService {
 
       // 验证调用者权限
       const authUser = this.extractAuthUser(metadata);
-      await this.authService.validateUser(authUser.userPhone);
+      await this.userService.getUserWithRoles(authUser.userPhone);
 
-      // TODO: 需要在 AuthService 中实现 createUser 方法
-      this.logger.warn('CreateUser method not fully implemented - createUser method needed in AuthService');
-      
-      // 临时使用 register 方法
-      const result = await this.authService.register({
+      // 创建用户
+      const userData = {
         phone: request.phone,
         username: request.username,
         password: request.password,
-      });
-
-      return UserTransformer.toProtobuf(result.user);
+        isActive: true,
+      };
+      
+      // 如果有角色ID，添加角色关联
+      if (request.roleIds && request.roleIds.length > 0) {
+        userData['userRoles'] = {
+          create: request.roleIds.map(roleId => ({
+            role: { connect: { id: roleId } }
+          }))
+        };
+      }
+      
+      const user = await this.userService.create(userData);
+      return UserTransformer.toProtobuf(user);
     });
   }
 
@@ -187,13 +201,32 @@ export class UserGrpcController extends BaseGrpcService {
 
       // 验证调用者权限
       const authUser = this.extractAuthUser(metadata);
-      await this.authService.validateUser(authUser.userPhone);
+      await this.userService.getUserWithRoles(authUser.userPhone);
 
-      // TODO: 需要在 AuthService 中实现 updateUser 方法
-      this.logger.warn('UpdateUser method not fully implemented - updateUser method needed in AuthService');
+      // 准备更新数据
+      const updateData: any = {};
       
-      // 临时返回当前用户信息
-      const user = await this.authService.validateUser(request.phone);
+      if (request.username !== undefined) {
+        updateData.username = request.username;
+      }
+      
+      if (request.isActive !== undefined) {
+        updateData.isActive = request.isActive;
+      }
+      
+      // 如果有角色ID，更新角色关联
+      if (request.roleIds && request.roleIds.length > 0) {
+        // 先删除现有角色关联，然后创建新的
+        updateData.userRoles = {
+          deleteMany: {},
+          create: request.roleIds.map(roleId => ({
+            role: { connect: { id: roleId } }
+          }))
+        };
+      }
+      
+      // 更新用户
+      const user = await this.userService.update(request.phone, updateData);
       return UserTransformer.toProtobuf(user);
     });
   }
@@ -210,15 +243,15 @@ export class UserGrpcController extends BaseGrpcService {
 
       // 验证调用者权限
       const authUser = this.extractAuthUser(metadata);
-      await this.authService.validateUser(authUser.userPhone);
+      await this.userService.getUserWithRoles(authUser.userPhone);
 
-      // TODO: 需要在 AuthService 中实现 deleteUser 方法
-      this.logger.warn('DeleteUser method not fully implemented - deleteUser method needed in AuthService');
+      // 删除用户
+      await this.userService.remove(request.phone);
       
       return {
         success: true,
-        message: 'User deletion not implemented yet',
-        code: 0,
+        message: '用户删除成功',
+        code: 200,
       };
     });
   }
@@ -236,17 +269,12 @@ export class UserGrpcController extends BaseGrpcService {
       this.validateRequired(request.adminKey, 'adminKey');
       this.validatePhone(request.phone);
 
-      // 验证管理员密钥
-      const expectedAdminKey = process.env.ADMIN_KEY || 'super-admin-key';
-      if (request.adminKey !== expectedAdminKey) {
-        throw new Error('Invalid admin key');
-      }
-
       // 调用业务服务
-      const result = await this.authService.createSuperAdmin({
+      const result = await this.userService.createSuperAdmin({
         phone: request.phone,
         username: request.username,
         password: request.password,
+        adminKey: request.adminKey
       });
 
       // 转换响应数据

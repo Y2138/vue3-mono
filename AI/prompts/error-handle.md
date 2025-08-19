@@ -20,3 +20,8 @@
 
 # C1
 1. 不应当在 http controller 中直接使用 grpc controller 中的内容，如果逻辑相似，可以将逻辑提取到 service 中，grpc 和 http 控制器都使用该 service 提供数据，而后续对响应数据的处理逻辑要区分开来
+
+
+# 其他改进
+1. 我希望 http 响应的 data 的数据类型也跟 proto 定义的一致，现在http 控制器中定义的返回值都是 any；
+2. 对于 http 请求只使用 get 和 post 两种，get 用于获取数据，post 用于变更数据
