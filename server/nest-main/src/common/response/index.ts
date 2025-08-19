@@ -1,47 +1,22 @@
-// 响应类型定义导出
-export {
-  UnifiedStatusCode,
-  GrpcToHttpStatusMap,
-  DefaultResponseMessages,
-  HttpMethodMessages,
-  ResponseType,
-  type UnifiedResponse,
-  type PaginatedResponse,
-  type ErrorResponse,
-  type ValidationError,
-  type ResponseBuilderOptions,
-  type ResponseFormatterConfig,
-} from './response-types';
-
-// 响应格式化器导出
-export {
-  ResponseFormatter,
-  createResponseFormatter,
-  defaultResponseFormatter,
-} from './response-formatter';
+// 导出响应类型定义
+export * from './types';
 
 // 响应拦截器导出
-export {
-  ResponseInterceptor,
-  createResponseInterceptor,
-  createResponseInterceptorWithConfig,
-} from './response-interceptor';
+export { ResponseInterceptor } from '../interceptors/response-interceptor';
+
+// 基础控制器导出
+export { BaseController } from '../controllers/base.controller';
+
+// 响应构建器导出
+export { ResponseBuilder, type ResponseBuilderChain } from './response-builder';
 
 // 响应模块聚合对象
-import { 
-  ResponseFormatter, 
-  defaultResponseFormatter,
-  createResponseFormatter 
-} from './response-formatter';
-import { 
-  ResponseInterceptor, 
-  createResponseInterceptor 
-} from './response-interceptor';
+import { ResponseInterceptor } from '../interceptors/response-interceptor';
+import { BaseController } from '../controllers/base.controller';
+import { ResponseBuilder } from './response-builder';
 
 export const ResponseModule = {
-  Formatter: ResponseFormatter,
-  Interceptor: ResponseInterceptor,
-  createFormatter: createResponseFormatter,
-  createInterceptor: createResponseInterceptor,
-  defaultFormatter: defaultResponseFormatter,
+  ResponseInterceptor,
+  BaseController,
+  ResponseBuilder,
 }; 

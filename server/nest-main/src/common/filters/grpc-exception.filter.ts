@@ -3,6 +3,7 @@ import { RpcException } from '@nestjs/microservices';
 import { Observable, throwError } from 'rxjs';
 import { status } from '@grpc/grpc-js';
 import { GrpcException, mapNestExceptionToGrpc } from '../grpc/grpc-exceptions';
+import { ERROR_TYPES } from '../response/types';
 
 /**
  * gRPC 异常过滤器
@@ -30,7 +31,7 @@ export class GrpcExceptionFilter implements ExceptionFilter {
     this.logException(exception, requestId, data);
 
     // 转换异常为 gRPC 错误格式
-    const grpcError = this.convertToGrpcError(exception);
+    const grpcError = this.convertToGrpcError(exception, requestId);
     
     // 记录转换后的错误响应
     this.logger.warn(
@@ -66,7 +67,7 @@ export class GrpcExceptionFilter implements ExceptionFilter {
   /**
    * 转换异常为 gRPC 错误格式
    */
-  private convertToGrpcError(exception: any): any {
+  private convertToGrpcError(exception: any, requestId: string): any {
     // 如果已经是 RpcException，提取其错误信息
     if (exception instanceof RpcException) {
       const error = exception.getError();
@@ -89,22 +90,48 @@ export class GrpcExceptionFilter implements ExceptionFilter {
     // 使用映射函数处理 NestJS 异常
     const mappedError = mapNestExceptionToGrpc(exception);
     
-    // 增强错误信息（在开发环境）
-    if (process.env.NODE_ENV === 'development') {
-      mappedError.details = {
-        ...mappedError.details,
-        originalError: exception.constructor?.name,
+    // 确定错误类型
+    const errorType = this.getErrorType(exception);
+    
+    // 增强错误信息
+    mappedError.details = {
+      ...(typeof mappedError.details === 'object' ? mappedError.details : {}),
+      type: errorType,
+      ...(process.env.NODE_ENV !== 'production' && {
+        requestId,
         timestamp: new Date().toISOString(),
-      };
-    }
+        originalError: exception.constructor?.name,
+        stack: exception.stack,
+      }),
+    };
 
     return mappedError;
+  }
+
+  /**
+   * 获取错误类型
+   */
+  private getErrorType(exception: any): string {
+    // 根据异常名称推断类型
+    const errorName = exception.constructor?.name || '';
+    
+    if (errorName.includes('Validation') || errorName.includes('BadRequest')) {
+      return ERROR_TYPES.VALIDATION;
+    } else if (errorName.includes('Unauthorized') || errorName.includes('Auth')) {
+      return ERROR_TYPES.AUTHENTICATION;
+    } else if (errorName.includes('Forbidden') || errorName.includes('Permission')) {
+      return ERROR_TYPES.AUTHORIZATION;
+    } else if (errorName.includes('NotFound')) {
+      return ERROR_TYPES.NOT_FOUND;
+    }
+    
+    return ERROR_TYPES.INTERNAL;
   }
 
   /**
    * 生成请求 ID
    */
   private generateRequestId(): string {
-    return Math.random().toString(36).substring(2, 15);
+    return `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
   }
 } 

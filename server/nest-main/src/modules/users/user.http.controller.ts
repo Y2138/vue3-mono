@@ -1,6 +1,8 @@
-import { Controller, Post, Get, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Post, Get, Put, Delete, Body, Param, Query, HttpCode, HttpStatus, NotFoundException } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse as SwaggerApiResponse } from '@nestjs/swagger';
 import { UserGrpcController } from './user.grpc.controller';
+import { BaseController } from '../../common/controllers/base.controller';
+import { ApiResponse, ApiPaginatedResponse } from '../../common/response/types';
 
 /**
  * 登录请求 DTO
@@ -65,8 +67,10 @@ export class GetUsersQueryDto {
  */
 @ApiTags('用户管理')
 @Controller('users')
-export class UserHttpController {
-  constructor(private readonly userGrpcController: UserGrpcController) {}
+export class UserHttpController extends BaseController {
+  constructor(private readonly userGrpcController: UserGrpcController) {
+    super(UserHttpController.name);
+  }
 
   /**
    * 用户登录
@@ -74,16 +78,27 @@ export class UserHttpController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '用户登录' })
-  @ApiResponse({ status: 200, description: '登录成功' })
-  @ApiResponse({ status: 401, description: '手机号或密码错误' })
-  async login(@Body() loginDto: LoginDto) {
-    // 复用 gRPC Controller 的逻辑
-    return this.userGrpcController.login(
-      {
-        phone: loginDto.phone,
-        password: loginDto.password,
+  @SwaggerApiResponse({ status: 200, description: '登录成功' })
+  @SwaggerApiResponse({ status: 401, description: '手机号或密码错误' })
+  async login(@Body() loginDto: LoginDto): Promise<ApiResponse<any>> {
+    return this.safeExecute(
+      async () => {
+        // 复用 gRPC Controller 的逻辑
+        const result = await this.userGrpcController.login(
+          {
+            phone: loginDto.phone,
+            password: loginDto.password,
+          },
+          {} as any // 创建空的 metadata，实际项目中可能需要从 HTTP headers 转换
+        );
+        
+        if (!result.success) {
+          throw new Error(result.message || '登录失败');
+        }
+        
+        return result.data;
       },
-      {} as any // 创建空的 metadata，实际项目中可能需要从 HTTP headers 转换
+      '登录成功'
     );
   }
 
@@ -92,17 +107,28 @@ export class UserHttpController {
    */
   @Post('register')
   @ApiOperation({ summary: '用户注册' })
-  @ApiResponse({ status: 201, description: '注册成功' })
-  @ApiResponse({ status: 409, description: '手机号已被注册' })
-  async register(@Body() registerDto: RegisterDto) {
-    return this.userGrpcController.register(
-      {
-        phone: registerDto.phone,
-        username: registerDto.username,
-        password: registerDto.password,
-        verificationCode: registerDto.verificationCode || '',
+  @SwaggerApiResponse({ status: 201, description: '注册成功' })
+  @SwaggerApiResponse({ status: 409, description: '手机号已被注册' })
+  async register(@Body() registerDto: RegisterDto): Promise<ApiResponse<any>> {
+    return this.safeExecute(
+      async () => {
+        const result = await this.userGrpcController.register(
+          {
+            phone: registerDto.phone,
+            username: registerDto.username,
+            password: registerDto.password,
+            verificationCode: registerDto.verificationCode || '',
+          },
+          {} as any
+        );
+        
+        if (!result.success) {
+          throw new Error(result.message || '注册失败');
+        }
+        
+        return result.data;
       },
-      {} as any
+      '注册成功'
     );
   }
 
@@ -112,16 +138,27 @@ export class UserHttpController {
    */
   @Get('profile')
   @ApiOperation({ summary: '获取当前用户信息' })
-  @ApiResponse({ status: 200, description: '获取成功' })
-  @ApiResponse({ status: 401, description: '未授权' })
-  async getProfile(@Query('phone') phone: string) {
-    // 临时实现：通过查询参数获取用户手机号
-    // TODO: 从认证用户信息创建 metadata
-    const metadata = this.createMetadataFromPhone(phone);
-    
-    return this.userGrpcController.getProfile(
-      { phone },
-      metadata
+  @SwaggerApiResponse({ status: 200, description: '获取成功' })
+  @SwaggerApiResponse({ status: 401, description: '未授权' })
+  async getProfile(@Query('phone') phone: string): Promise<ApiResponse<any>> {
+    return this.safeExecute(
+      async () => {
+        // 临时实现：通过查询参数获取用户手机号
+        // TODO: 从认证用户信息创建 metadata
+        const metadata = this.createMetadataFromPhone(phone);
+        
+        const result = await this.userGrpcController.getProfile(
+          { phone },
+          metadata
+        );
+        
+        if (!result.success) {
+          throw new Error(result.message || '获取用户信息失败');
+        }
+        
+        return result.data;
+      },
+      '获取用户信息成功'
     );
   }
 
@@ -131,14 +168,28 @@ export class UserHttpController {
    */
   @Get('user/:phone')
   @ApiOperation({ summary: '获取指定用户信息' })
-  @ApiResponse({ status: 200, description: '获取成功' })
-  @ApiResponse({ status: 404, description: '用户不存在' })
-  async getUser(@Param('phone') phone: string, @Query('currentUserPhone') currentUserPhone: string) {
-    const metadata = this.createMetadataFromPhone(currentUserPhone);
-    
-    return this.userGrpcController.getUser(
-      { phone },
-      metadata
+  @SwaggerApiResponse({ status: 200, description: '获取成功' })
+  @SwaggerApiResponse({ status: 404, description: '用户不存在' })
+  async getUser(@Param('phone') phone: string, @Query('currentUserPhone') currentUserPhone: string): Promise<ApiResponse<any>> {
+    return this.safeExecute(
+      async () => {
+        const metadata = this.createMetadataFromPhone(currentUserPhone);
+        
+        const result = await this.userGrpcController.getUser(
+          { phone },
+          metadata
+        );
+        
+        if (!result.success) {
+          if (result.code === 404) {
+            throw new NotFoundException('用户不存在');
+          }
+          throw new Error(result.message || '获取用户信息失败');
+        }
+        
+        return result.data;
+      },
+      '获取用户信息成功'
     );
   }
 
@@ -148,20 +199,36 @@ export class UserHttpController {
    */
   @Get('list')
   @ApiOperation({ summary: '获取用户列表' })
-  @ApiResponse({ status: 200, description: '获取成功' })
-  async getUsers(@Query() query: GetUsersQueryDto, @Query('currentUserPhone') currentUserPhone: string) {
-    const metadata = this.createMetadataFromPhone(currentUserPhone);
-    
-    return this.userGrpcController.getUsers(
-      {
-        pagination: {
-          page: query.page || 1,
-          pageSize: query.pageSize || 10,
-        },
-        search: query.search,
-        isActive: query.isActive,
+  @SwaggerApiResponse({ status: 200, description: '获取成功' })
+  async getUsers(@Query() query: GetUsersQueryDto, @Query('currentUserPhone') currentUserPhone: string): Promise<ApiPaginatedResponse<any>> {
+    return this.safePaginatedExecute(
+      async () => {
+        const metadata = this.createMetadataFromPhone(currentUserPhone);
+        
+        const result = await this.userGrpcController.getUsers(
+          {
+            pagination: {
+              page: query.page || 1,
+              pageSize: query.pageSize || 10,
+            },
+            search: query.search,
+            isActive: query.isActive,
+          },
+          metadata
+        );
+        
+        if (!result.success) {
+          throw new Error(result.message || '获取用户列表失败');
+        }
+        
+        return {
+          data: result.data || [],
+          total: result.pagination?.total || 0
+        };
       },
-      metadata
+      query.page || 1,
+      query.pageSize || 10,
+      '获取用户列表成功'
     );
   }
 
@@ -171,19 +238,30 @@ export class UserHttpController {
    */
   @Post('create')
   @ApiOperation({ summary: '创建用户' })
-  @ApiResponse({ status: 201, description: '创建成功' })
-  @ApiResponse({ status: 409, description: '手机号已被注册' })
-  async createUser(@Body() createUserDto: CreateUserDto, @Query('currentUserPhone') currentUserPhone: string) {
-    const metadata = this.createMetadataFromPhone(currentUserPhone);
-    
-    return this.userGrpcController.createUser(
-      {
-        phone: createUserDto.phone,
-        username: createUserDto.username,
-        password: createUserDto.password,
-        roleIds: createUserDto.roleIds || [],
+  @SwaggerApiResponse({ status: 201, description: '创建成功' })
+  @SwaggerApiResponse({ status: 409, description: '手机号已被注册' })
+  async createUser(@Body() createUserDto: CreateUserDto, @Query('currentUserPhone') currentUserPhone: string): Promise<ApiResponse<any>> {
+    return this.safeExecute(
+      async () => {
+        const metadata = this.createMetadataFromPhone(currentUserPhone);
+        
+        const result = await this.userGrpcController.createUser(
+          {
+            phone: createUserDto.phone,
+            username: createUserDto.username,
+            password: createUserDto.password,
+            roleIds: createUserDto.roleIds || [],
+          },
+          metadata
+        );
+        
+        if (!result.success) {
+          throw new Error(result.message || '创建用户失败');
+        }
+        
+        return result.data;
       },
-      metadata
+      '创建用户成功'
     );
   }
 
@@ -193,23 +271,37 @@ export class UserHttpController {
    */
   @Put('update/:phone')
   @ApiOperation({ summary: '更新用户' })
-  @ApiResponse({ status: 200, description: '更新成功' })
-  @ApiResponse({ status: 404, description: '用户不存在' })
+  @SwaggerApiResponse({ status: 200, description: '更新成功' })
+  @SwaggerApiResponse({ status: 404, description: '用户不存在' })
   async updateUser(
     @Param('phone') phone: string,
     @Body() updateUserDto: UpdateUserDto,
     @Query('currentUserPhone') currentUserPhone: string
-  ) {
-    const metadata = this.createMetadataFromPhone(currentUserPhone);
-    
-    return this.userGrpcController.updateUser(
-      {
-        phone,
-        username: updateUserDto.username,
-        isActive: updateUserDto.isActive,
-        roleIds: updateUserDto.roleIds || [],
+  ): Promise<ApiResponse<any>> {
+    return this.safeExecute(
+      async () => {
+        const metadata = this.createMetadataFromPhone(currentUserPhone);
+        
+        const result = await this.userGrpcController.updateUser(
+          {
+            phone,
+            username: updateUserDto.username,
+            isActive: updateUserDto.isActive,
+            roleIds: updateUserDto.roleIds || [],
+          },
+          metadata
+        );
+        
+        if (!result.success) {
+          if (result.code === 404) {
+            throw new NotFoundException('用户不存在');
+          }
+          throw new Error(result.message || '更新用户失败');
+        }
+        
+        return result.data;
       },
-      metadata
+      '更新用户成功'
     );
   }
 
@@ -219,14 +311,28 @@ export class UserHttpController {
    */
   @Delete('delete/:phone')
   @ApiOperation({ summary: '删除用户' })
-  @ApiResponse({ status: 200, description: '删除成功' })
-  @ApiResponse({ status: 404, description: '用户不存在' })
-  async deleteUser(@Param('phone') phone: string, @Query('currentUserPhone') currentUserPhone: string) {
-    const metadata = this.createMetadataFromPhone(currentUserPhone);
-    
-    return this.userGrpcController.deleteUser(
-      { phone },
-      metadata
+  @SwaggerApiResponse({ status: 200, description: '删除成功' })
+  @SwaggerApiResponse({ status: 404, description: '用户不存在' })
+  async deleteUser(@Param('phone') phone: string, @Query('currentUserPhone') currentUserPhone: string): Promise<ApiResponse<null>> {
+    return this.safeExecute(
+      async () => {
+        const metadata = this.createMetadataFromPhone(currentUserPhone);
+        
+        const result = await this.userGrpcController.deleteUser(
+          { phone },
+          metadata
+        );
+        
+        if (!result.success) {
+          if (result.code === 404) {
+            throw new NotFoundException('用户不存在');
+          }
+          throw new Error(result.message || '删除用户失败');
+        }
+        
+        return null;
+      },
+      '删除用户成功'
     );
   }
 
@@ -235,17 +341,28 @@ export class UserHttpController {
    */
   @Post('super-admin')
   @ApiOperation({ summary: '创建超级管理员' })
-  @ApiResponse({ status: 201, description: '创建成功' })
-  @ApiResponse({ status: 400, description: '管理员密钥错误' })
-  async createSuperAdmin(@Body() createSuperAdminDto: CreateSuperAdminDto) {
-    return this.userGrpcController.createSuperAdmin(
-      {
-        phone: createSuperAdminDto.phone,
-        username: createSuperAdminDto.username,
-        password: createSuperAdminDto.password,
-        adminKey: createSuperAdminDto.adminKey,
+  @SwaggerApiResponse({ status: 201, description: '创建成功' })
+  @SwaggerApiResponse({ status: 400, description: '管理员密钥错误' })
+  async createSuperAdmin(@Body() createSuperAdminDto: CreateSuperAdminDto): Promise<ApiResponse<any>> {
+    return this.safeExecute(
+      async () => {
+        const result = await this.userGrpcController.createSuperAdmin(
+          {
+            phone: createSuperAdminDto.phone,
+            username: createSuperAdminDto.username,
+            password: createSuperAdminDto.password,
+            adminKey: createSuperAdminDto.adminKey,
+          },
+          {} as any
+        );
+        
+        if (!result.success) {
+          throw new Error(result.message || '创建超级管理员失败');
+        }
+        
+        return result.data;
       },
-      {} as any
+      '创建超级管理员成功'
     );
   }
 

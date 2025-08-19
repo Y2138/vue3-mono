@@ -96,12 +96,24 @@ server/nest-main/
 
 | 层级 | 职责 | 主要组件 |
 |------|------|----------|
-| **Controller** | 请求路由、参数验证、响应格式化 | HTTP/gRPC Controllers |
+| **Controller** | 请求路由、参数验证、响应格式化 | HTTP/gRPC Controllers, BaseController |
 | **Service** | 业务逻辑、数据处理、事务管理 | Business Services |
 | **Transformer** | 数据格式转换、类型映射 | Entity ↔ Proto |
 | **Guard** | 认证授权、权限验证 | Auth/Permission Guards |
-| **Interceptor** | 日志记录、性能监控、异常处理 | Logging/Monitoring |
+| **Interceptor** | 日志记录、性能监控 | ResponseInterceptor |
 | **Middleware** | 协议检测、安全防护 | Protocol Detection |
+
+### 响应处理架构
+
+项目采用响应拦截器 + BaseController + 异常过滤器的模式进行响应处理：
+
+- **ResponseInterceptor**：负责日志记录和性能监控
+- **BaseController**：提供统一的响应方法，如 `success`、`paginated`、`notFound` 等
+- **异常过滤器**：专门处理异常，转换为统一的错误响应格式
+- **响应构建器**：支持链式调用，用于特殊场景
+- **协议分离**：HTTP 和 gRPC 各自保持其最适合的响应格式
+
+详细设计请参考 [响应处理架构](./docs/response-architecture.md)。
 
 ## 🔄 HTTP + gRPC 混合模式
 
@@ -171,19 +183,48 @@ export class YourFeatureService {
 ```typescript
 // HTTP Controller
 @Controller('your-features')
-export class YourFeatureHttpController {
+export class YourFeatureHttpController extends BaseController {
+  constructor(private readonly service: YourFeatureService) {
+    super(YourFeatureHttpController.name);
+  }
+  
   @Post()
-  async create(@Body() data: CreateYourFeatureDto) {
-    return this.service.create(data);
+  async create(@Body() data: CreateYourFeatureDto): Promise<ApiResponse<YourFeature>> {
+    return this.safeExecute(
+      () => this.service.create(data),
+      '创建成功'
+    );
+  }
+  
+  @Get(':id')
+  async findOne(@Param('id') id: string): Promise<ApiResponse<YourFeature>> {
+    try {
+      const feature = await this.service.findById(id);
+      if (!feature) {
+        return this.notFound('资源');
+      }
+      return this.success(feature, '获取成功');
+    } catch (error) {
+      // 异常会被 HttpExceptionFilter 捕获并格式化
+      throw error;
+    }
   }
 }
 
 // gRPC Controller
 @Controller()
 export class YourFeatureGrpcController {
+  constructor(private readonly service: YourFeatureService) {}
+  
   @GrpcMethod('YourFeatureService', 'CreateYourFeature')
   async createYourFeature(data: CreateRequest) {
-    return this.service.create(data);
+    try {
+      // gRPC 控制器保持原始格式
+      return this.service.create(data);
+    } catch (error) {
+      // 异常会被 GrpcExceptionFilter 捕获并格式化
+      throw error;
+    }
   }
 }
 ```
@@ -284,9 +325,10 @@ pnpm run proto:gen          # 生成 Proto 类型文件
 
 - [部署指南](./DEPLOYMENT.md)
 - [Prisma 指南](./docs/prisma-guide.md)
+- [响应处理架构](./docs/response-architecture.md)
 - [API 文档](./docs/api.md)
 
 ---
 
-*最后更新: 2024-01-28*
+*最后更新: 2024-08-15*
 

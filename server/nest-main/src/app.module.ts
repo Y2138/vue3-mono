@@ -14,6 +14,7 @@ import { HybridAuthGuard } from './common/guards/hybrid-auth.guard';
 import { PermissionGuard } from './modules/rbac/guards/permission.guard';
 import { HttpExceptionFilter, GrpcExceptionFilter } from './common/filters';
 import { SecurityMiddleware } from './common/middleware/security.middleware';
+import { ResponseInterceptor } from './common/response';
 
 @Module({
   imports: [
@@ -43,6 +44,10 @@ import { SecurityMiddleware } from './common/middleware/security.middleware';
     {
       provide: APP_INTERCEPTOR,
       useClass: MonitoringInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ResponseInterceptor,
     },
     // 全局认证守卫
     {

@@ -7,6 +7,7 @@ import {
   Logger 
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { ApiErrorResponse, ERROR_TYPES, RESPONSE_CODES } from '../response/types';
 
 /**
  * HTTP 异常过滤器
@@ -39,7 +40,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     this.logException(exception, request, requestId, statusCode);
 
     // 返回标准化的错误响应
-    response.status(statusCode).json(errorResponse);
+    response.status(200).json(errorResponse); // 始终返回 200 状态码，错误信息在响应体中
   }
 
   /**
@@ -53,87 +54,116 @@ export class HttpExceptionFilter implements ExceptionFilter {
     // 根据异常类型映射状态码
     const errorName = exception.constructor?.name;
     const statusMapping: Record<string, number> = {
-      ValidationError: HttpStatus.BAD_REQUEST,
-      UnauthorizedException: HttpStatus.UNAUTHORIZED,
-      ForbiddenException: HttpStatus.FORBIDDEN,
-      NotFoundException: HttpStatus.NOT_FOUND,
-      ConflictException: HttpStatus.CONFLICT,
-      UnprocessableEntityException: HttpStatus.UNPROCESSABLE_ENTITY,
-      BadRequestException: HttpStatus.BAD_REQUEST,
+      ValidationError: RESPONSE_CODES.VALIDATION_ERROR,
+      UnauthorizedException: RESPONSE_CODES.UNAUTHORIZED,
+      ForbiddenException: RESPONSE_CODES.FORBIDDEN,
+      NotFoundException: RESPONSE_CODES.NOT_FOUND,
+      ConflictException: 409,
+      UnprocessableEntityException: RESPONSE_CODES.VALIDATION_ERROR,
+      BadRequestException: RESPONSE_CODES.BAD_REQUEST,
     };
 
-    return statusMapping[errorName] || HttpStatus.INTERNAL_SERVER_ERROR;
+    return statusMapping[errorName] || RESPONSE_CODES.INTERNAL_ERROR;
   }
 
   /**
    * 构建错误响应对象
    */
-  private getErrorResponse(exception: any, request: Request, requestId: string): any {
-    const statusCode = this.getStatusCode(exception);
+  private getErrorResponse(exception: any, request: Request, requestId: string): ApiErrorResponse {
+    const code = this.getStatusCode(exception);
     const timestamp = new Date().toISOString();
-
-    // 基础错误响应
-    const baseResponse = {
-      success: false,
-      statusCode,
-      timestamp,
-      path: request.url,
-      method: request.method,
-      requestId,
-    };
-
-    // 如果是 HttpException，获取详细错误信息
+    
+    // 提取错误类型
+    const errorType = this.getErrorType(exception);
+    
+    // 提取错误消息
+    let message = '服务器内部错误';
+    let details: any = undefined;
+    
+    // 处理 HttpException
     if (exception instanceof HttpException) {
       const exceptionResponse = exception.getResponse();
       
       if (typeof exceptionResponse === 'string') {
-        return {
-          ...baseResponse,
-          message: exceptionResponse,
-          error: exception.constructor.name,
-        };
-      } else if (typeof exceptionResponse === 'object') {
-        return {
-          ...baseResponse,
-          ...(exceptionResponse as object),
-          error: exception.constructor.name,
-        };
+        message = exceptionResponse;
+      } else if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
+        const resp = exceptionResponse as Record<string, any>;
+        message = resp.message || exception.message || '请求处理失败';
+        details = resp.details || resp.errors || resp;
+      } else {
+        message = exception.message;
+      }
+    } 
+    // 处理验证错误
+    else if (exception.name === 'ValidationError' || exception.errors) {
+      message = '请求参数验证失败';
+      details = exception.errors || exception.details;
+    } 
+    // 处理其他错误
+    else {
+      message = exception.message || '服务器内部错误';
+    }
+    
+    // 在生产环境隐藏敏感错误信息
+    if (process.env.NODE_ENV === 'production' && code >= 500) {
+      message = '服务器内部错误';
+      details = undefined;
+    }
+
+    // 构建标准 ApiErrorResponse
+    return {
+      success: false,
+      code,
+      message,
+      data: null,
+      error: {
+        type: errorType,
+        details,
+        // 在开发环境提供更多调试信息
+        ...(process.env.NODE_ENV !== 'production' && {
+          stack: exception.stack,
+          requestId,
+          path: request.url,
+          timestamp,
+        }),
+      }
+    };
+  }
+
+  /**
+   * 获取错误类型
+   */
+  private getErrorType(exception: any): string {
+    if (exception instanceof HttpException) {
+      const status = exception.getStatus();
+      
+      if (status === HttpStatus.BAD_REQUEST) {
+        return ERROR_TYPES.VALIDATION;
+      } else if (status === HttpStatus.UNAUTHORIZED) {
+        return ERROR_TYPES.AUTHENTICATION;
+      } else if (status === HttpStatus.FORBIDDEN) {
+        return ERROR_TYPES.AUTHORIZATION;
+      } else if (status === HttpStatus.NOT_FOUND) {
+        return ERROR_TYPES.NOT_FOUND;
+      } else if (status >= 500) {
+        return ERROR_TYPES.INTERNAL;
       }
     }
 
-    // 处理验证错误
-    if (exception.name === 'ValidationError' || exception.errors) {
-      return {
-        ...baseResponse,
-        message: '请求参数验证失败',
-        error: 'ValidationError',
-        details: exception.errors || exception.details,
-      };
+    // 根据异常名称推断类型
+    const errorName = exception.constructor?.name || '';
+    
+    if (errorName.includes('Validation') || errorName.includes('BadRequest')) {
+      return ERROR_TYPES.VALIDATION;
+    } else if (errorName.includes('Unauthorized') || errorName.includes('Auth')) {
+      return ERROR_TYPES.AUTHENTICATION;
+    } else if (errorName.includes('Forbidden') || errorName.includes('Permission')) {
+      return ERROR_TYPES.AUTHORIZATION;
+    } else if (errorName.includes('NotFound')) {
+      return ERROR_TYPES.NOT_FOUND;
     }
-
-    // 处理其他类型的错误
-    const message = exception.message || 'Internal server error';
-    const error = exception.constructor?.name || 'InternalServerError';
-
-    // 在生产环境隐藏敏感错误信息
-    if (process.env.NODE_ENV === 'production' && statusCode >= 500) {
-      return {
-        ...baseResponse,
-        message: 'Internal server error',
-        error: 'InternalServerError',
-      };
-    }
-
-    return {
-      ...baseResponse,
-      message,
-      error,
-      // 在开发环境提供更多调试信息
-      ...(process.env.NODE_ENV === 'development' && {
-        stack: exception.stack,
-        details: exception.details,
-      }),
-    };
+    
+    return ERROR_TYPES.INTERNAL;
   }
 
   /**
@@ -187,6 +217,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
    * 生成请求 ID
    */
   private generateRequestId(): string {
-    return Math.random().toString(36).substring(2, 15);
+    return `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
   }
 } 

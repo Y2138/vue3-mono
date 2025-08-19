@@ -7,12 +7,14 @@ import {
   Body, 
   Param, 
   Query, 
-  Logger,
   HttpCode,
   HttpStatus,
+  NotFoundException,
 } from '@nestjs/common';
 import { RoleService } from './services/role.service';
 import { RoleTransformer } from '../../common/transformers/rbac.transformer';
+import { BaseController } from '../../common/controllers/base.controller';
+import { ApiResponse, ApiPaginatedResponse } from '../../common/response/types';
 
 // DTO interfaces for HTTP requests
 interface CreateRoleDto {
@@ -44,15 +46,15 @@ interface RemovePermissionsDto {
 }
 
 @Controller('api/roles')
-export class RoleHttpController {
-  private readonly logger = new Logger(RoleHttpController.name);
-
+export class RoleHttpController extends BaseController {
   constructor(
     private readonly roleService: RoleService,
-  ) {}
+  ) {
+    super(RoleHttpController.name);
+  }
 
   @Get()
-  async getRoles(@Query() query: GetRolesQueryDto) {
+  async getRoles(@Query() query: GetRolesQueryDto): Promise<ApiPaginatedResponse<any>> {
     this.logger.log(`Getting roles list with query: ${JSON.stringify(query)}`);
     
     // 暂时返回所有角色，后续可以根据query参数实现筛选和分页
@@ -60,119 +62,135 @@ export class RoleHttpController {
     
     const page = query.page || 1;
     const pageSize = query.pageSize || 10;
+    const total = roles.length;
+    const totalPages = Math.ceil(total / pageSize);
     
-    return {
-      data: roles.map(role => RoleTransformer.toProtobuf(role)),
-      pagination: {
+    return this.paginated(
+      roles.map(role => RoleTransformer.toProtobuf(role)),
+      {
         page,
         pageSize,
-        total: roles.length,
-        totalPages: Math.ceil(roles.length / pageSize),
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
       },
-    };
+      '获取角色列表成功'
+    );
   }
 
   @Get(':id')
-  async getRole(@Param('id') id: string) {
+  async getRole(@Param('id') id: string): Promise<ApiResponse<any>> {
     this.logger.log(`Getting role with ID: ${id}`);
     
     const role = await this.roleService.findById(id);
-    return {
-      data: RoleTransformer.toProtobuf(role),
-    };
+    if (!role) {
+      return this.notFound('角色');
+    }
+    
+    return this.success(RoleTransformer.toProtobuf(role), '获取角色信息成功');
   }
 
   @Post()
-  async createRole(@Body() createDto: CreateRoleDto) {
+  async createRole(@Body() createDto: CreateRoleDto): Promise<ApiResponse<any>> {
     this.logger.log(`Creating role: ${JSON.stringify(createDto)}`);
     
-    const role = await this.roleService.create(createDto);
-    return {
-      data: RoleTransformer.toProtobuf(role),
-    };
+    return this.safeExecute(
+      async () => {
+        const role = await this.roleService.create(createDto);
+        return RoleTransformer.toProtobuf(role);
+      },
+      '创建角色成功'
+    );
   }
 
   @Put(':id')
   async updateRole(
     @Param('id') id: string,
     @Body() updateDto: UpdateRoleDto,
-  ) {
+  ): Promise<ApiResponse<any>> {
     this.logger.log(`Updating role ${id}: ${JSON.stringify(updateDto)}`);
     
-    const role = await this.roleService.update(id, updateDto);
-    return {
-      data: RoleTransformer.toProtobuf(role),
-    };
+    return this.safeExecute(
+      async () => {
+        const role = await this.roleService.update(id, updateDto);
+        if (!role) {
+          throw new NotFoundException(`角色 ${id} 不存在`);
+        }
+        return RoleTransformer.toProtobuf(role);
+      },
+      '更新角色成功'
+    );
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteRole(@Param('id') id: string) {
+  @HttpCode(HttpStatus.OK)
+  async deleteRole(@Param('id') id: string): Promise<ApiResponse<null>> {
     this.logger.log(`Deleting role with ID: ${id}`);
     
-    await this.roleService.delete(id);
-    return {
-      message: `Role with ID ${id} deleted successfully`,
-    };
+    return this.safeExecute(
+      async () => {
+        await this.roleService.delete(id);
+        return null;
+      },
+      `角色删除成功`
+    );
   }
 
   @Post(':id/permissions')
   async assignPermissions(
     @Param('id') roleId: string,
     @Body() assignDto: AssignPermissionsDto,
-  ) {
+  ): Promise<ApiResponse<any>> {
     this.logger.log(`Assigning permissions to role ${roleId}: ${JSON.stringify(assignDto)}`);
     
-    try {
-      const role = await this.roleService.addPermissions(roleId, assignDto.permissionIds);
-      if (!role) {
-        return {
-          success: false,
-          code: 404,
-          message: '角色不存在，无法分配权限',
-          data: null,
-        };
-      }
-      return {
-        data: RoleTransformer.toProtobuf(role),
-        message: `权限已成功分配给角色 ${roleId}`,
-      };
-    } catch (error) {
-      // 返回用户友好的错误响应
-      return {
-        success: false,
-        code: 500,
-        message: '分配权限时发生错误',
-        data: null,
-      };
-    }
+    return this.safeExecute(
+      async () => {
+        const role = await this.roleService.addPermissions(roleId, assignDto.permissionIds);
+        if (!role) {
+          throw new NotFoundException('角色不存在，无法分配权限');
+        }
+        return RoleTransformer.toProtobuf(role);
+      },
+      `权限已成功分配给角色`
+    );
   }
 
   @Delete(':id/permissions')
   async removePermissions(
     @Param('id') roleId: string,
     @Body() removeDto: RemovePermissionsDto,
-  ) {
+  ): Promise<ApiResponse<any>> {
     this.logger.log(`Removing permissions from role ${roleId}: ${JSON.stringify(removeDto)}`);
     
-    const role = await this.roleService.removePermissions(roleId, removeDto.permissionIds);
-    return {
-      data: RoleTransformer.toProtobuf(role),
-      message: `Permissions removed from role ${roleId} successfully`,
-    };
+    return this.safeExecute(
+      async () => {
+        const role = await this.roleService.removePermissions(roleId, removeDto.permissionIds);
+        if (!role) {
+          throw new NotFoundException('角色不存在，无法移除权限');
+        }
+        return RoleTransformer.toProtobuf(role);
+      },
+      `权限已成功从角色移除`
+    );
   }
 
   @Put(':id/permissions')
   async setPermissions(
     @Param('id') roleId: string,
     @Body() setDto: AssignPermissionsDto,
-  ) {
+  ): Promise<ApiResponse<any>> {
     this.logger.log(`Setting permissions for role ${roleId}: ${JSON.stringify(setDto)}`);
     
-    const role = await this.roleService.setPermissions(roleId, setDto.permissionIds);
-    return {
-      data: RoleTransformer.toProtobuf(role),
-      message: `Permissions set for role ${roleId} successfully`,
-    };
+    return this.safeExecute(
+      async () => {
+        const role = await this.roleService.setPermissions(roleId, setDto.permissionIds);
+        if (!role) {
+          throw new NotFoundException('角色不存在，无法设置权限');
+        }
+        return RoleTransformer.toProtobuf(role);
+      },
+      `角色权限设置成功`
+    );
   }
 } 
