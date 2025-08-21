@@ -138,7 +138,7 @@ export const UserTransformer = {
   /**
    * 批量转换用户列表
    */
-  toProtobufList(entities: UserEntity[]): UserProto[] {
+  toProtobufList(entities: any[]): UserProto[] {
     return ArrayTransformer.toArray(entities).map(entity => this.toListItem(entity));
   },
 

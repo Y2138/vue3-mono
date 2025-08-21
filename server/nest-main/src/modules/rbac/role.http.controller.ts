@@ -2,8 +2,6 @@ import {
   Controller, 
   Get, 
   Post, 
-  Put, 
-  Delete, 
   Body, 
   Param, 
   Query, 
@@ -104,7 +102,7 @@ export class RoleHttpController extends BaseController {
     );
   }
 
-  @Put(':id')
+  @Post('update/:id')
   async updateRole(
     @Param('id') id: string,
     @Body() updateDto: UpdateRoleDto,
@@ -123,7 +121,7 @@ export class RoleHttpController extends BaseController {
     );
   }
 
-  @Delete(':id')
+  @Post('delete/:id')
   @HttpCode(HttpStatus.OK)
   async deleteRole(@Param('id') id: string): Promise<ApiResponse<null>> {
     this.logger.log(`Deleting role with ID: ${id}`);
@@ -156,7 +154,7 @@ export class RoleHttpController extends BaseController {
     );
   }
 
-  @Delete(':id/permissions')
+  @Post(':id/permissions/remove')
   async removePermissions(
     @Param('id') roleId: string,
     @Body() removeDto: RemovePermissionsDto,
@@ -175,7 +173,7 @@ export class RoleHttpController extends BaseController {
     );
   }
 
-  @Put(':id/permissions')
+  @Post(':id/permissions/set')
   async setPermissions(
     @Param('id') roleId: string,
     @Body() setDto: AssignPermissionsDto,

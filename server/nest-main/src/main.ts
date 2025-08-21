@@ -17,9 +17,9 @@ async function bootstrap() {
     options: {
       package: ['users', 'rbac', 'common'],
       protoPath: [
-        join(__dirname, '../protos/users.proto'),
-        join(__dirname, '../protos/rbac.proto'),
-        join(__dirname, '../protos/common.proto'),
+        join(__dirname, '../../../../protos/users.proto'),
+        join(__dirname, '../../../../protos/rbac.proto'),
+        join(__dirname, '../../../../protos/common.proto'),
       ],
       url: `0.0.0.0:${grpcPort}`,
       maxReceiveMessageLength: Number.parseInt(process.env.GRPC_MAX_RECEIVE_MESSAGE_LENGTH || '4194304'),
@@ -38,11 +38,11 @@ async function bootstrap() {
   // 全局拦截器
   app.useGlobalInterceptors(new LoggingInterceptor());
 
-  // 全局管道
+  // 全局管道 (HTTP 参数验证)
   app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-    forbidNonWhitelisted: true,
+    whitelist: true, // 自动去除未在 DTO 中定义的属性
+    forbidNonWhitelisted: true, // 如果请求参数中包含未在 DTO 中定义的属性，则抛出异常
+    transform: true, // 自动将请求参数转换为 DTO 中定义的类型
     // exceptionFactory: (errors) => {
     //   const formattedErrors = errors.map(err => {
     //     return {

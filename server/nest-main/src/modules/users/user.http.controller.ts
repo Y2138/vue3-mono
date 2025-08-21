@@ -1,8 +1,10 @@
-import { Controller, Post, Get, Put, Delete, Body, Param, Query, HttpCode, HttpStatus, ConflictException, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Query, HttpCode, HttpStatus, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse as SwaggerApiResponse } from '@nestjs/swagger';
 import { BaseController } from '../../common/controllers/base.controller';
-import { ApiResponse } from '../../common/response/types';
+import { ApiResponse, ApiErrorResponse } from '../../common/response/types';
 import { UserService } from './user.service';
+import { User, AuthResponse, GetUsersResponse } from '../../shared/users';
+import { UserTransformer } from '../../common/transformers/user.transformer';
 
 /**
  * 登录请求 DTO
@@ -80,7 +82,7 @@ export class UserHttpController extends BaseController {
   @ApiOperation({ summary: '用户登录' })
   @SwaggerApiResponse({ status: 200, description: '登录成功' })
   @SwaggerApiResponse({ status: 401, description: '手机号或密码错误' })
-  async login(@Body() loginDto: LoginDto): Promise<ApiResponse<any>> {
+  async login(@Body() loginDto: LoginDto): Promise<ApiResponse<AuthResponse> | ApiErrorResponse> {
     return this.safeExecute(
       async () => {
         try {
@@ -91,19 +93,7 @@ export class UserHttpController extends BaseController {
           });
           
           // 返回用户信息和令牌
-          return {
-            user: {
-              phone: result.user.phone,
-              username: result.user.username,
-              isActive: result.user.isActive,
-              roles: result.user.userRoles?.map(ur => ({
-                id: ur.role.id,
-                name: ur.role.name,
-              })) || [],
-            },
-            token: result.token,
-            expiresIn: result.expiresIn,
-          };
+          return UserTransformer.createAuthResponse(result.user, result.token);
         } catch (error) {
           if (error instanceof UnauthorizedException) {
             throw error;
@@ -122,7 +112,7 @@ export class UserHttpController extends BaseController {
   @ApiOperation({ summary: '用户注册' })
   @SwaggerApiResponse({ status: 201, description: '注册成功' })
   @SwaggerApiResponse({ status: 409, description: '手机号已被注册' })
-  async register(@Body() registerDto: RegisterDto): Promise<ApiResponse<any>> {
+  async register(@Body() registerDto: RegisterDto): Promise<ApiResponse<AuthResponse> | ApiErrorResponse> {
     return this.safeExecute(
       async () => {
         try {
@@ -135,19 +125,7 @@ export class UserHttpController extends BaseController {
           });
           
           // 返回用户信息和令牌
-          return {
-            user: {
-              phone: result.user.phone,
-              username: result.user.username,
-              isActive: result.user.isActive,
-              roles: result.user.userRoles?.map(ur => ({
-                id: ur.role.id,
-                name: ur.role.name,
-              })) || [],
-            },
-            token: result.token,
-            expiresIn: result.expiresIn,
-          };
+          return UserTransformer.createAuthResponse(result.user, result.token);
         } catch (error) {
           if (error instanceof ConflictException) {
             throw error;
@@ -167,7 +145,7 @@ export class UserHttpController extends BaseController {
   @ApiOperation({ summary: '获取当前用户信息' })
   @SwaggerApiResponse({ status: 200, description: '获取成功' })
   @SwaggerApiResponse({ status: 401, description: '未授权' })
-  async getProfile(@Query('phone') phone: string): Promise<ApiResponse<any>> {
+  async getProfile(@Query('phone') phone: string): Promise<ApiResponse<User> | ApiErrorResponse> {
     try {
       // 临时实现：通过查询参数获取用户手机号
       // TODO: 从 JWT 中获取用户信息
@@ -175,24 +153,8 @@ export class UserHttpController extends BaseController {
       // 获取用户信息
       const user = await this.userService.getUserWithRoles(phone);
       
-      // 转换为 HTTP 响应格式
-      const userData = {
-        phone: user.phone,
-        username: user.username,
-        isActive: user.isActive,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-        roles: user.userRoles?.map(ur => ({
-          id: ur.role.id,
-          name: ur.role.name,
-                      permissions: ur.role.rolePermissions?.map(rp => ({
-              id: rp.permission.id,
-              name: rp.permission.name,
-              resource: rp.permission.resource,
-              action: rp.permission.action,
-          })) || [],
-        })) || [],
-      };
+            // 转换为 HTTP 响应格式
+      const userData = UserTransformer.toProtobuf(user);
       
       return this.success(userData, '获取用户信息成功');
     } catch (error) {
@@ -212,7 +174,7 @@ export class UserHttpController extends BaseController {
   @ApiOperation({ summary: '获取指定用户信息' })
   @SwaggerApiResponse({ status: 200, description: '获取成功' })
   @SwaggerApiResponse({ status: 404, description: '用户不存在' })
-  async getUser(@Param('phone') phone: string, @Query('currentUserPhone') currentUserPhone: string): Promise<ApiResponse<any>> {
+  async getUser(@Param('phone') phone: string, @Query('currentUserPhone') currentUserPhone: string): Promise<ApiResponse<User> | ApiErrorResponse> {
     try {
       // 验证当前用户权限
       await this.userService.getUserWithRoles(currentUserPhone);
@@ -221,17 +183,7 @@ export class UserHttpController extends BaseController {
       const user = await this.userService.getUserWithRoles(phone);
       
       // 转换为 HTTP 响应格式
-      const userData = {
-        phone: user.phone,
-        username: user.username,
-        isActive: user.isActive,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-        roles: user.userRoles?.map(ur => ({
-          id: ur.role.id,
-          name: ur.role.name,
-        })) || [],
-      };
+      const userData = UserTransformer.toProtobuf(user);
       
       return this.success(userData, '获取用户信息成功');
     } catch (error) {
@@ -250,7 +202,7 @@ export class UserHttpController extends BaseController {
   @Get('list')
   @ApiOperation({ summary: '获取用户列表' })
   @SwaggerApiResponse({ status: 200, description: '获取成功' })
-  async getUsers(@Query() query: GetUsersQueryDto, @Query('currentUserPhone') currentUserPhone: string): Promise<ApiResponse<any>> {
+  async getUsers(@Query() query: GetUsersQueryDto, @Query('currentUserPhone') currentUserPhone: string): Promise<ApiResponse<GetUsersResponse> | ApiErrorResponse> {
     try {
       // 验证当前用户权限
       await this.userService.getUserWithRoles(currentUserPhone);
@@ -277,10 +229,18 @@ export class UserHttpController extends BaseController {
       }));
       
       // 返回成功响应
-      return this.success({
-        users,
-        pagination: result.pagination
-      }, '获取用户列表成功');
+      return this.success(
+        {
+          users: UserTransformer.toProtobufList(users),
+          pagination: {
+            page: result.pagination.page,
+            pageSize: result.pagination.pageSize,
+            total: result.pagination.total,
+            totalPages: result.pagination.totalPages,
+          }
+        },
+        '获取用户列表成功'
+      );
     } catch (error) {
       // 处理错误
       this.logger.error('获取用户列表失败', error);
@@ -296,7 +256,7 @@ export class UserHttpController extends BaseController {
   @ApiOperation({ summary: '创建用户' })
   @SwaggerApiResponse({ status: 201, description: '创建成功' })
   @SwaggerApiResponse({ status: 409, description: '手机号已被注册' })
-  async createUser(@Body() createUserDto: CreateUserDto, @Query('currentUserPhone') currentUserPhone: string): Promise<ApiResponse<any>> {
+  async createUser(@Body() createUserDto: CreateUserDto, @Query('currentUserPhone') currentUserPhone: string): Promise<ApiResponse<User> | ApiErrorResponse> {
     return this.safeExecute(
       async () => {
         // 验证当前用户权限
@@ -323,17 +283,7 @@ export class UserHttpController extends BaseController {
         const user = await this.userService.create(userData);
         
         // 转换为 HTTP 响应格式
-        return {
-          phone: user.phone,
-          username: user.username,
-          isActive: user.isActive,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-          roles: user.userRoles?.map(ur => ({
-            id: ur.role.id,
-            name: ur.role.name,
-          })) || [],
-        };
+        return UserTransformer.toProtobuf(user);
       },
       '创建用户成功'
     );
@@ -343,7 +293,7 @@ export class UserHttpController extends BaseController {
    * 更新用户
    * TODO: 需要添加认证守卫
    */
-  @Put('update/:phone')
+  @Post('update/:phone')
   @ApiOperation({ summary: '更新用户' })
   @SwaggerApiResponse({ status: 200, description: '更新成功' })
   @SwaggerApiResponse({ status: 404, description: '用户不存在' })
@@ -351,7 +301,7 @@ export class UserHttpController extends BaseController {
     @Param('phone') phone: string,
     @Body() updateUserDto: UpdateUserDto,
     @Query('currentUserPhone') currentUserPhone: string
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<User> | ApiErrorResponse> {
     return this.safeExecute(
       async () => {
         // 验证当前用户权限
@@ -383,17 +333,7 @@ export class UserHttpController extends BaseController {
         const user = await this.userService.update(phone, updateData);
         
         // 转换为 HTTP 响应格式
-        return {
-          phone: user.phone,
-          username: user.username,
-          isActive: user.isActive,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-          roles: user.userRoles?.map(ur => ({
-            id: ur.role.id,
-            name: ur.role.name,
-          })) || [],
-        };
+        return UserTransformer.toProtobuf(user);
       },
       '更新用户成功'
     );
@@ -403,7 +343,7 @@ export class UserHttpController extends BaseController {
    * 删除用户
    * TODO: 需要添加认证守卫
    */
-  @Delete('delete/:phone')
+  @Post('delete/:phone')
   @ApiOperation({ summary: '删除用户' })
   @SwaggerApiResponse({ status: 200, description: '删除成功' })
   @SwaggerApiResponse({ status: 404, description: '用户不存在' })
@@ -429,7 +369,7 @@ export class UserHttpController extends BaseController {
   @ApiOperation({ summary: '创建超级管理员' })
   @SwaggerApiResponse({ status: 201, description: '创建成功' })
   @SwaggerApiResponse({ status: 400, description: '管理员密钥错误' })
-  async createSuperAdmin(@Body() createSuperAdminDto: CreateSuperAdminDto): Promise<ApiResponse<any>> {
+  async createSuperAdmin(@Body() createSuperAdminDto: CreateSuperAdminDto): Promise<ApiResponse<AuthResponse> | ApiErrorResponse> {
     return this.safeExecute(
       async () => {
         // 创建超级管理员
@@ -440,24 +380,10 @@ export class UserHttpController extends BaseController {
           adminKey: createSuperAdminDto.adminKey,
         });
         
-        // 转换为 HTTP 响应格式
-        return {
-          user: {
-            phone: result.user.phone,
-            username: result.user.username,
-            isActive: result.user.isActive,
-            roles: result.user.userRoles?.map(ur => ({
-              id: ur.role.id,
-              name: ur.role.name,
-            })) || [],
-          },
-          token: result.token,
-          expiresIn: result.expiresIn,
-        };
+                  // 转换为 HTTP 响应格式
+          return UserTransformer.createAuthResponse(result.user, result.token);
       },
       '创建超级管理员成功'
     );
   }
-
-  // 删除 createMetadataFromPhone 方法，因为不再需要调用 gRPC 控制器
 } 

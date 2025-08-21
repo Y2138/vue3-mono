@@ -1,0 +1,8 @@
+---
+description: 接口,controller,service,后端,服务端
+alwaysApply: false
+---
+开发后端应用时，遵守以下规则：
+1. http method 定义只使用 get 和 post，get 用于数据获取，post 用于数据变更
+2. grpc 和 http 控制器应该共用 proto 定义的接口数据格式
+3. 日期统一使用 YYYY-MM-DD 格式，日期时间使用 YYYY-MM-DD HH:mm:SS 格式，而非时间戳

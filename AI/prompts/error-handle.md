@@ -25,3 +25,5 @@
 # 其他改进
 1. 我希望 http 响应的 data 的数据类型也跟 proto 定义的一致，现在http 控制器中定义的返回值都是 any；
 2. 对于 http 请求只使用 get 和 post 两种，get 用于获取数据，post 用于变更数据
+
+3. common/transformer 下的文件没有必要？

@@ -26,12 +26,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         throw new UnauthorizedException('用户不存在或未激活');
       }
 
-      if (!user.roles) {
+      if (!user.userRoles || user.userRoles.length === 0) {
         this.logger.error(`用户没有加载角色信息: ${payload.sub}`);
       } else {
-        this.logger.log(`用户 ${payload.sub} 拥有角色: ${user.roles.map(r => r.name).join(', ')}`);
+        const roleNames = user.userRoles.map(ur => ur.role.name).join(', ');
+        this.logger.log(`用户 ${payload.sub} 拥有角色: ${roleNames}`);
         
-        const hasPermissions = user.roles.every(role => role.permissions && role.permissions.length > 0);
+        const hasPermissions = user.userRoles.every(ur => 
+          ur.role.rolePermissions && ur.role.rolePermissions.length > 0
+        );
         if (!hasPermissions) {
           this.logger.warn(`用户 ${payload.sub} 的角色没有加载权限信息`);
         }

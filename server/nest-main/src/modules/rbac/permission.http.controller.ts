@@ -2,8 +2,6 @@ import {
   Controller, 
   Get, 
   Post, 
-  Put, 
-  Delete, 
   Body, 
   Param, 
   Query, 
@@ -94,7 +92,7 @@ export class PermissionHttpController {
     };
   }
 
-  @Put(':id')
+  @Post('update/:id')
   async updatePermission(
     @Param('id') id: string,
     @Body() updateDto: UpdatePermissionDto,
@@ -107,7 +105,7 @@ export class PermissionHttpController {
     };
   }
 
-  @Delete(':id')
+  @Post('delete/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deletePermission(@Param('id') id: string) {
     this.logger.log(`Deleting permission with ID: ${id}`);

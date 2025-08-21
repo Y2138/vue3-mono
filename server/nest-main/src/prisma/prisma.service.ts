@@ -1,6 +1,5 @@
-import { Inject, Injectable, OnModuleDestroy, OnModuleInit, Logger } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit, Logger } from '@nestjs/common';
 import { PrismaClient, Prisma } from '@prisma/client';
-import { PRISMA_CLIENT } from './prisma.module';
 import { userRoleExtension } from './prisma.middleware';
 
 // 定义日志监控扩展
@@ -39,7 +38,12 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
   private extendedPrisma: any;
 
-  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient) {
+  private readonly prisma: PrismaClient;
+
+  constructor() {
+    this.prisma = new PrismaClient({
+      log: ['query', 'info', 'warn', 'error'],
+    });
     // 先应用日志监控扩展，再应用用户角色转换扩展
     this.extendedPrisma = this.prisma
       .$extends(loggerExtension)

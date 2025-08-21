@@ -1,4 +1,4 @@
-import { Role as RoleEntity, Permission as PermissionEntity, RolePermission, Prisma } from '@prisma/client';
+import { Role as RoleEntity, Permission as PermissionEntity, Prisma } from '@prisma/client';
 // 导入Prisma客户端类型
 import { 
   Role as RoleProto, 

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, HttpCode, HttpStatus, NotFoundException } from '@nestjs/common';
 import { BaseController } from './base.controller';
 import { ApiResponse, ApiPaginatedResponse } from '../response/types';
 
@@ -80,7 +80,7 @@ export class ExampleController extends BaseController {
   /**
    * 更新示例
    */
-  @Put(':id')
+  @Post('update/:id')
   async update(@Param('id') id: string, @Body() data: { name?: string; description?: string }): Promise<ApiResponse<any>> {
     // 使用 safeExecute 方法简化错误处理
     return this.safeExecute(
@@ -106,7 +106,7 @@ export class ExampleController extends BaseController {
   /**
    * 删除示例
    */
-  @Delete(':id')
+  @Post('delete/:id')
   @HttpCode(HttpStatus.OK)
   async delete(@Param('id') id: string): Promise<ApiResponse<null>> {
     const index = this.examples.findIndex(e => e.id === id);
