@@ -32,7 +32,7 @@ interface ProtoFileConfig {
  * 功能：
  * - Vite 启动时自动生成 protobuf 类型
  * - 开发模式下监听 proto 文件变化
- * - 集成现有的 proto-gen.cjs 逻辑
+ * - 自动处理 proto 文件并生成 TypeScript 类型
  */
 export function protobufPlugin(options: ProtobufPluginOptions): Plugin {
   const {

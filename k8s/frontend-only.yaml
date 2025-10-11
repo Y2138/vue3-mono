@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vue-frontend
+  labels:
+    app: vue-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vue-frontend
+  template:
+    metadata:
+      labels:
+        app: vue-frontend
+    spec:
+      containers:
+      - name: nginx
+        image: vue3-mono-frontend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vue-frontend
+spec:
+  selector:
+    app: vue-frontend
+  ports:
+  - port: 80
+    targetPort: 80
+  type: NodePort
+---
+# 简单的 Ingress 配置，仅用于前端
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vue-frontend-ingress
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: vue3-mono.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: vue-frontend
+            port:
+              number: 80
