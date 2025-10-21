@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center pl-2" :style="{ width: colWidth }">
-    <label v-if="label" :style="{ width: computedLabelWidth }" class="whitespace-nowrap flex-shrink-0 mr-2">{{ label }}</label>
+    <label v-if="props.label" :style="{ width: computedLabelWidth }" class="whitespace-nowrap flex-shrink-0 mr-2">{{ props.label }}</label>
     <div class="flex-1" :class="contentClass">
       <slot></slot>
     </div>
@@ -12,7 +12,7 @@ import { computed, inject } from 'vue'
 defineOptions({
   name: 'WrapCol'
 })
-const { label, labelWidth = 'auto', contentClass = '' } = defineProps<{
+const props = defineProps<{
   label?: string
   labelWidth?: string | number | 'auto'
   contentClass?: string
@@ -27,13 +27,13 @@ function dealWidth(width: string | number | 'auto'): string {
   if (width === 'auto') {
     return 'auto'
   }
-  return isNaN(Number(width)) ? width as string : `${width}px`
+  return isNaN(Number(width)) ? (width as string) : `${width}px`
 }
 
 // 计算label宽度
 const computedLabelWidth = computed(() => {
-  if (labelWidth) {
-    return dealWidth(labelWidth)
+  if (props.labelWidth) {
+    return dealWidth(props.labelWidth)
   }
   if (injectedConfig && injectedConfig.labelWidth) {
     return dealWidth(injectedConfig.labelWidth)
@@ -54,6 +54,4 @@ const colWidth = computed(() => {
 })
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

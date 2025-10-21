@@ -1,11 +1,5 @@
 <template>
-  <SearchPanel
-    :cols="3"
-    :formModel="formModel"
-    :searchLoading="loading"
-    searchOnUpdate
-    @search="firstPageRequest"
-    @reset="handleReset">
+  <SearchPanel :cols="4" :formModel="formModel" :searchLoading="loading" searchOnUpdate @search="refresh" @reset="handleReset">
     <template #top>
       <n-radio-group v-model:value="formModel.type" class="mb-4" @update:value="handleRadioChange">
         <n-radio-button value="date">日汇总</n-radio-button>
@@ -14,28 +8,9 @@
       </n-radio-group>
     </template>
     <WrapCol label="创建时间">
-      <n-date-picker
-        v-if="formModel.type === 'date'"
-        v-model:formatted-value="formModel.daterange"
-        close-on-select
-        type="daterange"
-        clearable
-        value-format="yyyy-MM-dd">
-      </n-date-picker>
-      <n-date-picker
-        v-else-if="formModel.type === 'month'"
-        v-model:formatted-value="formModel.daterange"
-        type="monthrange"
-        clearable
-        value-format="yyyyMM">
-      </n-date-picker>
-      <n-date-picker
-        v-else-if="formModel.type === 'year'"
-        v-model:formatted-value="formModel.start_date"
-        type="year"
-        clearable
-        value-format="yyyy">
-      </n-date-picker>
+      <n-date-picker v-if="formModel.type === 'date'" v-model:formatted-value="formModel.daterange" close-on-select type="daterange" clearable value-format="yyyy-MM-dd"> </n-date-picker>
+      <n-date-picker v-else-if="formModel.type === 'month'" v-model:formatted-value="formModel.daterange" type="monthrange" clearable value-format="yyyyMM"> </n-date-picker>
+      <n-date-picker v-else-if="formModel.type === 'year'" v-model:formatted-value="formModel.start_date" type="year" clearable value-format="yyyy"> </n-date-picker>
     </WrapCol>
     <WrapCol label="所属部门">
       <n-select v-model:value="formModel.dept" :options="departmentOptions"></n-select>
@@ -43,20 +18,15 @@
     <WrapCol label="编辑">
       <n-input v-model:value="formModel.keywords" :options="editorOptions"></n-input>
     </WrapCol>
+    <WrapCol></WrapCol>
   </SearchPanel>
-  <n-data-table
-    class="mt-2"
-    :columns="tableColumns"
-    :data="tableData"
-    :pagination="pagination"
-    >
-  </n-data-table>
+  <n-data-table class="mt-2" :columns="tableColumns" :data="tableData" :pagination="pagination"> </n-data-table>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import useTablePage from '@/hooks/useTablePage'
-import { get } from '@/request/axios'
+import { apiCall } from '@/request/api-adapter'
 import type { SelectMixedOption } from 'naive-ui/es/select/src/interface'
 import { format } from 'date-fns'
 import { usePageLoading } from '@/hooks/usePageLoading'
@@ -71,7 +41,7 @@ interface IReq extends Partial<Omit<IFormModel, 'daterange'>> {
   start_date?: string
   end_date?: string
   page: number
-  page_size: number
+  pageSize: number
 }
 interface IRes {
   date: string
@@ -100,41 +70,37 @@ const formModel = ref<IFormModel>({
   dept: null,
   start_date: ''
 })
-const departmentOptions = ref<SelectMixedOption[]>([
-  { label: '全部', value: undefined }
-])
-const editorOptions = ref([
-  { label: '全部', value: undefined }
-])
+const departmentOptions = ref<SelectMixedOption[]>([{ label: '全部', value: undefined }])
+const editorOptions = ref([{ label: '全部', value: undefined }])
 function handleReset() {
   formModel.value.daterange = null
   formModel.value.keywords = ''
-  firstPageRequest()
+  refresh(true)
 }
 function handleRadioChange(type: string) {
   switch (type) {
     case 'date':
       formModel.value.daterange = null
-      break;
+      break
     case 'month':
       formModel.value.daterange = [format(Date.now(), 'yyyyMM'), format(Date.now(), 'yyyyMM')]
-      break;
+      break
     case 'year':
       formModel.value.start_date = format(Date.now(), 'yyyy')
-      break;
+      break
     default:
-      break;
+      break
   }
-  firstPageRequest()
+  refresh(true)
 }
 
-const requestFn = (data: IReq) => get<IReq, IPaginationResData<IRes[]>>('/statistics/zhzww-vip/list', { params: data })
+const requestFn = (data: IReq) => apiCall<IReq, IPaginationResData<IRes[]>>('/statistics/zhzww-vip/list', { params: data })
 const dealParams = (): IReq => {
   const { daterange, ...rest } = formModel.value
   const params: IReq = {
     ...rest,
     page: pagination.page,
-    page_size: pagination.pageSize
+    pageSize: pagination.pageSize
   }
   if (['date', 'month'].includes(formModel.value.type) && daterange && daterange.length) {
     const [start, end] = daterange
@@ -149,18 +115,11 @@ const dealParams = (): IReq => {
 //   tableData.value = res.table_data || []
 //   pagination.itemCount = res.page_data.count || 0
 // }
-const {
-  pagination,
-  tableColumns,
-  tableData,
-  loading,
-  firstPageRequest
-} = useTablePage<IReq, IRes>(requestFn, dealParams, {
-  returnHeader: true,
+const { pagination, tableColumns, tableData, loading, refresh } = useTablePage<IReq, IRes>(requestFn, dealParams, {
+  returnHeader: true
   // customResHandleFn: handleRes
 })
 // 首次请求
-firstPageRequest()
 </script>
 
 <style scoped>

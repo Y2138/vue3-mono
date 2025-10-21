@@ -45,6 +45,7 @@ docker-compose -f deploy/compose/docker-compose.yaml up -d --build
 ```
 
 这将启动以下服务：
+
 - 前端应用 (Vue3)
 - 后端服务 (NestJS)
 - PostgreSQL 数据库
@@ -161,7 +162,6 @@ kubectl get ingress
 
 - 前端应用：http://localhost:8030
 - 后端 API：http://localhost:8030/api
-- gRPC 服务：localhost:50051（需要 gRPC 客户端访问）
 
 ### Kubernetes 部署
 
@@ -173,6 +173,7 @@ kubectl port-forward service/ingress-nginx-controller 8030:80 -n ingress-nginx
 ```
 
 然后访问：
+
 - 前端应用：http://localhost:8030
 - 后端 API：http://localhost:8030/api
 
@@ -185,6 +186,7 @@ kubectl port-forward service/ingress-nginx-controller 8030:80 -n ingress-nginx
 ```
 
 然后访问：
+
 - 前端应用：http://vue3-mono.local:8030
 - 后端 API：http://vue3-mono.local:8030/api
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="px-2 pt-4 pb-2 shadow-rs">
+  <div class="px-2 pt-4 pb-2">
     <div class="flex-center mb-2">
       <div class="flex-1 w-0 flex-start">
         <Icon class="cursor-pointer" :class="menuStore.collapsed ? 'transform-rotate-180' : ''" icon="ion:chevron-back-circle-outline" width="20" height="20" @click="handleToggleMenu"></Icon>
@@ -9,19 +9,14 @@
           </n-breadcrumb-item>
         </n-breadcrumb>
       </div>
-      
+
       <n-space size="large" class="mr-5" align="center" item-class="flex">
         <Icon icon="ion:search" width="20" height="20" class="cursor-pointer"></Icon>
         <Icon icon="ion:sunny-sharp" width="20" height="20" class="cursor-pointer" @click="handleChangeTheme" title="切换主题"></Icon>
         <Icon icon="ion:refresh" width="20" height="20" class="cursor-pointer animate-keyframes-spin" @click="handleRefresh" title="刷新"></Icon>
         <n-dropdown trigger="click" :options="userOptions" @select="handleUserAction">
           <div class="flex-center cursor-pointer">
-            <n-avatar
-              class="mr-2"
-              round
-              size="small"
-              :src="userAvatar"
-            />
+            <n-avatar class="mr-2" round size="small" :src="userAvatar" />
             <span>{{ userInfo?.username || '未登录' }}</span>
           </div>
         </n-dropdown>
@@ -34,12 +29,12 @@
 <script setup lang="ts">
 import { computed, ref, h } from 'vue'
 import { Icon } from '@iconify/vue'
-import TabBar from './tabBar.vue';
-import { useRouter } from 'vue-router';
-import { useMenuStore } from '@/store/modules/menu';
-import { useGlobalStore } from '@/store/modules/global';
-import { usePageLoading } from '@/hooks/usePageLoading';
-import { useUserStore } from '@/store/modules/user';
+import TabBar from './tabBar.vue'
+import { useRouter } from 'vue-router'
+import { useMenuStore } from '@/store/modules/menu'
+import { useGlobalStore } from '@/store/modules/global'
+import { usePageLoading } from '@/hooks/usePageLoading'
+import { useUserStore } from '@/store/modules/user'
 
 const router = useRouter()
 const globalStore = useGlobalStore()
@@ -110,5 +105,3 @@ const handleChangeTheme = () => {
   globalStore.toggleTheme()
 }
 </script>
-
-

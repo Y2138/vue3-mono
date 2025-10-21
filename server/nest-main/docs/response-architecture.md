@@ -29,30 +29,30 @@ BaseController 提供了一系列类型安全的响应方法，包括：
 
 ```typescript
 interface ApiResponse<T> {
-  success: boolean;   // 是否成功
-  code: number;       // 状态码
-  message: string;    // 消息
-  data?: T;           // 数据
-  error?: ErrorInfo;  // 错误信息
+  success: boolean // 是否成功
+  code: number // 状态码
+  message: string // 消息
+  data?: T // 数据
+  error?: ErrorInfo // 错误信息
 }
 
 interface ApiPaginatedResponse<T> extends ApiResponse<T[]> {
   pagination: {
-    page: number;
-    pageSize: number;
-    total: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
+    page: number
+    pageSize: number
+    total: number
+    totalPages: number
+    hasNext: boolean
+    hasPrev: boolean
+  }
 }
 ```
 
-### 4. 协议分离设计
+### 4. 统一响应设计
 
 - **HTTP 响应**：使用统一的 REST API 响应格式（`ApiResponse`）
-- **gRPC 响应**：保持 Protocol Buffers 定义的原始格式，专注于高性能 RPC 通信
-- **适配层**：在 HTTP 控制器中将 gRPC 响应转换为 HTTP 响应格式
+- **标准化**：所有 API 端点都遵循相同的响应结构
+- **类型安全**：通过 TypeScript 类型系统确保响应格式一致性
 
 ## 使用方式
 
@@ -62,22 +62,22 @@ interface ApiPaginatedResponse<T> extends ApiResponse<T[]> {
 @Controller('api/roles')
 export class RoleController extends BaseController {
   constructor(private readonly roleService: RoleService) {
-    super('RoleController');
+    super('RoleController')
   }
 
   @Get()
   async getRoles(): Promise<ApiResponse<Role[]>> {
-    const roles = await this.roleService.findAll();
-    return this.success(roles, '获取角色列表成功');
+    const roles = await this.roleService.findAll()
+    return this.success(roles, '获取角色列表成功')
   }
 
   @Get(':id')
   async getRole(@Param('id') id: string): Promise<ApiResponse<Role>> {
-    const role = await this.roleService.findById(id);
+    const role = await this.roleService.findById(id)
     if (!role) {
-      return this.notFound('角色');
+      return this.notFound('角色')
     }
-    return this.success(role, '获取角色信息成功');
+    return this.success(role, '获取角色信息成功')
   }
 }
 ```
@@ -87,7 +87,7 @@ export class RoleController extends BaseController {
 对于不继承 BaseController 的场景，可以使用响应构建器：
 
 ```typescript
-import { ResponseBuilder } from './common/response';
+import { ResponseBuilder } from './common/response'
 
 @Controller('api/users')
 export class UserController {
@@ -96,13 +96,13 @@ export class UserController {
   @Get(':id')
   async getUser(@Param('id') id: string) {
     try {
-      const user = await this.userService.findById(id);
+      const user = await this.userService.findById(id)
       if (!user) {
-        return ResponseBuilder.notFound('用户').build();
+        return ResponseBuilder.notFound('用户').build()
       }
-      return ResponseBuilder.success(user).message('获取用户信息成功').build();
+      return ResponseBuilder.success(user).message('获取用户信息成功').build()
     } catch (error) {
-      return ResponseBuilder.serverError('获取用户信息失败', error).build();
+      return ResponseBuilder.serverError('获取用户信息失败', error).build()
     }
   }
 }
@@ -113,28 +113,24 @@ export class UserController {
 在模块中注册响应拦截器和异常过滤器：
 
 ```typescript
-import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
-import { ResponseInterceptor } from './common/response';
-import { HttpExceptionFilter, GrpcExceptionFilter } from './common/filters';
+import { Module } from '@nestjs/common'
+import { APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core'
+import { ResponseInterceptor } from './common/response'
+import { HttpExceptionFilter } from './common/filters'
 
 @Module({
   providers: [
     // 拦截器
     {
       provide: APP_INTERCEPTOR,
-      useClass: ResponseInterceptor,
+      useClass: ResponseInterceptor
     },
     // 异常过滤器
     {
       provide: APP_FILTER,
-      useClass: HttpExceptionFilter,
-    },
-    {
-      provide: APP_FILTER,
-      useClass: GrpcExceptionFilter,
-    },
-  ],
+      useClass: HttpExceptionFilter
+    }
+  ]
 })
 export class AppModule {}
 ```
@@ -155,12 +151,12 @@ async createRole(@Body() createDto: CreateRoleDto): Promise<ApiResponse<Role>> {
 
 ### 3. 异常过滤器
 
-项目使用两个专门的异常过滤器处理所有异常：
+项目使用专门的异常过滤器处理所有异常：
 
 - **HttpExceptionFilter**：处理 HTTP 请求中的异常，转换为统一的 `ApiErrorResponse` 格式
-- **GrpcExceptionFilter**：处理 gRPC 请求中的异常，转换为 gRPC 错误格式
 
 这种设计确保了：
+
 - 异常处理职责集中在过滤器中
 - 统一的错误响应格式
 - 详细的错误日志记录
@@ -184,6 +180,7 @@ async createRole(@Body() createDto: CreateRoleDto): Promise<ApiResponse<Role>> {
 ```
 
 HTTP 响应始终返回状态码 200，错误信息在响应体中，这样可以：
+
 - 确保前端始终能解析到响应体
 - 提供更详细的错误信息
 - 统一错误处理流程
@@ -197,21 +194,20 @@ HTTP 响应始终返回状态码 200，错误信息在响应体中，这样可�
 5. **使用适当的错误响应方法**：根据错误类型选择合适的错误响应方法，如 `notFound`、`forbidden` 等
 6. **保持消息一致性**：使用一致的消息格式，如中文提示信息
 7. **链式调用**：利用响应构建器的链式调用特性，使代码更简洁可读
-8. **协议分离**：gRPC 和 HTTP 各自保持其最适合的响应格式，不强行统一
+8. **统一标准**：所有 HTTP API 都遵循相同的响应格式标准
 
 ## 性能考量
 
 - 职责明确分离，减少了处理开销，提升了性能
 - 拦截器只负责日志和监控，不处理响应格式化
 - 异常处理集中在过滤器中，避免了重复处理
-- 在 HTTP 控制器中处理 gRPC 到 HTTP 的响应转换，减少了重复代码
+- 统一的响应处理流程，减少了重复代码
 - 使用 TypeScript 类型系统提供编译时类型检查，减少运行时错误
 
 ## 组件职责总结
 
-| 组件 | 职责 |
-|------|------|
-| **ResponseInterceptor** | 日志记录、性能监控 |
-| **BaseController** | 成功响应格式化、业务错误处理 |
+| 组件                    | 职责                          |
+| ----------------------- | ----------------------------- |
+| **ResponseInterceptor** | 日志记录、性能监控            |
+| **BaseController**      | 成功响应格式化、业务错误处理  |
 | **HttpExceptionFilter** | HTTP 异常处理、错误响应格式化 |
-| **GrpcExceptionFilter** | gRPC 异常处理、错误响应格式化 |

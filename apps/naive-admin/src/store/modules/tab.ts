@@ -4,13 +4,18 @@ import type { Router } from 'vue-router'
 export const useTabStore = defineStore('tab', {
   state: () => ({
     tabList: <ITabItem[]>[],
-    activeTabKey: '',
+    activeTabKey: ''
   }),
   getters: {},
   actions: {
     // 开启tab
     activeTab(routePath: string, name: string) {
-      const _fIndex = this.tabList.findIndex(item => item.path === routePath)
+      // 如果已经是当前激活的标签，不需要做任何操作
+      if (this.activeTabKey === routePath) {
+        return
+      }
+
+      const _fIndex = this.tabList.findIndex((item) => item.path === routePath)
       if (_fIndex === -1) {
         this.tabList.push({
           path: routePath,
@@ -20,7 +25,7 @@ export const useTabStore = defineStore('tab', {
       this.activeTabKey = routePath
     },
     removeTab(tab: ITabItem, router: Router) {
-      const _fIndex = this.tabList.findIndex(item => item.path === tab.path)
+      const _fIndex = this.tabList.findIndex((item) => item.path === tab.path)
       if (_fIndex !== -1) {
         if (tab.path === this.activeTabKey) {
           if (_fIndex === 0) {
@@ -33,11 +38,11 @@ export const useTabStore = defineStore('tab', {
       }
     },
     removeOtherTabs(tab: ITabItem) {
-      this.tabList = this.tabList.filter(item => item.path === tab.path)
+      this.tabList = this.tabList.filter((item) => item.path === tab.path)
       this.activeTabKey = this.tabList[0].path
     },
     removeRightTabs(tab: ITabItem) {
-      const _fIndex = this.tabList.findIndex(item => item.path === tab.path)
+      const _fIndex = this.tabList.findIndex((item) => item.path === tab.path)
       if (_fIndex !== -1) {
         this.tabList.splice(_fIndex + 1)
       }
@@ -45,6 +50,6 @@ export const useTabStore = defineStore('tab', {
     removeAllTabs(router: Router) {
       this.tabList = []
       router.push('/')
-    },
+    }
   }
 })

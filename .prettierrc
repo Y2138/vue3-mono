@@ -1,0 +1,18 @@
+{
+  "endOfLine": "auto",
+  "overrides": [
+    {
+      "files": ["*.json5"],
+      "options": {
+        "quoteProps": "preserve",
+        "singleQuote": false
+      }
+    }
+  ],
+  "printWidth": 500,
+  "proseWrap": "never",
+  "semi": false,
+  "singleQuote": true,
+  "trailingComma": "none",
+  "tabWidth": 2
+}

@@ -1,21 +1,9 @@
 <template>
-  <n-form-item
-    v-if="showComp"
-    ref="nFormRef"
-    :label="props.label"
-    :path="props.valueKey"
-    :rule="mergedRule">
-    <span v-if="props.isTxt">
+  <n-form-item v-if="showComp" ref="nFormRef" :label="props.label" :path="props.valueKey" :rule="mergedRule">
+    <span v-if="props.isText">
       {{ formModel[props.textKey || props.valueKey] || '' }}
     </span>
-    <component
-      v-else
-      :is="componentsName[props.comp || 'NInput']"
-      v-model:value="formModel[props.valueKey]"
-      :options="curOptions"
-      :placeholder="placeholder"
-      v-bind="props.props || {}">
-    </component>
+    <component v-else :is="componentsName[props.comp || 'NInput']" v-model:value="formModel[props.valueKey]" :options="curOptions" :placeholder="placeholder" v-bind="props.props || {}"> </component>
   </n-form-item>
 </template>
 
@@ -41,16 +29,18 @@ const componentsName = shallowReactive<Record<string, any>>({
   'd-checkbox': DCheckbox
 })
 
-const props = defineProps<IFormConfig & {
-  selectOptions: Record<string, IOption[]>
-}>()
+const props = defineProps<
+  IFormConfig & {
+    selectOptions: Record<string, IOption[]>
+  }
+>()
 const formModel = defineModel<Record<string, unknown>>('formModel', { required: true })
 
 // placeholder
 const attrs = useAttrs()
 const placeholder = computed(() => {
-  if (props.props && 'placeholder' in props.props) return props.props.placeholder;
-  return attrs.placeholder || `${(['d-select', 'd-date-picker'].includes(props.comp || '') ? '请选择' : '请填写') + props.label}`;
+  if (props.props && 'placeholder' in props.props) return props.props.placeholder
+  return attrs.placeholder || `${(['d-select', 'd-date-picker'].includes(props.comp || '') ? '请选择' : '请填写') + props.label}`
 })
 
 const defaultRule: FormItemRule = {
@@ -59,10 +49,10 @@ const defaultRule: FormItemRule = {
 }
 const mergedRule = computed(() => {
   if (props.rule?.message)
-  return {
-    ...defaultRule,
-    ...props.rule
-  }
+    return {
+      ...defaultRule,
+      ...props.rule
+    }
 })
 
 // 组件筛选项
@@ -72,7 +62,7 @@ const curOptions = computed(() => {
   if (optionsKey) {
     return props.selectOptions[optionsKey] || options || []
   }
-  return options || [];
+  return options || []
 })
 // 判断当前组件是否展示
 const showComp = computed(() => {
@@ -103,6 +93,4 @@ defineExpose({
 })
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

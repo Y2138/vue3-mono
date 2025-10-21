@@ -1,15 +1,15 @@
 # Vue3 Admin - 现代化前端管理系统
 
-> 基于 Vue 3 + TypeScript + Naive UI + gRPC 的企业级管理后台
+> 基于 Vue 3 + TypeScript + Naive UI 的企业级管理后台
 
 ## 🚀 项目特色
 
 - **现代化技术栈**：Vue 3 + Composition API + TypeScript + Vite 6
-- **双协议支持**：HTTP + gRPC 透明切换，性能与兼容性并存
-- **优雅UI框架**：Naive UI 组件库，简洁美观
-- **高性能CSS**：UnoCSS 原子化CSS，构建极速
-- **类型安全**：Protobuf 自动生成 TypeScript 类型定义
-- **开发友好**：HMR 热更新，API 状态监控，协议切换面板
+- **HTTP RESTful API**：标准化的 API 通信，简洁高效
+- **优雅 UI 框架**：Naive UI 组件库，简洁美观
+- **高性能 CSS**：UnoCSS 原子化 CSS，构建极速
+- **类型安全**：TypeScript 类型定义，开发时类型检查
+- **开发友好**：HMR 热更新，API 状态监控
 
 ## 📁 项目结构
 
@@ -34,34 +34,34 @@ apps/naive-admin/
 │   │   │   ├── rbac.ts      # 权限API
 │   │   │   └── column.ts    # 专栏API
 │   │   └── tests/           # API测试
-│   ├── shared/              # Protobuf生成类型
+│   ├── shared/              # 共享类型定义
 │   ├── router/              # 路由配置
 │   └── utils/               # 工具函数
 ├── vite-plugins/            # 自定义Vite插件
 ├── scripts/                 # 构建脚本
-└── protos/                  # Protobuf定义文件
+└── types/                   # TypeScript 类型定义
 ```
 
 ## 🏗️ 核心架构
 
-### 1. 双协议通信架构
+### 1. HTTP API 通信架构
 
 ```mermaid
 graph TD
     A[Vue组件] --> B[API适配器]
-    B --> C{协议选择}
-    C -->|HTTP| D[REST API]
-    C -->|gRPC| E[gRPC-Web]
-    D --> F[后端服务]
-    E --> F
-    
-    G[环境变量] --> C
-    H[运行时配置] --> C
+    B --> C[HTTP Client]
+    C --> D[REST API]
+    D --> E[后端服务]
+
+    F[环境变量] --> C
+    G[请求拦截器] --> C
+    H[响应拦截器] --> C
 ```
 
-### 2. API层设计
+### 2. API 层设计
 
 **统一调用接口**：
+
 ```typescript
 // 统一的API调用方式
 const [data, error] = await apiCall('GET /users', { page: 1 })
@@ -72,14 +72,21 @@ import { getCurrentUser, login } from '@/request/api/users'
 const [user, error] = await getCurrentUser()
 ```
 
-**协议透明切换**：
+**HTTP 配置**：
+
 ```typescript
 // 环境变量控制
-VITE_USE_GRPC=true    # 启用gRPC
-VITE_USE_GRPC=false   # 使用HTTP
+VITE_API_URL=http://localhost:3000    # API 基础地址
+VITE_API_TIMEOUT=10000               # 请求超时时间
 
-// 运行时切换（开发模式）
-globalStore.toggleProtocol()
+// 请求配置
+const apiConfig = {
+  baseURL: import.meta.env.VITE_API_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+}
 ```
 
 ### 3. 状态管理
@@ -89,13 +96,13 @@ globalStore.toggleProtocol()
 const userStore = useUserStore()
 const { userInfo, isAuthenticated } = storeToRefs(userStore)
 
-// 权限状态  
+// 权限状态
 const permissionStore = usePermissionStore()
 const { permissions, hasAllPermissions } = storeToRefs(permissionStore)
 
 // 全局状态
 const globalStore = useGlobalStore()
-const { currentProtocol, protocolUsageStats } = storeToRefs(globalStore)
+const { loading, apiStats } = storeToRefs(globalStore)
 ```
 
 ## 🚦 快速开始
@@ -104,7 +111,6 @@ const { currentProtocol, protocolUsageStats } = storeToRefs(globalStore)
 
 - **Node.js**: ≥ 18.0.0
 - **pnpm**: ≥ 8.0.0
-- **Protoc**: ≥ 3.21.0（用于Protobuf编译）
 
 ### 安装依赖
 
@@ -124,25 +130,23 @@ pnpm install
 ```bash
 # .env.development - 开发环境
 VITE_API_URL=http://localhost:3000
-VITE_GRPC_ENDPOINT=http://localhost:3000
-VITE_USE_GRPC=false
+VITE_API_TIMEOUT=10000
 VITE_API_DEBUG=true
 
-# .env.production - 生产环境  
+# .env.production - 生产环境
 VITE_API_URL=https://api.yourdomain.com
-VITE_GRPC_ENDPOINT=https://grpc.yourdomain.com
-VITE_USE_GRPC=true
+VITE_API_TIMEOUT=30000
 VITE_API_DEBUG=false
 ```
 
 ### 启动项目
 
 ```bash
-# 生成Protobuf类型并启动
-pnpm run dev:with-proto
+# 启动开发服务器
+pnpm run dev
 
 # 或分步执行
-pnpm run proto:gen  # 生成类型
+pnpm run build     # 构建项目
 pnpm run dev        # 启动开发服务器
 ```
 
@@ -150,25 +154,28 @@ pnpm run dev        # 启动开发服务器
 
 ## 🛠️ 开发指南
 
-### API开发
+### API 开发
 
-1. **定义Protobuf消息**（位于根目录 `/protos`）：
+1. **定义 Protobuf 消息**（位于根目录 `/protos`）：
+
 ```protobuf
 // users.proto
 message User {
   string phone = 1;
-  string username = 2; 
+  string username = 2;
   bool isActive = 3;
   repeated string roleIds = 4;
 }
 ```
 
-2. **生成TypeScript类型**：
+2. **生成 TypeScript 类型**：
+
 ```bash
 pnpm run proto:gen
 ```
 
-3. **创建API函数**：
+3. **创建 API 函数**：
+
 ```typescript
 // src/request/api/users.ts
 export const getCurrentUser = async () => {
@@ -183,6 +190,7 @@ export const updateUser = async (phone: string, data: Partial<User>) => {
 ### 组件开发
 
 **权限组件示例**：
+
 ```vue
 <template>
   <div v-if="hasPermission('user:create')">
@@ -201,7 +209,8 @@ const hasPermission = (permission: string) => {
 </script>
 ```
 
-**API调用示例**：
+**API 调用示例**：
+
 ```vue
 <script setup lang="ts">
 import { ref } from 'vue'
@@ -213,12 +222,12 @@ const user = ref(null)
 const fetchUser = async () => {
   loading.value = true
   const [data, error] = await getCurrentUser()
-  
+
   if (error) {
     console.error('获取用户失败:', error)
     return
   }
-  
+
   user.value = data
   loading.value = false
 }
@@ -227,7 +236,8 @@ const fetchUser = async () => {
 
 ### 样式开发
 
-**使用UnoCSS原子化类名**：
+**使用 UnoCSS 原子化类名**：
+
 ```vue
 <template>
   <div class="flex-center p-4 bg-white rounded-lg shadow-md">
@@ -237,6 +247,7 @@ const fetchUser = async () => {
 ```
 
 **自定义快捷方式（已预配置）**：
+
 - `flex-center` = `flex items-center justify-center`
 - `flex-start` = `flex items-center justify-start`
 - `shadow-rs` = `shadow-md`
@@ -285,7 +296,8 @@ pnpm run preview
 
 ### 部署配置
 
-**Nginx配置示例**：
+**Nginx 配置示例**：
+
 ```nginx
 server {
   listen 80;
@@ -297,12 +309,12 @@ server {
   location / {
     try_files $uri $uri/ /index.html;
   }
-  
+
   # API代理
   location /api/ {
     proxy_pass http://backend:3000/;
   }
-  
+
   # gRPC代理
   location /grpc/ {
     grpc_pass grpc://backend:3000;
@@ -314,19 +326,20 @@ server {
 
 ### 环境变量
 
-| 变量名 | 描述 | 默认值 | 示例 |
-|--------|------|-------|------|
-| `VITE_API_URL` | HTTP API地址 | `http://localhost:3000` | `https://api.example.com` |
-| `VITE_GRPC_ENDPOINT` | gRPC服务地址 | `http://localhost:3000` | `https://grpc.example.com` |
-| `VITE_USE_GRPC` | 是否启用gRPC | `false` | `true/false` |
-| `VITE_API_DEBUG` | API调试模式 | `false` | `true/false` |
+| 变量名               | 描述          | 默认值                  | 示例                       |
+| -------------------- | ------------- | ----------------------- | -------------------------- |
+| `VITE_API_URL`       | HTTP API 地址 | `http://localhost:3000` | `https://api.example.com`  |
+| `VITE_GRPC_ENDPOINT` | gRPC 服务地址 | `http://localhost:3000` | `https://grpc.example.com` |
+| `VITE_USE_GRPC`      | 是否启用 gRPC | `false`                 | `true/false`               |
+| `VITE_API_DEBUG`     | API 调试模式  | `false`                 | `true/false`               |
 
 ### 开发工具
 
 **协议状态面板**（仅开发模式显示）：
+
 - 📊 协议使用统计
 - 🔄 一键协议切换
-- 💚 API健康状态
+- 💚 API 健康状态
 - ⚡ 性能监控
 
 **访问方式**：开发模式下右上角自动显示
@@ -335,36 +348,36 @@ server {
 
 ### 核心依赖
 
-- **Vue 3.5+** - 渐进式JavaScript框架
-- **TypeScript 5.8+** - JavaScript的超集
+- **Vue 3.5+** - 渐进式 JavaScript 框架
+- **TypeScript 5.8+** - JavaScript 的超集
 - **Vite 6.3+** - 下一代前端构建工具
-- **Naive UI 2.41+** - Vue 3组件库
-- **Pinia 2.3+** - Vue状态管理库
-- **UnoCSS 0.65+** - 即时原子化CSS引擎
+- **Naive UI 2.41+** - Vue 3 组件库
+- **Pinia 2.3+** - Vue 状态管理库
+- **UnoCSS 0.65+** - 即时原子化 CSS 引擎
 
 ### 通信层
 
-- **Axios 1.7+** - HTTP客户端
-- **gRPC-Web 1.5+** - Web端gRPC客户端  
+- **Axios 1.7+** - HTTP 客户端
+- **gRPC-Web 1.5+** - Web 端 gRPC 客户端
 - **Protobuf 3.21+** - 数据序列化协议
-- **ts-proto 2.7+** - TypeScript代码生成器
+- **ts-proto 2.7+** - TypeScript 代码生成器
 
 ### 开发工具
 
 - **Vitest 4.0+** - 单元测试框架
-- **Oxlint** - 快速JavaScript/TypeScript代码检查器
+- **Oxlint** - 快速 JavaScript/TypeScript 代码检查器
 - **TypeScript Strict Mode** - 严格类型检查
 
 ## 💡 最佳实践
 
-### 1. API调用
+### 1. API 调用
 
 ```typescript
 // ✅ 推荐：使用统一错误处理
 const [users, error] = await getUsers()
 if (error) {
   console.error('获取失败:', error)
-  message.error(error) 
+  message.error(error)
   return
 }
 
@@ -405,9 +418,9 @@ const props = withDefaults(defineProps<Props>(), {
 ```html
 <!-- ✅ 推荐：原子化类名 -->
 <div class="flex items-center space-x-4 p-6 bg-white rounded-lg">
-
-<!-- ❌ 避免：过度自定义CSS -->
-<div class="custom-complex-layout">
+  <!-- ❌ 避免：过度自定义CSS -->
+  <div class="custom-complex-layout"></div>
+</div>
 ```
 
 ## 🐛 故障排除
@@ -415,32 +428,35 @@ const props = withDefaults(defineProps<Props>(), {
 ### 常见问题
 
 1. **项目启动失败**
+
    ```bash
    # 清理依赖重新安装
    rm -rf node_modules pnpm-lock.yaml
    pnpm install
    ```
 
-2. **Protobuf类型错误**
+2. **Protobuf 类型错误**
+
    ```bash
    # 重新生成类型
    pnpm run proto:gen
    ```
 
 3. **样式不生效**
+
    ```bash
    # 检查UnoCSS配置
    # 确保uno.config.ts正确配置
    ```
 
-4. **API调用失败**
+4. **API 调用失败**
    - 检查环境变量配置
    - 确认后端服务运行状态
    - 查看浏览器网络面板
 
 ### 性能优化
 
-1. **启用gRPC协议**：生产环境建议启用gRPC获得更好性能
+1. **启用 gRPC 协议**：生产环境建议启用 gRPC 获得更好性能
 2. **组件懒加载**：大型组件使用动态导入
 3. **图片优化**：使用现代图片格式（WebP）
 4. **代码分割**：合理配置路由懒加载
@@ -476,9 +492,9 @@ test: 添加用户API测试
 
 感谢以下开源项目：
 
-- [Vue.js](https://vuejs.org/) - 渐进式JavaScript框架
-- [Naive UI](https://www.naiveui.com/) - Vue 3组件库
-- [UnoCSS](https://github.com/unocss/unocss) - 即时原子化CSS引擎
+- [Vue.js](https://vuejs.org/) - 渐进式 JavaScript 框架
+- [Naive UI](https://www.naiveui.com/) - Vue 3 组件库
+- [UnoCSS](https://github.com/unocss/unocss) - 即时原子化 CSS 引擎
 - [Vite](https://vitejs.dev/) - 下一代前端构建工具
 
 ---
@@ -486,6 +502,7 @@ test: 添加用户API测试
 **📧 联系方式**：如有问题请提交 [Issue](../../issues)
 
 **🔗 相关项目**：
-- [后端服务](../server/) - NestJS + gRPC后端
+
+- [后端服务](../server/) - NestJS + gRPC 后端
 - [共享配置](../configs/) - 通用构建配置
 - [组件库](../packages/components/) - 可复用组件

@@ -1,7 +1,7 @@
 <template>
   <n-card size="small">
     <slot name="top"></slot>
-    <WrapRow v-if="inline" :cols="computedCols" v-bind="$attrs">
+    <WrapRow v-if="inline" :cols="computedCols" v-bind="attrs">
       <slot>
         <WrapCol></WrapCol>
       </slot>
@@ -14,7 +14,9 @@
     </WrapRow>
     <template v-if="!inline">
       <div class="flex flex-wrap items-center ml-[-0.5rem]">
-        <slot></slot>
+        <WrapRow :labelWidth="props.labelWidth" :cols="computedCols" v-bind="attrs">
+          <slot></slot>
+        </WrapRow>
       </div>
       <div class="mt-2">
         <slot name="btn-affix"></slot>
@@ -28,31 +30,33 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, useAttrs, watch } from 'vue'
 interface SearchPanelProps {
   formModel?: any
   inline?: boolean
   cols?: number
+  labelWidth?: string | number
   searchOnUpdate?: boolean
   searchLoading?: boolean
 }
 
 defineOptions({
-  name: 'SearchPanel'
+  name: 'SearchPanel',
+  inheritAttrs: false
 })
+
+const attrs = useAttrs()
 
 const emits = defineEmits<{
   (e: 'search'): void
   (e: 'reset'): void
 }>()
 
-const props = withDefaults(
-  defineProps<SearchPanelProps>(), {
-    inline: false,
-    cols: 3,
-    searchOnUpdate: false
-  }
-)
+const props = withDefaults(defineProps<SearchPanelProps>(), {
+  inline: false,
+  cols: 4,
+  searchOnUpdate: false
+})
 const computedCols = computed(() => {
   return props.inline ? 0 : props.cols
 })
@@ -64,7 +68,8 @@ watch(
     if (props.searchOnUpdate) {
       emits('search')
     }
-  }, {
+  },
+  {
     deep: true
   }
 )
@@ -79,6 +84,4 @@ const handleReset = () => {
 }
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

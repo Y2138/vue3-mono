@@ -1,153 +1,52 @@
-# Protobuf 契约定义
+# 协议定义文件（已废弃）
 
-本目录包含了项目的所有 Protocol Buffers (protobuf) 契约定义文件，用于 gRPC 服务的接口定义和前后端数据类型统一。
+⚠️ **注意：本目录中的 Protocol Buffers 文件已不再使用**
+
+项目已从 gRPC 双协议架构迁移到纯 HTTP RESTful API 架构。这些 proto 文件保留仅作为历史记录。
 
 ## 📁 文件结构
 
 ```
 protos/
-├── common.proto      # 通用类型定义（分页、时间戳、错误等）
-├── users.proto       # 用户服务契约定义
-├── rbac.proto        # 权限管理服务契约定义
+├── common.proto      # 通用类型定义（已废弃）
+├── users.proto       # 用户服务契约定义（已废弃）
+├── rbac.proto        # 权限管理服务契约定义（已废弃）
+├── health.proto      # 健康检查服务定义（已废弃）
 └── README.md         # 本说明文档
 ```
 
-## 📋 契约概览
+## 🔄 架构变更说明
 
-### common.proto - 通用类型
-- `Timestamp` - 时间戳类型
-- `PaginationRequest/Response` - 分页请求/响应
-- `ResponseStatus` - 通用响应状态
-- `ErrorDetail` - 错误详情
+### 变更原因
 
-### users.proto - 用户服务
-**核心消息类型：**
-- `User` - 用户信息
-- `LoginRequest/AuthResponse` - 登录认证
-- `CreateUserRequest/UpdateUserRequest` - 用户管理
-- `GetUsersRequest/GetUsersResponse` - 用户列表
+- 简化架构复杂度
+- 统一前后端通信协议
+- 降低维护成本
+- 提高开发效率
 
-**服务定义：**
-- `UserService` - 用户相关的所有 gRPC 方法
+### 当前架构
 
-### rbac.proto - 权限管理服务
-**核心消息类型：**
-- `Permission` - 权限信息
-- `Role` - 角色信息
-- `CreateRoleRequest/UpdateRoleRequest` - 角色管理
-- `CheckPermissionRequest/Response` - 权限检查
+项目现在使用：
 
-**服务定义：**
-- `PermissionService` - 权限管理相关方法
-- `RoleService` - 角色管理相关方法
+- **后端**：NestJS HTTP RESTful API
+- **前端**：基于 HTTP 的 API 调用
+- **数据格式**：JSON
+- **认证方式**：JWT Token
 
-## 🔧 使用方式
+### 数据类型定义
 
-### 后端 (NestJS)
-1. 安装依赖：
-```bash
-npm install @nestjs/microservices @grpc/grpc-js @grpc/proto-loader ts-proto
-```
+原本在 proto 文件中定义的数据类型现在通过以下方式管理：
 
-2. 编译 proto 文件：
-```bash
-npm run proto:gen
-```
+- **后端**：TypeScript 接口和 DTO 类
+- **前端**：TypeScript 类型定义
+- **共享类型**：通过 `packages/share` 包统一管理
 
-3. 在 Controller 中使用：
-```typescript
-import { Controller } from '@nestjs/common';
-import { GrpcMethod } from '@nestjs/microservices';
-import { LoginRequest, AuthResponse } from '../shared/users';
+## 📚 相关文档
 
-@Controller()
-export class AuthController {
-  @GrpcMethod('UserService', 'Login')
-  async login(data: LoginRequest): Promise<AuthResponse> {
-    // 实现登录逻辑
-  }
-}
-```
+- [后端 API 文档](../server/nest-main/README.md)
+- [前端开发指南](../apps/naive-admin/README.md)
+- [共享类型定义](../packages/share/README.md)
 
-### 前端 (Vue3)
-1. 安装依赖：
-```bash
-npm install @improbable-eng/grpc-web google-protobuf
-```
+---
 
-2. 配置 Vite 自动编译：
-```typescript
-// vite.config.ts
-import protoPlugin from 'vite-plugin-proto';
-
-export default defineConfig({
-  plugins: [
-    vue(),
-    protoPlugin({
-      input: ['../../protos/*.proto'],
-      output: 'src/shared'
-    })
-  ]
-});
-```
-
-3. 在组件中使用：
-```typescript
-import { UserServiceClient } from '@/shared/users';
-import type { LoginRequest } from '@/shared/users';
-
-const client = new UserServiceClient(grpcEndpoint);
-const response = await client.login(loginRequest);
-```
-
-## 📝 开发规范
-
-### 命名约定
-- **Package 名称**：小写，简洁描述（如 `users`, `rbac`）
-- **Message 名称**：大驼峰命名（如 `LoginRequest`, `UserInfo`）
-- **字段名称**：下划线命名（如 `user_id`, `created_at`）
-- **Service 名称**：大驼峰 + Service 后缀（如 `UserService`）
-- **RPC 方法**：大驼峰命名（如 `GetUser`, `CreateRole`）
-
-### 版本控制
-- 字段编号一旦分配，不可更改
-- 新增字段使用新的编号
-- 删除字段时保留字段编号注释
-- 使用 `optional` 关键字标记可选字段
-
-### 数据类型选择
-- **ID 字段**：使用 `string` 类型（支持 UUID）
-- **时间字段**：使用 `common.Timestamp` 类型
-- **布尔字段**：使用 `bool` 类型
-- **枚举字段**：暂时使用 `string`，后续可考虑 `enum`
-
-## 🚀 编译脚本
-
-项目中已配置自动编译脚本：
-
-```bash
-# 编译所有 proto 文件
-npm run proto:gen
-
-# 监听 proto 文件变化并自动编译
-npm run proto:watch
-
-# 开发模式（同时监听和启动服务）
-npm run dev:with-proto
-```
-
-## 🔄 迁移进度
-
-- [x] `common.proto` - 通用类型定义
-- [x] `users.proto` - 用户服务契约
-- [x] `rbac.proto` - 权限服务契约
-- [ ] 后端 gRPC Controller 实现
-- [ ] 前端 gRPC Client 实现
-- [ ] 测试和验证
-
-## 📚 参考资料
-
-- [Protocol Buffers 官方文档](https://developers.google.com/protocol-buffers)
-- [gRPC 官方文档](https://grpc.io/docs/)
-- [NestJS Microservices 文档](https://docs.nestjs.com/microservices/basics)
-- [gRPC-Web 文档](https://github.com/grpc/grpc-web) 
+_如需了解当前的 API 接口定义，请参考后端项目的 OpenAPI 文档或控制器代码。_

@@ -3,7 +3,6 @@ import axios from 'axios'
 import type { AxiosRequestConfig, AxiosRequestHeaders, RawAxiosRequestHeaders } from 'axios'
 import { PendingMap } from './cancelToken'
 import { useUserStore } from '@/store/modules/user'
-import { UnifiedErrorHandler } from './error-handler'
 // Protobuf 数据类型判断和转换工具
 interface ProtobufTransformConfig {
   /** 是否启用 Protobuf 处理 */
@@ -21,14 +20,14 @@ interface ICustomAxiosConfig<T> extends AxiosRequestConfig<T> {
   disableErrorMsg?: boolean
   /* 是否需要全屏loading */
   fullLoading?: boolean
-	/* 是否重试 */
-	retry?: boolean
-	/* 重试次数 */
-	retryMaxCount?: number
-	/* 重试间隔 */
-	retryRelay?: number
-	/* 已重试次数 */
-	__retryCount?: number
+  /* 是否重试 */
+  retry?: boolean
+  /* 重试次数 */
+  retryMaxCount?: number
+  /* 重试间隔 */
+  retryRelay?: number
+  /* 已重试次数 */
+  __retryCount?: number
   /* 是否不需要拼接时间戳，默认拼接 */
   noTimestamp?: boolean
   /* Protobuf 配置 */
@@ -43,13 +42,7 @@ class ProtobufTransformers {
    */
   static isProtobufInterface(data: any): boolean {
     // 检查是否为普通对象且不是 FormData、Date 等特殊类型
-    return data && 
-           typeof data === 'object' && 
-           !(data instanceof FormData) && 
-           !(data instanceof Date) && 
-           !(data instanceof File) && 
-           !(data instanceof Blob) &&
-           !Array.isArray(data)
+    return data && typeof data === 'object' && !(data instanceof FormData) && !(data instanceof Date) && !(data instanceof File) && !(data instanceof Blob) && !Array.isArray(data)
   }
 
   /**
@@ -154,11 +147,7 @@ class ProtobufTransformers {
   /**
    * 创建 Protobuf 配置的辅助方法
    */
-  static createConfig(options: {
-    requestType?: string
-    responseType?: string
-    useBinary?: boolean
-  }): ProtobufTransformConfig {
+  static createConfig(options: { requestType?: string; responseType?: string; useBinary?: boolean }): ProtobufTransformConfig {
     return {
       useProtobuf: true,
       requestMessageType: options.requestType,
@@ -168,35 +157,26 @@ class ProtobufTransformers {
   }
 }
 
-
 const loginUrls = ['/auth/v3/login', '/auth/v3/sendSmsCode', '/auth/v3/logout', '/auth/v3/api/verify-token']
 
 // 解构CancelToken 对象 以及 是否是取消错误方法
 // const { CancelToken, isCancel } = axios
 const pendingMap = new PendingMap()
 
-// 注意：原有的 errorHandle 函数已被 UnifiedErrorHandler 替代
-
 /* 实例化请求配置 */
 const instance = axios.create({
-	headers: {
-		'Content-Type': 'application/json;charset=UTF-8',
-	},
-	// 请求时长
-	// timeout: 1000 * 10,
-	// 表示跨域请求时是否需要使用凭证
-	withCredentials: false,
+  headers: {
+    'Content-Type': 'application/json;charset=UTF-8'
+  },
+  // 请求时长
+  // timeout: 1000 * 10,
+  // 表示跨域请求时是否需要使用凭证
+  withCredentials: false,
   // 设置基础URL
   // baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
   // 添加数据转换器
-  transformRequest: [
-    ProtobufTransformers.requestTransformer,
-    ...(Array.isArray(axios.defaults.transformRequest) ? axios.defaults.transformRequest : [])
-  ],
-  transformResponse: [
-    ...(Array.isArray(axios.defaults.transformResponse) ? axios.defaults.transformResponse : []),
-    ProtobufTransformers.responseTransformer
-  ]
+  transformRequest: [ProtobufTransformers.requestTransformer, ...(Array.isArray(axios.defaults.transformRequest) ? axios.defaults.transformRequest : [])],
+  transformResponse: [...(Array.isArray(axios.defaults.transformResponse) ? axios.defaults.transformResponse : []), ProtobufTransformers.responseTransformer]
 })
 
 /**
@@ -204,18 +184,18 @@ const instance = axios.create({
  * 每次请求前，如果存在token则在请求头中携带token
  */
 instance.interceptors.request.use(
-	(config) => {
+  (config) => {
     // TODO 若非同域名请求，需要前端获取cookie后塞入header头中
     // TODO 若是同域名请求，header头会带入该域名下所有cookie，无需再处理
     const headers: RawAxiosRequestHeaders = {}
 
     // 获取并添加JWT token到请求头
-    const userStore = useUserStore();
-    const token = userStore.getToken();
+    const userStore = useUserStore()
+    const token = userStore.authToken
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers['Authorization'] = `Bearer ${token}`
     }
-    
+
     // Protobuf 请求特殊处理
     const protobufConfig = (config as ICustomAxiosConfig<any>).protobuf
     if (protobufConfig?.useProtobuf && ProtobufTransformers.isProtobufInterface(config.data)) {
@@ -229,120 +209,106 @@ instance.interceptors.request.use(
       // 处理 Protobuf 数据
       config.data = ProtobufTransformers.processProtobufRequest(config.data, config as ICustomAxiosConfig<any>)
     } else if (config.data instanceof FormData && config.url) {
-			headers['Content-Type'] = 'multipart/form-data'
-		}
+      headers['Content-Type'] = 'multipart/form-data'
+    }
 
-		config.headers = { ...config.headers, ...headers } as AxiosRequestHeaders
+    config.headers = { ...config.headers, ...headers } as AxiosRequestHeaders
 
-		// console.log("config.header---", config.headers, config.url);
-		const configUrl = config.url?.replace(/\?.*/, '') // 过滤掉多余的/
-    // TODO 拼接时间戳
+    // console.log("config.header---", config.headers, config.url);
+    const configUrl = config.url?.replace(/\?.*/, '') // 过滤掉多余的/
+    // 拼接时间戳
     if (!(config as ICustomAxiosConfig<unknown>).noTimestamp) {
       config.params = {
         ...config.params,
-        timestamp: Date.now(),
+        timestamp: Date.now()
       }
     }
-		if (configUrl && loginUrls.includes(configUrl)) {
+    if (configUrl && loginUrls.includes(configUrl)) {
       // 登录相关接口的特殊处理
-		}
+    }
 
     pendingMap.cancelPending(config)
     pendingMap.addPending(config)
 
-		return config
-	},
-	error => {
-		console.error(error.data.error.message)
-		return Promise.reject(error.data.error.message)
-	},
+    return config
+  },
+  (error) => {
+    console.error(error.data.error.message)
+    return Promise.reject(error.data.error.message)
+  }
 )
 
 // 响应拦截器
 instance.interceptors.response.use(
-	(response) => {
-		// 2xx 请求成功
-		const { config } = response
-    pendingMap.removePending(config);
+  (response) => {
+    // 2xx 请求成功
+    const { config } = response
+    pendingMap.removePending(config)
 
     // Protobuf 响应处理
     const protobufConfig = (config as ICustomAxiosConfig<any>).protobuf
     if (protobufConfig?.useProtobuf) {
-      response.data = ProtobufTransformers.processProtobufResponse(
-        response.data, 
-        response.headers, 
-        config as ICustomAxiosConfig<any>
-      )
+      response.data = ProtobufTransformers.processProtobufResponse(response.data, response.headers, config as ICustomAxiosConfig<any>)
     }
 
     return response
-	},
-	(error) => {
-		// 从请求队列中移除当前请求
-		if (error.response?.config) {
-			pendingMap.removePending(error.response.config)
-		}
+  },
+  (error) => {
+    // 从请求队列中移除当前请求
+    if (error.response?.config) {
+      pendingMap.removePending(error.response.config)
+    }
 
-		// 使用统一错误处理器处理错误
-		const unifiedError = UnifiedErrorHandler.handleError(error, {
-			protobuf: (error.config as ICustomAxiosConfig<any>)?.protobuf
-		})
+    // 保留重试逻辑
+    if (error.response) {
+      const _config = error.response.config as ICustomAxiosConfig<any>
+      const status = error.response.status
 
-		// 保留重试逻辑
-		if (error.response) {
-			const _config = error.response.config as ICustomAxiosConfig<any>
-			const status = error.response.status
+      // 对于非认证/权限错误，尝试重试
+      if (![401, 403, 404].includes(status) && _config?.retry && (_config.retryMaxCount || 0) > 0) {
+        // 设置用于跟踪重试计数的变量
+        _config.__retryCount = _config.__retryCount || 0
+        // 检查是否已经把重试的总数用完
+        if (_config.__retryCount >= (_config.retryMaxCount || 0)) {
+          return Promise.reject(error)
+        }
+        // 增加重试计数
+        _config.__retryCount++
 
-			// 对于非认证/权限错误，尝试重试
-			if (![401, 403, 404].includes(status) && _config?.retry && (_config.retryMaxCount || 0) > 0) {
-				// 设置用于跟踪重试计数的变量
-				_config.__retryCount = _config.__retryCount || 0
-				// 检查是否已经把重试的总数用完
-				if (_config.__retryCount >= (_config.retryMaxCount || 0)) {
-					return Promise.reject(unifiedError)
-				}
-				// 增加重试计数
-				_config.__retryCount++
+        console.log(`请求重试 ${_config.__retryCount}/${_config.retryMaxCount}: ${error.config?.url}`)
 
-				console.log(`请求重试 ${_config.__retryCount}/${_config.retryMaxCount}: ${error.config?.url}`)
+        // 创造新的Promise来处理计数后退
+        const backoff = new Promise<void>((resolve) => {
+          setTimeout(() => {
+            resolve()
+          }, _config.retryRelay || 1000)
+        })
 
-				// 创造新的Promise来处理计数后退
-				const backoff = new Promise<void>(resolve => {
-					setTimeout(() => {
-						resolve()
-					}, _config.retryRelay || 1000)
-				})
+        // instance重试请求的Promise
+        return backoff.then(() => {
+          return instance(_config)
+        })
+      }
+    }
 
-				// instance重试请求的Promise
-				return backoff.then(() => {
-					return instance(_config)
-				})
-			}
-		}
-
-		// 显示用户友好的错误提示（在非调试模式下）
-		if ((import.meta as any).env.VITE_PROTO_DEBUG !== 'true') {
-			UnifiedErrorHandler.showUserFriendlyError(unifiedError)
-		}
-
-		return Promise.reject(unifiedError)
-	},
+    return Promise.reject(error)
+  }
 )
 
 // Q是请求data类型，R是响应data类型
 const request = async <Q = any, R = any>(config: string | AxiosRequestConfig<Q>, options?: ICustomAxiosConfig<Q>) => {
-	if (typeof config === 'string') {
-		if (!options) {
-			return instance.request<ResResult<R>>({
-				url: config,
-			})
-			// throw new Error('请配置正确的请求参数');
-		}
-		return instance.request<ResResult<R>>({
-			url: config,
-			...options,
-		})
-	}
+  if (typeof config === 'string') {
+    if (!options) {
+      return instance.request<ResResult<R>>({
+        url: config
+      })
+      // throw new Error('请配置正确的请求参数');
+    }
+    return instance.request<ResResult<R>>({
+      url: config,
+      ...options
+    })
+  }
   return instance.request<ResResult<R>>({ ...config, ...options })
 }
 
@@ -354,36 +320,74 @@ function handleResponseResult<Q = any, R = any>(data: ResResult<R>, config: ICus
     const { disableErrorMsg } = config
     if (!disableErrorMsg) {
       // 此处默认展示提示信息
-      data.msg && window.$message.error(data.msg)
+      if (data.msg) {
+        window.$message.error(data.msg)
+      }
     }
     return false
   }
   return true
 }
 
-export async function get<Q = any, R = any>(url: string, options: ICustomAxiosConfig<Q>): Promise<[ResResult<R>, null] | [null, any]> {
-    try {
-        const response = await request<Q, R>(url, { method: 'GET', ...options })
-        // console.log('2501 response===>', response)
-        const { data, config } = response
-        handleResponseResult<Q, R>(data, config)
+export async function get<Q = any, R = any>(url: string, options?: ICustomAxiosConfig<Q>): Promise<[ResResult<R>, null] | [null, any]> {
+  try {
+    const response = await request<Q, R>(url, { method: 'GET', ...options })
+    // console.log('2501 response===>', response)
+    const { data, config } = response
+    handleResponseResult<Q, R>(data, config)
 
-        return [data, null]
-      } catch (error) {
-        return [null, error]
-    }
+    return [data, null]
+  } catch (error) {
+    return [null, error]
+  }
 }
 
-export async function post<Q = any, R = any>(url: string, options: ICustomAxiosConfig<Q>):  Promise<[ResResult<R>, null] | [null, any]> {
-    try {
-        const response = await request<Q, R>(url, { method: 'POST', ...options })
-        const { data, config } = response
-        handleResponseResult<Q, R>(data, config)
+export async function post<Q = any, R = any>(url: string, options: ICustomAxiosConfig<Q>): Promise<[ResResult<R>, null] | [null, any]> {
+  try {
+    const response = await request<Q, R>(url, { method: 'POST', ...options })
+    const { data, config } = response
+    handleResponseResult<Q, R>(data, config)
 
-        return [data, null]
-    } catch (error) {
-        return [null, error]
-    }
+    return [data, null]
+  } catch (error) {
+    return [null, error]
+  }
+}
+
+export async function put<Q = any, R = any>(url: string, options: ICustomAxiosConfig<Q>): Promise<[ResResult<R>, null] | [null, any]> {
+  try {
+    const response = await request<Q, R>(url, { method: 'PUT', ...options })
+    const { data, config } = response
+    handleResponseResult<Q, R>(data, config)
+
+    return [data, null]
+  } catch (error) {
+    return [null, error]
+  }
+}
+
+export async function del<Q = any, R = any>(url: string, options?: ICustomAxiosConfig<Q>): Promise<[ResResult<R>, null] | [null, any]> {
+  try {
+    const response = await request<Q, R>(url, { method: 'DELETE', ...options })
+    const { data, config } = response
+    handleResponseResult<Q, R>(data, config)
+
+    return [data, null]
+  } catch (error) {
+    return [null, error]
+  }
+}
+
+export async function patch<Q = any, R = any>(url: string, options: ICustomAxiosConfig<Q>): Promise<[ResResult<R>, null] | [null, any]> {
+  try {
+    const response = await request<Q, R>(url, { method: 'PATCH', ...options })
+    const { data, config } = response
+    handleResponseResult<Q, R>(data, config)
+
+    return [data, null]
+  } catch (error) {
+    return [null, error]
+  }
 }
 // const api_example2 = (data: string) => post('/api/example2', { data: 'aaa' })
 // const api_example = (req: 'name') => post<'string'>('api/example', { data: 'name' })
@@ -391,7 +395,6 @@ export async function post<Q = any, R = any>(url: string, options: ICustomAxiosC
 
 // 导出 Protobuf 工具类和错误处理器供外部使用
 export { ProtobufTransformers }
-export { UnifiedErrorHandler, handleApiError } from './error-handler'
 
 // 只需要考虑单一职责，这块只封装axios
 export default instance

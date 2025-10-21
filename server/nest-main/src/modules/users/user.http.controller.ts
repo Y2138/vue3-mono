@@ -1,389 +1,419 @@
-import { Controller, Post, Get, Body, Param, Query, HttpCode, HttpStatus, ConflictException, UnauthorizedException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse as SwaggerApiResponse } from '@nestjs/swagger';
-import { BaseController } from '../../common/controllers/base.controller';
-import { ApiResponse, ApiErrorResponse } from '../../common/response/types';
-import { UserService } from './user.service';
-import { User, AuthResponse, GetUsersResponse } from '../../shared/users';
-import { UserTransformer } from '../../common/transformers/user.transformer';
+import { Controller, Post, Get, Body, Param, Query, HttpCode, HttpStatus, ConflictException, UnauthorizedException } from '@nestjs/common'
+import { ApiTags, ApiOperation, ApiResponse as SwaggerApiResponse } from '@nestjs/swagger'
+import { BaseController } from '../../common/controllers/base.controller'
+import { ApiResponse } from '../../common/response/types'
+import { UserService } from './user.service'
+import { User, AuthResponse, GetUsersResponse, LoginRequest, RegisterRequest, CreateUserRequest, UpdateUserRequest } from '../../shared/users'
+import { UserTransformer } from '../../common/transformers/user.transformer'
 
 /**
- * 登录请求 DTO
+ * 用户认证和管理 HTTP 控制器
+ * 使用 proto 定义的类型确保前后端接口一致性
  */
-export class LoginDto {
-  phone: string;
-  password: string;
-}
-
-/**
- * 注册请求 DTO
- */
-export class RegisterDto {
-  phone: string;
-  username: string;
-  password: string;
-  verificationCode?: string;
-}
-
-/**
- * 创建用户请求 DTO
- */
-export class CreateUserDto {
-  phone: string;
-  username: string;
-  password: string;
-  roleIds?: string[];
-}
-
-/**
- * 更新用户请求 DTO
- */
-export class UpdateUserDto {
-  username?: string;
-  isActive?: boolean;
-  roleIds?: string[];
-}
-
-/**
- * 创建超级管理员请求 DTO
- */
-export class CreateSuperAdminDto {
-  phone: string;
-  username: string;
-  password: string;
-  adminKey: string;
-}
-
-/**
- * 用户分页查询参数
- */
-export class GetUsersQueryDto {
-  page?: number = 1;
-  pageSize?: number = 10;
-  search?: string;
-  isActive?: boolean;
-}
-
-/**
- * 用户服务 HTTP Controller
- * 提供用户认证、管理等功能的 RESTful 接口
- */
-@ApiTags('用户管理')
-@Controller('users')
+@ApiTags('Users')
+@Controller('api')
 export class UserHttpController extends BaseController {
   constructor(private readonly userService: UserService) {
-    super(UserHttpController.name);
+    super('UserHttpController')
   }
+
+  // ========================================
+  // 🔐 用户认证相关接口
+  // ========================================
 
   /**
    * 用户登录
    */
-  @Post('login')
+  @Post('auth/login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: '用户登录' })
-  @SwaggerApiResponse({ status: 200, description: '登录成功' })
-  @SwaggerApiResponse({ status: 401, description: '手机号或密码错误' })
-  async login(@Body() loginDto: LoginDto): Promise<ApiResponse<AuthResponse> | ApiErrorResponse> {
-    return this.safeExecute(
-      async () => {
-        try {
-          // 调用 UserService 登录方法
-          const result = await this.userService.login({
-            phone: loginDto.phone,
-            password: loginDto.password,
-          });
-          
-          // 返回用户信息和令牌
-          return UserTransformer.createAuthResponse(result.user, result.token);
-        } catch (error) {
-          if (error instanceof UnauthorizedException) {
-            throw error;
-          }
-          throw new Error('登录失败: ' + error.message);
-        }
-      },
-      '登录成功'
-    );
+  @ApiOperation({
+    summary: '用户登录',
+    description: '使用手机号和密码进行用户登录认证'
+  })
+  @SwaggerApiResponse({
+    status: 200,
+    description: '登录成功，返回用户信息和访问令牌'
+  })
+  @SwaggerApiResponse({
+    status: 401,
+    description: '登录失败，手机号或密码错误'
+  })
+  async login(@Body() loginRequest: LoginRequest): Promise<ApiResponse<AuthResponse>> {
+    try {
+      // 验证登录请求
+      const validatedRequest = UserTransformer.validateLoginRequest(loginRequest)
+
+      // 执行登录逻辑
+      const result = await this.userService.login({
+        phone: validatedRequest.phone,
+        password: validatedRequest.password
+      })
+
+      if (!result) {
+        throw new UnauthorizedException('手机号或密码错误')
+      }
+
+      // 转换为 proto 格式的响应
+      const authResponse = UserTransformer.createAuthResponse(result.user, result.token)
+
+      return this.success(authResponse, '登录成功')
+    } catch (error) {
+      return this.handleError(error, '登录失败')
+    }
   }
 
   /**
    * 用户注册
    */
-  @Post('register')
-  @ApiOperation({ summary: '用户注册' })
-  @SwaggerApiResponse({ status: 201, description: '注册成功' })
-  @SwaggerApiResponse({ status: 409, description: '手机号已被注册' })
-  async register(@Body() registerDto: RegisterDto): Promise<ApiResponse<AuthResponse> | ApiErrorResponse> {
-    return this.safeExecute(
-      async () => {
-        try {
-          // 调用 UserService 注册方法
-          const result = await this.userService.register({
-            phone: registerDto.phone,
-            username: registerDto.username,
-            password: registerDto.password,
-            verificationCode: registerDto.verificationCode,
-          });
-          
-          // 返回用户信息和令牌
-          return UserTransformer.createAuthResponse(result.user, result.token);
-        } catch (error) {
-          if (error instanceof ConflictException) {
-            throw error;
-          }
-          throw new Error('注册失败: ' + error.message);
-        }
-      },
-      '注册成功'
-    );
+  @Post('auth/register')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: '用户注册',
+    description: '注册新用户账号'
+  })
+  @SwaggerApiResponse({
+    status: 201,
+    description: '注册成功，返回用户信息和访问令牌'
+  })
+  @SwaggerApiResponse({
+    status: 409,
+    description: '注册失败，手机号已存在'
+  })
+  async register(@Body() registerRequest: RegisterRequest): Promise<ApiResponse<AuthResponse>> {
+    try {
+      // 验证注册请求
+      const validatedRequest = UserTransformer.validateRegisterRequest(registerRequest)
+
+      // 检查手机号是否已存在
+      const existingUser = await this.userService.findOne(validatedRequest.phone)
+      if (existingUser) {
+        throw new ConflictException('该手机号已被注册')
+      }
+
+      // 执行注册逻辑
+      const result = await this.userService.register({
+        phone: validatedRequest.phone,
+        username: validatedRequest.username,
+        password: validatedRequest.password
+      })
+
+      // 转换为 proto 格式的响应
+      const authResponse = UserTransformer.createAuthResponse(result.user, result.token)
+
+      return this.success(authResponse, '注册成功')
+    } catch (error) {
+      return this.handleError(error, '注册失败')
+    }
   }
 
   /**
    * 获取当前用户信息
-   * TODO: 需要添加 JWT 认证守卫和用户装饰器
    */
-  @Get('profile')
-  @ApiOperation({ summary: '获取当前用户信息' })
-  @SwaggerApiResponse({ status: 200, description: '获取成功' })
-  @SwaggerApiResponse({ status: 401, description: '未授权' })
-  async getProfile(@Query('phone') phone: string): Promise<ApiResponse<User> | ApiErrorResponse> {
+  @Get('auth/profile')
+  @ApiOperation({
+    summary: '获取当前用户信息',
+    description: '获取当前登录用户的详细信息'
+  })
+  @SwaggerApiResponse({
+    status: 200,
+    description: '成功获取用户信息'
+  })
+  async getCurrentUser(@Query('phone') phone: string): Promise<ApiResponse<User>> {
     try {
-      // 临时实现：通过查询参数获取用户手机号
-      // TODO: 从 JWT 中获取用户信息
-      
-      // 获取用户信息
-      const user = await this.userService.getUserWithRoles(phone);
-      
-            // 转换为 HTTP 响应格式
-      const userData = UserTransformer.toProtobuf(user);
-      
-      return this.success(userData, '获取用户信息成功');
-    } catch (error) {
-      this.logger.error('获取用户信息失败', error);
-      if (error.entityType === '用户') {
-        return this.dataNotFound('用户', phone);
+      const user = await this.userService.findOne(phone)
+      if (!user) {
+        return this.error('用户不存在', 404)
       }
-      return this.serverError('获取用户信息失败', error);
+
+      // 转换为 proto 格式
+      const userProto = UserTransformer.toProtobuf(user)
+
+      return this.success(userProto, '获取用户信息成功')
+    } catch (error) {
+      return this.handleError(error, '获取用户信息失败')
     }
   }
 
   /**
-   * 获取指定用户信息
-   * TODO: 需要添加认证守卫
+   * 用户登出
    */
-  @Get('user/:phone')
-  @ApiOperation({ summary: '获取指定用户信息' })
-  @SwaggerApiResponse({ status: 200, description: '获取成功' })
-  @SwaggerApiResponse({ status: 404, description: '用户不存在' })
-  async getUser(@Param('phone') phone: string, @Query('currentUserPhone') currentUserPhone: string): Promise<ApiResponse<User> | ApiErrorResponse> {
+  @Post('auth/logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '用户登出',
+    description: '用户登出，清除认证状态'
+  })
+  @SwaggerApiResponse({
+    status: 200,
+    description: '登出成功'
+  })
+  async logout(): Promise<ApiResponse<void>> {
     try {
-      // 验证当前用户权限
-      await this.userService.getUserWithRoles(currentUserPhone);
-      
-      // 获取目标用户信息
-      const user = await this.userService.getUserWithRoles(phone);
-      
-      // 转换为 HTTP 响应格式
-      const userData = UserTransformer.toProtobuf(user);
-      
-      return this.success(userData, '获取用户信息成功');
+      // 这里可以实现 token 黑名单等逻辑
+      return this.success(undefined, '登出成功')
     } catch (error) {
-      this.logger.error('获取用户信息失败', error);
-      if (error.entityType === '用户') {
-        return this.dataNotFound('用户', phone);
-      }
-      return this.serverError('获取用户信息失败', error);
+      return this.handleError(error, '登出失败')
     }
   }
+
+  // ========================================
+  // 👥 用户管理相关接口
+  // ========================================
 
   /**
    * 获取用户列表
-   * TODO: 需要添加认证守卫
    */
-  @Get('list')
-  @ApiOperation({ summary: '获取用户列表' })
-  @SwaggerApiResponse({ status: 200, description: '获取成功' })
-  async getUsers(@Query() query: GetUsersQueryDto, @Query('currentUserPhone') currentUserPhone: string): Promise<ApiResponse<GetUsersResponse> | ApiErrorResponse> {
+  @Get('users')
+  @ApiOperation({
+    summary: '获取用户列表',
+    description: '分页获取用户列表，支持关键词搜索和状态筛选'
+  })
+  @SwaggerApiResponse({
+    status: 200,
+    description: '成功获取用户列表'
+  })
+  async getUsers(@Query('page') page: number = 1, @Query('pageSize') pageSize: number = 20, @Query('keyword') keyword?: string, @Query('isActive') isActive?: boolean): Promise<ApiResponse<GetUsersResponse>> {
     try {
-      // 验证当前用户权限
-      await this.userService.getUserWithRoles(currentUserPhone);
-      
-      // 获取用户列表
       const result = await this.userService.findAll({
-        page: query.page,
-        pageSize: query.pageSize,
-        search: query.search,
-        isActive: query.isActive
-      });
-      
-      // 转换用户列表为 HTTP 响应格式
-      const users = result.data.map(user => ({
-        phone: user.phone,
-        username: user.username,
-        isActive: user.isActive,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-        roles: user.userRoles?.map(ur => ({
-          id: ur.role.id,
-          name: ur.role.name,
-        })) || [],
-      }));
-      
-      // 返回成功响应
-      return this.success(
-        {
-          users: UserTransformer.toProtobufList(users),
-          pagination: {
-            page: result.pagination.page,
-            pageSize: result.pagination.pageSize,
-            total: result.pagination.total,
-            totalPages: result.pagination.totalPages,
-          }
-        },
-        '获取用户列表成功'
-      );
+        page,
+        pageSize,
+        search: keyword,
+        isActive
+      })
+
+      // 转换为 proto 格式的响应
+      const usersResponse: GetUsersResponse = {
+        users: result.data.map((user) => UserTransformer.toProtobuf(user)),
+        pagination: {
+          page: result.pagination.page,
+          pageSize: result.pagination.pageSize,
+          total: result.pagination.total,
+          totalPages: result.pagination.totalPages
+        }
+      }
+
+      return this.success(usersResponse, '获取用户列表成功')
     } catch (error) {
-      // 处理错误
-      this.logger.error('获取用户列表失败', error);
-      return this.serverError('获取用户列表失败', error);
+      return this.handleError(error, '获取用户列表失败')
+    }
+  }
+
+  /**
+   * 根据手机号获取用户详情
+   */
+  @Get('users/:phone')
+  @ApiOperation({
+    summary: '获取用户详情',
+    description: '根据手机号获取用户的详细信息'
+  })
+  @SwaggerApiResponse({
+    status: 200,
+    description: '成功获取用户详情'
+  })
+  @SwaggerApiResponse({
+    status: 404,
+    description: '用户不存在'
+  })
+  async getUserByPhone(@Param('phone') phone: string): Promise<ApiResponse<User>> {
+    try {
+      const user = await this.userService.findOne(phone)
+      if (!user) {
+        return this.error('用户不存在', 404)
+      }
+
+      // 转换为 proto 格式
+      const userProto = UserTransformer.toProtobuf(user)
+
+      return this.success(userProto, '获取用户详情成功')
+    } catch (error) {
+      return this.handleError(error, '获取用户详情失败')
     }
   }
 
   /**
    * 创建用户
-   * TODO: 需要添加认证守卫
    */
-  @Post('create')
-  @ApiOperation({ summary: '创建用户' })
-  @SwaggerApiResponse({ status: 201, description: '创建成功' })
-  @SwaggerApiResponse({ status: 409, description: '手机号已被注册' })
-  async createUser(@Body() createUserDto: CreateUserDto, @Query('currentUserPhone') currentUserPhone: string): Promise<ApiResponse<User> | ApiErrorResponse> {
-    return this.safeExecute(
-      async () => {
-        // 验证当前用户权限
-        await this.userService.getUserWithRoles(currentUserPhone);
-        
-        // 准备用户数据
-        const userData = {
-          phone: createUserDto.phone,
-          username: createUserDto.username,
-          password: createUserDto.password,
-          isActive: true,
-        };
-        
-        // 如果有角色ID，添加角色关联
-        if (createUserDto.roleIds && createUserDto.roleIds.length > 0) {
-          userData['userRoles'] = {
-            create: createUserDto.roleIds.map(roleId => ({
-              role: { connect: { id: roleId } }
-            }))
-          };
-        }
-        
-        // 创建用户
-        const user = await this.userService.create(userData);
-        
-        // 转换为 HTTP 响应格式
-        return UserTransformer.toProtobuf(user);
-      },
-      '创建用户成功'
-    );
+  @Post('users')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: '创建用户',
+    description: '创建新的用户账号'
+  })
+  @SwaggerApiResponse({
+    status: 201,
+    description: '用户创建成功'
+  })
+  @SwaggerApiResponse({
+    status: 409,
+    description: '手机号已存在'
+  })
+  async createUser(@Body() createUserRequest: CreateUserRequest): Promise<ApiResponse<User>> {
+    try {
+      // 检查手机号是否已存在
+      const existingUser = await this.userService.findOne(createUserRequest.phone)
+      if (existingUser) {
+        throw new ConflictException('该手机号已被注册')
+      }
+
+      // 创建用户
+      const user = await this.userService.create({
+        phone: createUserRequest.phone,
+        username: createUserRequest.username,
+        password: createUserRequest.password
+      })
+
+      // 转换为 proto 格式
+      const userProto = UserTransformer.toProtobuf(user)
+
+      return this.success(userProto, '用户创建成功')
+    } catch (error) {
+      return this.handleError(error, '用户创建失败')
+    }
   }
 
   /**
-   * 更新用户
-   * TODO: 需要添加认证守卫
+   * 更新用户信息
    */
-  @Post('update/:phone')
-  @ApiOperation({ summary: '更新用户' })
-  @SwaggerApiResponse({ status: 200, description: '更新成功' })
-  @SwaggerApiResponse({ status: 404, description: '用户不存在' })
-  async updateUser(
-    @Param('phone') phone: string,
-    @Body() updateUserDto: UpdateUserDto,
-    @Query('currentUserPhone') currentUserPhone: string
-  ): Promise<ApiResponse<User> | ApiErrorResponse> {
-    return this.safeExecute(
-      async () => {
-        // 验证当前用户权限
-        await this.userService.getUserWithRoles(currentUserPhone);
-        
-        // 准备更新数据
-        const updateData: any = {};
-        
-        if (updateUserDto.username !== undefined) {
-          updateData.username = updateUserDto.username;
-        }
-        
-        if (updateUserDto.isActive !== undefined) {
-          updateData.isActive = updateUserDto.isActive;
-        }
-        
-        // 如果有角色ID，更新角色关联
-        if (updateUserDto.roleIds && updateUserDto.roleIds.length > 0) {
-          // 先删除现有角色关联，然后创建新的
-          updateData.userRoles = {
-            deleteMany: {},
-            create: updateUserDto.roleIds.map(roleId => ({
-              role: { connect: { id: roleId } }
-            }))
-          };
-        }
-        
-        // 更新用户
-        const user = await this.userService.update(phone, updateData);
-        
-        // 转换为 HTTP 响应格式
-        return UserTransformer.toProtobuf(user);
-      },
-      '更新用户成功'
-    );
+  @Post('users/:phone')
+  @ApiOperation({
+    summary: '更新用户信息',
+    description: '更新指定用户的信息'
+  })
+  @SwaggerApiResponse({
+    status: 200,
+    description: '用户信息更新成功'
+  })
+  @SwaggerApiResponse({
+    status: 404,
+    description: '用户不存在'
+  })
+  async updateUser(@Param('phone') phone: string, @Body() updateUserRequest: UpdateUserRequest): Promise<ApiResponse<User>> {
+    try {
+      // 检查用户是否存在
+      const existingUser = await this.userService.findOne(phone)
+      if (!existingUser) {
+        return this.error('用户不存在', 404)
+      }
+
+      // 更新用户信息
+      const updatedUser = await this.userService.update(phone, {
+        username: updateUserRequest.username,
+        isActive: updateUserRequest.isActive
+      })
+
+      // 转换为 proto 格式
+      const userProto = UserTransformer.toProtobuf(updatedUser)
+
+      return this.success(userProto, '用户信息更新成功')
+    } catch (error) {
+      return this.handleError(error, '用户信息更新失败')
+    }
   }
 
   /**
    * 删除用户
-   * TODO: 需要添加认证守卫
    */
-  @Post('delete/:phone')
-  @ApiOperation({ summary: '删除用户' })
-  @SwaggerApiResponse({ status: 200, description: '删除成功' })
-  @SwaggerApiResponse({ status: 404, description: '用户不存在' })
-  async deleteUser(@Param('phone') phone: string, @Query('currentUserPhone') currentUserPhone: string): Promise<ApiResponse<null>> {
-    return this.safeExecute(
-      async () => {
-        // 验证当前用户权限
-        await this.userService.getUserWithRoles(currentUserPhone);
-        
-        // 删除用户
-        await this.userService.remove(phone);
-        
-        return null;
-      },
-      '删除用户成功'
-    );
+  @Post('users/:phone/delete')
+  @ApiOperation({
+    summary: '删除用户',
+    description: '删除指定的用户账号'
+  })
+  @SwaggerApiResponse({
+    status: 200,
+    description: '用户删除成功'
+  })
+  @SwaggerApiResponse({
+    status: 404,
+    description: '用户不存在'
+  })
+  async deleteUser(@Param('phone') phone: string): Promise<ApiResponse<void>> {
+    try {
+      // 检查用户是否存在
+      const existingUser = await this.userService.findOne(phone)
+      if (!existingUser) {
+        return this.error('用户不存在', 404)
+      }
+
+      // 删除用户
+      await this.userService.remove(phone)
+
+      return this.success(undefined, '用户删除成功')
+    } catch (error) {
+      return this.handleError(error, '用户删除失败')
+    }
+  }
+
+  // ========================================
+  // 📊 用户统计相关接口
+  // ========================================
+
+  /**
+   * 获取用户统计信息
+   */
+  @Get('users/stats')
+  @ApiOperation({
+    summary: '获取用户统计信息',
+    description: '获取用户相关的统计数据'
+  })
+  @SwaggerApiResponse({
+    status: 200,
+    description: '成功获取统计信息'
+  })
+  async getUserStats(): Promise<
+    ApiResponse<{
+      totalUsers: number
+      activeUsers: number
+      inactiveUsers: number
+      newUsersToday: number
+    }>
+  > {
+    try {
+      const stats = await this.userService.getStats()
+      return this.success(stats, '获取统计信息成功')
+    } catch (error) {
+      return this.handleError(error, '获取统计信息失败')
+    }
   }
 
   /**
-   * 创建超级管理员
+   * 检查手机号是否存在
    */
-  @Post('super-admin')
-  @ApiOperation({ summary: '创建超级管理员' })
-  @SwaggerApiResponse({ status: 201, description: '创建成功' })
-  @SwaggerApiResponse({ status: 400, description: '管理员密钥错误' })
-  async createSuperAdmin(@Body() createSuperAdminDto: CreateSuperAdminDto): Promise<ApiResponse<AuthResponse> | ApiErrorResponse> {
-    return this.safeExecute(
-      async () => {
-        // 创建超级管理员
-        const result = await this.userService.createSuperAdmin({
-          phone: createSuperAdminDto.phone,
-          username: createSuperAdminDto.username,
-          password: createSuperAdminDto.password,
-          adminKey: createSuperAdminDto.adminKey,
-        });
-        
-                  // 转换为 HTTP 响应格式
-          return UserTransformer.createAuthResponse(result.user, result.token);
-      },
-      '创建超级管理员成功'
-    );
+  @Get('users/check-phone/:phone')
+  @ApiOperation({
+    summary: '检查手机号是否存在',
+    description: '检查指定手机号是否已被注册'
+  })
+  @SwaggerApiResponse({
+    status: 200,
+    description: '检查完成'
+  })
+  async checkPhoneExists(@Param('phone') phone: string): Promise<ApiResponse<{ exists: boolean }>> {
+    try {
+      const user = await this.userService.findOne(phone)
+      return this.success({ exists: !!user }, '检查完成')
+    } catch (error) {
+      return this.handleError(error, '检查失败')
+    }
   }
-} 
+
+  /**
+   * 检查用户名是否存在
+   */
+  @Get('users/check-username/:username')
+  @ApiOperation({
+    summary: '检查用户名是否存在',
+    description: '检查指定用户名是否已被使用'
+  })
+  @SwaggerApiResponse({
+    status: 200,
+    description: '检查完成'
+  })
+  async checkUsernameExists(@Param('username') username: string): Promise<ApiResponse<{ exists: boolean }>> {
+    try {
+      const user = await this.userService.findByUsername(username)
+      return this.success({ exists: !!user }, '检查完成')
+    } catch (error) {
+      return this.handleError(error, '检查失败')
+    }
+  }
+}

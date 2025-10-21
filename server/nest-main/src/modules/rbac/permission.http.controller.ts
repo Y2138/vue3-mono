@@ -1,144 +1,366 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Param, 
-  Query, 
-  Logger,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
-import { PermissionService } from './services/permission.service';
-import { PermissionTransformer } from '../../common/transformers/rbac.transformer';
+import { Controller, Get, Post, Body, Param, Query, Logger, HttpCode, HttpStatus } from '@nestjs/common'
+import { ApiTags, ApiOperation, ApiResponse as SwaggerApiResponse } from '@nestjs/swagger'
+import { BaseController } from '../../common/controllers/base.controller'
+import { ApiResponse, ApiErrorResponse } from '../../common/response/types'
+import { PermissionService } from './services/permission.service'
+import { RbacTransformer } from '../../common/transformers/rbac.transformer'
+import { Permission, CreatePermissionRequest, UpdatePermissionRequest, GetPermissionsRequest, GetPermissionsResponse, CheckPermissionRequest, CheckPermissionResponse } from '../../shared/rbac'
 
-// DTO interfaces for HTTP requests
-interface CreatePermissionDto {
-  name: string;
-  action: string;
-  resource: string;
-  description?: string;
-}
-
-interface UpdatePermissionDto {
-  name?: string;
-  action?: string;
-  resource?: string;
-  description?: string;
-  isActive?: boolean;
-}
-
-interface GetPermissionsQueryDto {
-  page?: number;
-  pageSize?: number;
-  search?: string;
-  isActive?: boolean;
-  action?: string;
-  resource?: string;
-}
-
-interface CheckPermissionDto {
-  userPhone: string;
-  action: string;
-  resource: string;
-}
-
+/**
+ * 权限管理 HTTP 控制器
+ * 使用 proto 定义的类型确保前后端接口一致性
+ */
+@ApiTags('RBAC - Permissions')
 @Controller('api/permissions')
-export class PermissionHttpController {
-  private readonly logger = new Logger(PermissionHttpController.name);
+export class PermissionHttpController extends BaseController {
+  protected readonly logger = new Logger(PermissionHttpController.name)
 
-  constructor(
-    private readonly permissionService: PermissionService,
-  ) {}
+  constructor(private readonly permissionService: PermissionService) {
+    super('PermissionHttpController')
+  }
 
+  // ========================================
+  // 🔒 权限管理相关接口
+  // ========================================
+
+  /**
+   * 获取权限列表
+   */
   @Get()
-  async getPermissions(@Query() query: GetPermissionsQueryDto) {
-    this.logger.log(`Getting permissions list with query: ${JSON.stringify(query)}`);
-    
-    // 暂时返回所有权限，后续可以根据query参数实现筛选和分页
-    const permissions = await this.permissionService.findAll();
-    
-    const page = query.page || 1;
-    const pageSize = query.pageSize || 10;
-    
-    return {
-      data: permissions.map(permission => PermissionTransformer.toProtobuf(permission)),
-      pagination: {
-        page,
-        pageSize,
-        total: permissions.length,
-        totalPages: Math.ceil(permissions.length / pageSize),
-      },
-    };
-  }
-
-  @Get(':id')
-  async getPermission(@Param('id') id: string) {
-    this.logger.log(`Getting permission with ID: ${id}`);
-    
-    const permission = await this.permissionService.findById(id);
-    return {
-      data: PermissionTransformer.toProtobuf(permission),
-    };
-  }
-
-  @Post()
-  async createPermission(@Body() createDto: CreatePermissionDto) {
-    this.logger.log(`Creating permission: ${JSON.stringify(createDto)}`);
-    
-    const permission = await this.permissionService.create(createDto);
-    return {
-      data: PermissionTransformer.toProtobuf(permission),
-    };
-  }
-
-  @Post('update/:id')
-  async updatePermission(
-    @Param('id') id: string,
-    @Body() updateDto: UpdatePermissionDto,
-  ) {
-    this.logger.log(`Updating permission ${id}: ${JSON.stringify(updateDto)}`);
-    
-    const permission = await this.permissionService.update(id, updateDto);
-    return {
-      data: PermissionTransformer.toProtobuf(permission),
-    };
-  }
-
-  @Post('delete/:id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async deletePermission(@Param('id') id: string) {
-    this.logger.log(`Deleting permission with ID: ${id}`);
-    
-    await this.permissionService.delete(id);
-    return {
-      message: `Permission with ID ${id} deleted successfully`,
-    };
-  }
-
-  @Post('check')
-  async checkPermission(@Body() checkDto: CheckPermissionDto) {
-    this.logger.log(`Checking permission: ${checkDto.userPhone} -> ${checkDto.resource}:${checkDto.action}`);
-    
+  @ApiOperation({
+    summary: '获取权限列表',
+    description: '分页获取权限列表，支持关键词搜索和条件筛选'
+  })
+  @SwaggerApiResponse({
+    status: 200,
+    description: '成功获取权限列表'
+  })
+  async getPermissions(@Query('page') page: number = 1, @Query('pageSize') pageSize: number = 20, @Query('search') search?: string, @Query('isActive') isActive?: boolean, @Query('action') action?: string, @Query('resource') resource?: string): Promise<ApiResponse<GetPermissionsResponse> | ApiErrorResponse> {
     try {
-      const permission = await this.permissionService.findByResourceAndAction(
-        checkDto.resource,
-        checkDto.action
-      );
-      
-      return {
-        data: {
-          hasPermission: true,
-          matchedPermissions: [PermissionTransformer.toProtobuf(permission)],
+      // 构建 proto 格式的请求
+      const request: GetPermissionsRequest = {
+        pagination: {
+          page,
+          pageSize
         },
-      };
-    } catch {
-      return {
-        data: {
-          hasPermission: false,
-          matchedPermissions: [],
-        },
-      };
+        search,
+        isActive,
+        action,
+        resource
+      }
+
+      const result = await this.permissionService.findMany({
+        page: request.pagination?.page || 1,
+        pageSize: request.pagination?.pageSize || 20,
+        search: request.search,
+        isActive: request.isActive,
+        action: request.action,
+        resource: request.resource
+      })
+
+      // 转换为 proto 格式的响应
+      const permissionsResponse: GetPermissionsResponse = {
+        permissions: result.permissions.map((permission) => RbacTransformer.permissionToProtobuf(permission)),
+        pagination: {
+          page: result.pagination.page,
+          pageSize: result.pagination.pageSize,
+          total: result.pagination.total,
+          totalPages: Math.ceil(result.pagination.total / result.pagination.pageSize)
+        }
+      }
+
+      return this.success(permissionsResponse, '获取权限列表成功')
+    } catch (error) {
+      return this.handleError(error, '获取权限列表失败')
     }
   }
-} 
+
+  /**
+   * 根据ID获取权限详情
+   */
+  @Get(':id')
+  @ApiOperation({
+    summary: '获取权限详情',
+    description: '根据权限ID获取权限的详细信息'
+  })
+  @SwaggerApiResponse({
+    status: 200,
+    description: '成功获取权限详情'
+  })
+  @SwaggerApiResponse({
+    status: 404,
+    description: '权限不存在'
+  })
+  async getPermissionById(@Param('id') id: string): Promise<ApiResponse<Permission>> {
+    try {
+      const permission = await this.permissionService.findById(id)
+      if (!permission) {
+        return this.error('权限不存在', 404)
+      }
+
+      // 转换为 proto 格式
+      const permissionProto = RbacTransformer.permissionToProtobuf(permission)
+
+      return this.success(permissionProto, '获取权限详情成功')
+    } catch (error) {
+      return this.handleError(error, '获取权限详情失败')
+    }
+  }
+
+  /**
+   * 创建权限
+   */
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: '创建权限',
+    description: '创建新的权限'
+  })
+  @SwaggerApiResponse({
+    status: 201,
+    description: '权限创建成功'
+  })
+  @SwaggerApiResponse({
+    status: 409,
+    description: '权限已存在'
+  })
+  async createPermission(@Body() createPermissionRequest: CreatePermissionRequest): Promise<ApiResponse<Permission>> {
+    try {
+      // 验证请求数据
+      const validatedRequest = RbacTransformer.validateCreatePermissionRequest(createPermissionRequest)
+
+      // 检查权限是否已存在
+      const existingPermission = await this.permissionService.findByActionAndResource(validatedRequest.action, validatedRequest.resource)
+      if (existingPermission) {
+        return this.error('该权限已存在', 409)
+      }
+
+      // 创建权限
+      const permission = await this.permissionService.create({
+        name: validatedRequest.name,
+        action: validatedRequest.action,
+        resource: validatedRequest.resource,
+        description: validatedRequest.description
+      })
+
+      // 转换为 proto 格式
+      const permissionProto = RbacTransformer.permissionToProtobuf(permission)
+
+      return this.success(permissionProto, '权限创建成功')
+    } catch (error) {
+      return this.handleError(error, '权限创建失败')
+    }
+  }
+
+  /**
+   * 更新权限
+   */
+  @Post(':id')
+  @ApiOperation({
+    summary: '更新权限',
+    description: '更新指定权限的信息'
+  })
+  @SwaggerApiResponse({
+    status: 200,
+    description: '权限更新成功'
+  })
+  @SwaggerApiResponse({
+    status: 404,
+    description: '权限不存在'
+  })
+  async updatePermission(@Param('id') id: string, @Body() updatePermissionRequest: UpdatePermissionRequest): Promise<ApiResponse<Permission>> {
+    try {
+      // 检查权限是否存在
+      const existingPermission = await this.permissionService.findById(id)
+      if (!existingPermission) {
+        return this.error('权限不存在', 404)
+      }
+
+      // 验证请求数据
+      const validatedRequest = RbacTransformer.validateUpdatePermissionRequest({
+        ...updatePermissionRequest,
+        id
+      })
+
+      // 更新权限
+      const updatedPermission = await this.permissionService.update(id, {
+        name: validatedRequest.name,
+        action: validatedRequest.action,
+        resource: validatedRequest.resource,
+        description: validatedRequest.description,
+        isActive: validatedRequest.isActive
+      })
+
+      // 转换为 proto 格式
+      const permissionProto = RbacTransformer.permissionToProtobuf(updatedPermission)
+
+      return this.success(permissionProto, '权限更新成功')
+    } catch (error) {
+      return this.handleError(error, '权限更新失败')
+    }
+  }
+
+  /**
+   * 删除权限
+   */
+  @Post(':id/delete')
+  @ApiOperation({
+    summary: '删除权限',
+    description: '删除指定的权限'
+  })
+  @SwaggerApiResponse({
+    status: 200,
+    description: '权限删除成功'
+  })
+  @SwaggerApiResponse({
+    status: 404,
+    description: '权限不存在'
+  })
+  async deletePermission(@Param('id') id: string): Promise<ApiResponse<void>> {
+    try {
+      // 检查权限是否存在
+      const existingPermission = await this.permissionService.findById(id)
+      if (!existingPermission) {
+        return this.error('权限不存在', 404)
+      }
+
+      // 删除权限
+      await this.permissionService.delete(id)
+
+      return this.success(undefined, '权限删除成功')
+    } catch (error) {
+      return this.handleError(error, '权限删除失败')
+    }
+  }
+
+  /**
+   * 批量删除权限
+   */
+  @Post('batch-delete')
+  @ApiOperation({
+    summary: '批量删除权限',
+    description: '批量删除多个权限'
+  })
+  @SwaggerApiResponse({
+    status: 200,
+    description: '批量删除成功'
+  })
+  async batchDeletePermissions(@Body() body: { ids: string[] }): Promise<ApiResponse<void>> {
+    try {
+      const { ids } = body
+      if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return this.error('请提供要删除的权限ID列表', 400)
+      }
+
+      // 批量删除权限
+      await this.permissionService.batchDelete(ids)
+
+      return this.success(undefined, `成功删除 ${ids.length} 个权限`)
+    } catch (error) {
+      return this.handleError(error, '批量删除权限失败')
+    }
+  }
+
+  // ========================================
+  // 🔐 权限检查相关接口
+  // ========================================
+
+  /**
+   * 检查用户权限
+   */
+  @Post('check')
+  @ApiOperation({
+    summary: '检查用户权限',
+    description: '检查指定用户是否具有某项权限'
+  })
+  @SwaggerApiResponse({
+    status: 200,
+    description: '权限检查完成'
+  })
+  async checkPermission(@Body() checkPermissionRequest: CheckPermissionRequest): Promise<ApiResponse<CheckPermissionResponse>> {
+    try {
+      // 验证请求数据
+      const validatedRequest = RbacTransformer.validateCheckPermissionRequest(checkPermissionRequest)
+
+      // 执行权限检查
+      const hasPermission = await this.permissionService.checkUserPermission(validatedRequest.userPhone, validatedRequest.action, validatedRequest.resource)
+
+      const response: CheckPermissionResponse = {
+        hasPermission,
+        matchedPermissions: [] // 简化实现，不返回匹配的权限详情
+      }
+
+      return this.success(response, '权限检查完成')
+    } catch (error) {
+      return this.handleError(error, '权限检查失败')
+    }
+  }
+
+  /**
+   * 批量检查权限
+   */
+  @Post('batch-check')
+  @ApiOperation({
+    summary: '批量检查权限',
+    description: '批量检查用户的多项权限'
+  })
+  @SwaggerApiResponse({
+    status: 200,
+    description: '批量权限检查完成'
+  })
+  async batchCheckPermissions(@Body() body: { userPhone: string; permissions: Array<{ action: string; resource: string }> }): Promise<ApiResponse<CheckPermissionResponse[]>> {
+    try {
+      const { userPhone, permissions } = body
+      if (!userPhone || !permissions || !Array.isArray(permissions)) {
+        return this.error('请提供用户手机号和权限列表', 400)
+      }
+
+      // 批量检查权限
+      const results = await Promise.all(
+        permissions.map(async (perm) => {
+          const hasPermission = await this.permissionService.checkUserPermission(userPhone, perm.action, perm.resource)
+          return {
+            hasPermission,
+            matchedPermissions: [] // 简化实现，不返回匹配的权限详情
+          }
+        })
+      )
+
+      return this.success(results, '批量权限检查完成')
+    } catch (error) {
+      return this.handleError(error, '批量权限检查失败')
+    }
+  }
+
+  // ========================================
+  // 📊 权限统计相关接口
+  // ========================================
+
+  /**
+   * 获取权限统计信息
+   */
+  @Get('stats')
+  @ApiOperation({
+    summary: '获取权限统计信息',
+    description: '获取权限相关的统计数据'
+  })
+  @SwaggerApiResponse({
+    status: 200,
+    description: '成功获取统计信息'
+  })
+  async getPermissionStats(): Promise<
+    ApiResponse<{
+      totalPermissions: number
+      activePermissions: number
+      inactivePermissions: number
+      permissionsByResource: Record<string, number>
+    }>
+  > {
+    try {
+      const stats = await this.permissionService.getStats()
+      return this.success(stats, '获取权限统计信息成功')
+    } catch (error) {
+      return this.handleError(error, '获取权限统计信息失败')
+    }
+  }
+}

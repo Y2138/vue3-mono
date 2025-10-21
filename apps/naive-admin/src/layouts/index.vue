@@ -1,17 +1,10 @@
 <template>
   <n-layout class="h-100%" content-class="h-100%" has-sider>
-    <n-layout-sider
-      ref="siderRef"
-      :native-scrollbar="false"
-      :width="244"
-      bordered
-      collapse-mode="width"
-      :collapsed-width="64"
-      :collapsed="collapsed">
+    <n-layout-sider ref="siderRef" :native-scrollbar="false" :width="244" bordered collapse-mode="width" :collapsed-width="64" :collapsed="collapsed">
       <Menu></Menu>
     </n-layout-sider>
     <n-layout class="h-100%" content-class="w-100% flex flex-col">
-      <n-layout-header class="shadow-rs">
+      <n-layout-header>
         <Header></Header>
       </n-layout-header>
       <n-spin class="flex-1 h-0 w-100% p-2" content-class="h-100%" :show="pageRefreshStatus">
@@ -23,7 +16,7 @@
         <Footer></Footer>
       </n-layout-footer>
     </n-layout>
-    
+
     <!-- 悬浮的 API 状态组件 -->
     <ApiStatus />
   </n-layout>
@@ -41,8 +34,8 @@ import { usePageLoading } from '@/hooks/usePageLoading'
 
 const menuStore = useMenuStore()
 // 在window上挂载一个$message以在setup函数外使用
-window.$message = useMessage();
-window.$loadingBar = useLoadingBar();
+window.$message = useMessage()
+window.$loadingBar = useLoadingBar()
 
 const collapsed = computed(() => {
   return menuStore.collapsed
@@ -50,6 +43,4 @@ const collapsed = computed(() => {
 const { pageRefreshStatus } = usePageLoading()
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

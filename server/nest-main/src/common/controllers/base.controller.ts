@@ -1,29 +1,21 @@
-import { Logger } from '@nestjs/common';
-import { 
-  ApiResponse, 
-  ApiPaginatedResponse, 
-  ApiErrorResponse,
-  PaginationInfo,
-  ErrorInfo,
-  RESPONSE_CODES,
-  ERROR_TYPES
-} from '../response/types';
+import { Logger } from '@nestjs/common'
+import { ApiResponse, ApiPaginatedResponse, ApiErrorResponse, PaginationInfo, ErrorInfo, RESPONSE_CODES, ERROR_TYPES } from '../response/types'
 
 /**
  * 控制器基类
- * 
+ *
  * 提供统一的响应处理方法，支持成功响应、分页响应和错误响应
  * 所有 HTTP 和 gRPC 控制器都应继承此基类
  */
 export abstract class BaseController {
-  protected readonly logger: Logger;
+  protected readonly logger: Logger
 
   /**
    * 构造函数
    * @param controllerName 控制器名称，用于日志记录
    */
   constructor(controllerName: string) {
-    this.logger = new Logger(controllerName);
+    this.logger = new Logger(controllerName)
   }
 
   // ==================== 成功响应方法 ====================
@@ -40,7 +32,7 @@ export abstract class BaseController {
       code: RESPONSE_CODES.SUCCESS,
       message,
       data
-    };
+    }
   }
 
   /**
@@ -50,18 +42,14 @@ export abstract class BaseController {
    * @param message 响应消息
    * @returns 标准化的分页响应
    */
-  protected paginated<T>(
-    data: T[], 
-    pagination: PaginationInfo, 
-    message = '查询成功'
-  ): ApiPaginatedResponse<T> {
+  protected paginated<T>(data: T[], pagination: PaginationInfo, message = '查询成功'): ApiPaginatedResponse<T> {
     return {
       success: true,
       code: RESPONSE_CODES.SUCCESS,
       message,
       data,
       pagination
-    };
+    }
   }
 
   /**
@@ -75,7 +63,7 @@ export abstract class BaseController {
       code: RESPONSE_CODES.NO_CONTENT,
       message,
       data: null
-    };
+    }
   }
 
   /**
@@ -90,7 +78,7 @@ export abstract class BaseController {
       code: RESPONSE_CODES.CREATED,
       message,
       data
-    };
+    }
   }
 
   // ==================== 错误响应方法 ====================
@@ -106,7 +94,7 @@ export abstract class BaseController {
     const error: ErrorInfo = {
       type: ERROR_TYPES.BUSINESS,
       details: { message }
-    };
+    }
 
     return {
       success: false,
@@ -114,7 +102,7 @@ export abstract class BaseController {
       message,
       data: null,
       error
-    };
+    }
   }
 
   /**
@@ -127,9 +115,9 @@ export abstract class BaseController {
     const error: ErrorInfo = {
       type: ERROR_TYPES.BUSINESS,
       details: { message }
-    };
+    }
 
-    this.logger.warn(`业务错误: ${message}`);
+    this.logger.warn(`业务错误: ${message}`)
 
     return {
       success: false,
@@ -137,7 +125,7 @@ export abstract class BaseController {
       message,
       data: null,
       error
-    };
+    }
   }
 
   /**
@@ -147,11 +135,11 @@ export abstract class BaseController {
    * @returns 资源未找到错误响应
    */
   protected notFound(resource: string): ApiErrorResponse {
-    const message = `${resource}不存在`;
+    const message = `${resource}不存在`
     const error: ErrorInfo = {
       type: ERROR_TYPES.NOT_FOUND,
       details: { resource }
-    };
+    }
 
     return {
       success: false,
@@ -159,9 +147,9 @@ export abstract class BaseController {
       message,
       data: null,
       error
-    };
+    }
   }
-  
+
   /**
    * 创建数据不存在错误响应
    * 用于表示数据库中的记录不存在，如用户、角色等
@@ -170,11 +158,11 @@ export abstract class BaseController {
    * @returns 数据不存在错误响应
    */
   protected dataNotFound(entityType: string, identifier: string | number): ApiErrorResponse {
-    const message = `${entityType} ${identifier} 不存在`;
+    const message = `${entityType} ${identifier} 不存在`
     const error: ErrorInfo = {
       type: ERROR_TYPES.DATA_ERROR,
       details: { entityType, identifier }
-    };
+    }
 
     return {
       success: false,
@@ -182,7 +170,7 @@ export abstract class BaseController {
       message,
       data: null,
       error
-    };
+    }
   }
 
   /**
@@ -194,7 +182,7 @@ export abstract class BaseController {
     const error: ErrorInfo = {
       type: ERROR_TYPES.AUTHORIZATION,
       details: { message }
-    };
+    }
 
     return {
       success: false,
@@ -202,7 +190,7 @@ export abstract class BaseController {
       message,
       data: null,
       error
-    };
+    }
   }
 
   /**
@@ -215,7 +203,7 @@ export abstract class BaseController {
     const error: ErrorInfo = {
       type: ERROR_TYPES.VALIDATION,
       details
-    };
+    }
 
     return {
       success: false,
@@ -223,7 +211,7 @@ export abstract class BaseController {
       message,
       data: null,
       error
-    };
+    }
   }
 
   /**
@@ -236,9 +224,9 @@ export abstract class BaseController {
     const errorInfo: ErrorInfo = {
       type: ERROR_TYPES.INTERNAL,
       details: error
-    };
+    }
 
-    this.logger.error(`服务器错误: ${message}`, error?.stack || error);
+    this.logger.error(`服务器错误: ${message}`, error?.stack || error)
 
     return {
       success: false,
@@ -246,7 +234,7 @@ export abstract class BaseController {
       message,
       data: null,
       error: errorInfo
-    };
+    }
   }
 
   // ==================== 安全执行方法 ====================
@@ -257,16 +245,13 @@ export abstract class BaseController {
    * @param successMessage 成功消息
    * @returns 标准响应或错误响应
    */
-  protected async safeExecute<T>(
-    operation: () => Promise<T>,
-    successMessage = '操作成功'
-  ): Promise<ApiResponse<T> | ApiErrorResponse> {
+  protected async safeExecute<T>(operation: () => Promise<T>, successMessage = '操作成功'): Promise<ApiResponse<T> | ApiErrorResponse> {
     try {
-      const result = await operation();
-      return this.success(result, successMessage);
+      const result = await operation()
+      return this.success(result, successMessage)
     } catch (error) {
-      this.logger.error('操作执行失败', error?.stack || error);
-      return this.handleOperationError(error);
+      this.logger.error('操作执行失败', error?.stack || error)
+      return this.handleOperationError(error)
     }
   }
 
@@ -278,17 +263,12 @@ export abstract class BaseController {
    * @param successMessage 成功消息
    * @returns 标准分页响应或错误响应
    */
-  protected async safePaginatedExecute<T>(
-    operation: () => Promise<{ data: T[]; total: number }>,
-    page: number,
-    pageSize: number,
-    successMessage = '查询成功'
-  ): Promise<ApiPaginatedResponse<T> | ApiErrorResponse> {
+  protected async safePaginatedExecute<T>(operation: () => Promise<{ data: T[]; total: number }>, page: number, pageSize: number, successMessage = '查询成功'): Promise<ApiPaginatedResponse<T> | ApiErrorResponse> {
     try {
-      const { data, total } = await operation();
-      
-      const totalPages = Math.ceil(total / pageSize);
-      
+      const { data, total } = await operation()
+
+      const totalPages = Math.ceil(total / pageSize)
+
       const pagination: PaginationInfo = {
         page,
         pageSize,
@@ -296,12 +276,12 @@ export abstract class BaseController {
         totalPages,
         hasNext: page < totalPages,
         hasPrev: page > 1
-      };
-      
-      return this.paginated(data, pagination, successMessage);
+      }
+
+      return this.paginated(data, pagination, successMessage)
     } catch (error) {
-      this.logger.error('分页查询失败', error?.stack || error);
-      return this.handleOperationError(error);
+      this.logger.error('分页查询失败', error?.stack || error)
+      return this.handleOperationError(error)
     }
   }
 
@@ -317,30 +297,67 @@ export abstract class BaseController {
     if (error.status === 404) {
       // 判断是资源不存在还是数据不存在
       if (error.entityType && error.identifier) {
-        return this.dataNotFound(error.entityType, error.identifier);
+        return this.dataNotFound(error.entityType, error.identifier)
       } else if (error.message?.includes('不存在') && error.message?.includes('用户')) {
         // 如果是用户不存在的错误，则使用数据错误
-        return this.dataNotFound('用户', error.resource || '');
+        return this.dataNotFound('用户', error.resource || '')
       } else {
         // 其他资源不存在的错误
-        return this.notFound(error.resource || '资源');
+        return this.notFound(error.resource || '资源')
       }
     }
-    
+
     if (error.status === 403 || error.message?.includes('forbidden')) {
-      return this.forbidden(error.message);
+      return this.forbidden(error.message)
     }
-    
+
     if (error.status === 400 || error.message?.includes('validation')) {
-      return this.validationError(error.message, error.errors);
+      return this.validationError(error.message, error.errors)
     }
-    
+
     // 检查是否是 NotFoundException 实例，但实际上是数据错误
     if (error.name === 'NotFoundException' && error.message?.includes('用户')) {
-      return this.dataNotFound('用户', error.message.replace(/.*\s([^\s]+)\s不存在.*/, '$1'));
+      return this.dataNotFound('用户', error.message.replace(/.*\s([^\s]+)\s不存在.*/, '$1'))
     }
-    
+
     // 默认返回服务器错误
-    return this.serverError(error.message || '操作执行失败', error);
+    return this.serverError(error.message || '操作执行失败', error)
+  }
+
+  /**
+   * 通用错误响应方法
+   * @param message 错误消息
+   * @param code HTTP 状态码
+   * @returns 错误响应
+   */
+  protected error(message: string, code = 400): any {
+    if (code === 404) {
+      return this.notFound(message)
+    } else if (code === 403) {
+      return this.forbidden(message)
+    } else if (code === 409) {
+      return this.businessError(message)
+    } else if (code >= 500) {
+      return this.serverError(message)
+    } else {
+      return this.userError(message)
+    }
+  }
+
+  /**
+   * 统一错误处理方法
+   * @param error 错误对象
+   * @param defaultMessage 默认错误消息
+   * @returns 错误响应
+   */
+  protected handleError(error: any, defaultMessage = '操作失败'): any {
+    this.logger.error(`${defaultMessage}: ${error.message}`, error.stack)
+
+    if (error.response) {
+      // 如果是已经格式化的错误响应，直接返回
+      return error.response
+    }
+
+    return this.serverError(defaultMessage, error)
   }
 }

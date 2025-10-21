@@ -1,4 +1,4 @@
-import { defineConfig, presetUno, presetAttributify, presetIcons } from 'unocss'
+import { defineConfig, presetUno, presetAttributify, presetIcons } from 'unocss';
 
 export default defineConfig({
   // 预设
@@ -29,18 +29,18 @@ export default defineConfig({
     'flex-start': 'flex items-center justify-start',
     'flex-between': 'flex items-center justify-between',
     'flex-around': 'flex items-center justify-around',
-    
+
     // 尺寸相关
     'w-100%': 'w-full',
     'h-100%': 'h-full',
-    
+
     // 阴影相关 - 定义项目中使用的自定义阴影
-    'shadow-rs': 'shadow-md',
-    
+    'shadow-rs': 'shadow-[0_2px_6px_-1px_rgba(0,0,0,0.08)]',
+
     // 文本相关
     'text-6': 'text-xl', // text-6 -> text-xl
     'font-600': 'font-semibold', // font-600 -> font-semibold
-    
+
     // 按钮相关
     'btn-primary': 'px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors',
     'btn-secondary': 'px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-colors',
@@ -63,11 +63,11 @@ export default defineConfig({
       },
     },
     breakpoints: {
-      'xs': '480px',
-      'sm': '640px',
-      'md': '768px',
-      'lg': '1024px',
-      'xl': '1280px',
+      xs: '480px',
+      sm: '640px',
+      md: '768px',
+      lg: '1024px',
+      xl: '1280px',
       '2xl': '1536px',
     },
   },
@@ -86,20 +86,12 @@ export default defineConfig({
 
   // CSS 层级
   layers: {
-    'components': -1,
-    'default': 1,
-    'utilities': 2,
-    'shortcuts': 3,
+    components: -1,
+    default: 1,
+    utilities: 2,
+    shortcuts: 3,
   },
 
   // 安全列表 - 确保某些类名总是被包含
-  safelist: [
-    'flex-center',
-    'flex-start', 
-    'shadow-rs',
-    'animate-keyframes-spin',
-    'transform-rotate-180',
-  ],
-
-
-}) 
+  safelist: ['flex-center', 'flex-start', 'shadow-rs', 'animate-keyframes-spin', 'transform-rotate-180'],
+});

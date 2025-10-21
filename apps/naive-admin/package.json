@@ -17,20 +17,18 @@
     "test:coverage": "vitest --coverage"
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.13.4",
-    "@grpc/proto-loader": "^0.8.0",
-    "@vicons/ionicons5": "^0.13.0",
     "@vueuse/core": "^13.0.0",
     "axios": "^1.7.7",
     "date-fns": "^4.1.0",
-    "google-protobuf": "^3.21.4",
-    "grpc-web": "^1.5.0",
+    "google-protobuf": "^4.0.0",
+    "lodash-es": "^4.17.21",
     "motion-v": "^0.13.1",
     "pinia": "^2.3.0",
+    "pinia-plugin-persistedstate": "^4.5.0",
     "qs": "^6.10.3",
     "vite-plugin-pwa": "^1.0.0",
-    "vue": "^3.5.13",
-    "vue-router": "^4.5.0"
+    "vue": "^3.5.22",
+    "vue-router": "^4.6.3"
   },
   "devDependencies": {
     "@iconify/vue": "^4.3.0",

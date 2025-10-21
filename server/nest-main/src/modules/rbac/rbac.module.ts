@@ -1,25 +1,16 @@
-import { Module } from '@nestjs/common';
-import { PrismaModule } from '../../prisma/prisma.module';
-import { RbacSeedService } from './seeds/rbac-seed.service';
-import { PermissionService } from './services/permission.service';
-import { RbacInitService } from './services/rbac-init.service';
-import { RoleService } from './services/role.service';
-import { PermissionGrpcController } from './permission.grpc.controller';
-import { PermissionHttpController } from './permission.http.controller';
-import { RoleGrpcController } from './role.grpc.controller';
-import { RoleHttpController } from './role.http.controller';
-import { RbacTransformer } from '../../common/transformers/rbac.transformer';
+import { Module } from '@nestjs/common'
+import { PrismaModule } from '../../prisma/prisma.module'
+import { RbacSeedService } from './seeds/rbac-seed.service'
+import { PermissionService } from './services/permission.service'
+import { RbacInitService } from './services/rbac-init.service'
+import { RoleService } from './services/role.service'
+import { PermissionHttpController } from './permission.http.controller'
+import { RoleHttpController } from './role.http.controller'
+import { RbacTransformer } from '../../common/transformers/rbac.transformer'
 
 @Module({
-  imports: [
-    PrismaModule,
-  ],
-  controllers: [
-    PermissionGrpcController,
-    PermissionHttpController,
-    RoleGrpcController,
-    RoleHttpController,
-  ],
+  imports: [PrismaModule],
+  controllers: [PermissionHttpController, RoleHttpController],
   providers: [
     RoleService,
     PermissionService,
@@ -27,11 +18,11 @@ import { RbacTransformer } from '../../common/transformers/rbac.transformer';
     RbacInitService,
     {
       provide: 'RBAC_TRANSFORMER',
-      useValue: RbacTransformer,
-    },
+      useValue: RbacTransformer
+    }
   ],
-  exports: [RoleService, PermissionService, RbacSeedService],
+  exports: [RoleService, PermissionService, RbacSeedService]
 })
 export class RbacModule {
-  // RBAC模块：提供权限和角色管理的双协议支持（gRPC + HTTP）
-} 
+  // RBAC模块：提供权限和角色管理的 HTTP REST API
+}

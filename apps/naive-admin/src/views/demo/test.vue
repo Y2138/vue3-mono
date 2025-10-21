@@ -1,0 +1,111 @@
+<template>
+  <n-tree block-line expand-on-click :data="treeData" :node-props="nodeProps" :on-update:expanded-keys="updatePrefixWithExpaned" />
+</template>
+
+<script lang="tsx">
+import type { TreeOption } from 'naive-ui'
+import { Icon } from '@iconify/vue'
+import { NIcon, useMessage, NInput, NButton } from 'naive-ui'
+import { defineComponent, h, ref, computed } from 'vue'
+
+export default defineComponent({
+  setup() {
+    const message = useMessage()
+
+    // 图标组件定义
+    const FileTrayFullOutline = () => h(Icon, { icon: 'ion:document-outline', width: 16, height: 16 })
+    const Folder = () => h(Icon, { icon: 'ion:folder-outline', width: 16, height: 16 })
+    const FolderOpenOutline = () => h(Icon, { icon: 'ion:folder-open-outline', width: 16, height: 16 })
+    const updatePrefixWithExpaned = (
+      _keys: Array<string | number>,
+      _option: Array<TreeOption | null>,
+      meta: {
+        node: TreeOption | null
+        action: 'expand' | 'collapse' | 'filter'
+      }
+    ) => {
+      if (!meta.node) return
+      switch (meta.action) {
+        case 'expand':
+          meta.node.prefix = () =>
+            h(NIcon, null, {
+              default: () => h(FolderOpenOutline)
+            })
+          break
+        case 'collapse':
+          meta.node.prefix = () =>
+            h(NIcon, null, {
+              default: () => h(Folder)
+            })
+          break
+      }
+    }
+    const nodeProps = ({ option }: { option: TreeOption }) => {
+      return {
+        onClick() {
+          if (!option.children && !option.disabled) {
+            message.info(`[Click] ${option.label}`)
+          }
+        }
+      }
+    }
+    const editFields = ref<string[]>([])
+    const treeData = computed<TreeOption[]>(() => [
+      {
+        key: '文件夹',
+        label: '文件夹',
+        prefix: () =>
+          h(NIcon, null, {
+            default: () => h(Folder)
+          }),
+        children: [
+          {
+            key: '空的',
+            label: '空的',
+            disabled: true,
+            prefix: () =>
+              h(NIcon, null, {
+                default: () => h(Folder)
+              })
+          },
+          {
+            key: '我的文件',
+            //   label: '我的文件',
+            label: () => (editFields.value.includes('我的文件') ? <NInput value={123} placeholder="请输入" size="small" onClick={(e) => e.stopPropagation()}></NInput> : <>我的文件</>),
+            prefix: () =>
+              h(NIcon, null, {
+                default: () => h(Folder)
+              }),
+            suffix: () =>
+              h(
+                NButton,
+                {
+                  text: true,
+                  onClick: () => editFields.value.push('我的文件')
+                },
+                {
+                  default: () => 'edit'
+                }
+              ),
+            children: [
+              {
+                label: 'template.txt',
+                key: 'template.txt',
+                prefix: () =>
+                  h(NIcon, null, {
+                    default: () => h(FileTrayFullOutline)
+                  })
+              }
+            ]
+          }
+        ]
+      }
+    ])
+    return {
+      updatePrefixWithExpaned,
+      nodeProps,
+      treeData
+    }
+  }
+})
+</script>

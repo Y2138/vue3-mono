@@ -1,13 +1,13 @@
 /**
  * 通用 API 工具模块
- * 基于简化的 API 适配器实现
+ * 使用标准 HTTP/REST API，但保持 proto 类型定义
  */
 
-import { apiCall, checkApiHealth, getApiConfig } from '../api-adapter'
-import type { ApiResponse as AdapterResponse } from '../api-adapter'
+import { get, post } from '../axios'
+import type { PaginationRequest, PaginationResponse, Timestamp } from '@/shared/common'
 
 // ========================================
-// 🔄 通用响应类型（保持向后兼容）
+// 🔄 通用响应类型（基于 proto 定义）
 // ========================================
 
 // 传统 HTTP 响应类型
@@ -16,241 +16,202 @@ export interface ApiResponse<T = any> {
   msg: string
   data: T
   timestamp: number
+  error?: any
 }
 
-// 分页参数
-export interface PaginationParams {
-  page: number
-  pageSize: number
-}
-
-// 分页响应
-export interface PaginationResponse<T = any> {
+// 使用 proto 生成的分页类型
+export type PaginationParams = Omit<PaginationRequest, 'toJSON' | 'fromJSON' | 'create' | 'decode' | 'encode' | 'fromPartial'>
+export type PaginationData<T = any> = Omit<PaginationResponse, 'toJSON' | 'fromJSON' | 'create' | 'decode' | 'encode' | 'fromPartial' | 'items'> & {
   items: T[]
-  pagination: {
-    page: number
-    pageSize: number
-    total: number
-    totalPages: number
+}
+
+// 错误详情
+export interface ErrorDetail {
+  field?: string
+  message: string
+  code?: string
+}
+
+// 响应状态
+export interface ResponseStatus {
+  success: boolean
+  code: number
+  message: string
+  errors?: ErrorDetail[]
+}
+
+// ========================================
+// 🔧 通用工具函数
+// ========================================
+
+/**
+ * 格式化 proto Timestamp 为日期字符串
+ */
+export const formatTimestamp = (timestamp: Timestamp | string | number | Date): string => {
+  if (!timestamp) return ''
+
+  let date: Date
+
+  if (typeof timestamp === 'object' && 'seconds' in timestamp) {
+    // Protobuf Timestamp 格式
+    date = new Date(Number(timestamp.seconds) * 1000)
+  } else if (typeof timestamp === 'string') {
+    date = new Date(timestamp)
+  } else if (typeof timestamp === 'number') {
+    // 如果是毫秒时间戳
+    date = new Date(timestamp)
+  } else {
+    date = timestamp
   }
-}
 
-// 统一的 API 响应格式（适配器格式）
-export type UnifiedApiResponse<T = any> = AdapterResponse<T>
-
-// ========================================
-// 🛠️ 通用工具函数
-// ========================================
-
-/**
- * 通用 GET 请求
- * 保持向后兼容的接口
- */
-export async function get<T = any>(
-  url: string, 
-  config?: { params?: any; headers?: Record<string, string> }
-): Promise<UnifiedApiResponse<T>> {
-  return apiCall<T>(`GET ${url}`, config?.params, {
-    headers: config?.headers
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
   })
 }
 
 /**
- * 通用 POST 请求
- * 保持向后兼容的接口
+ * 格式化时间戳为相对时间
  */
-export async function post<T = any>(
-  url: string, 
-  data?: any,
-  config?: { headers?: Record<string, string> }
-): Promise<UnifiedApiResponse<T>> {
-  return apiCall<T>(`POST ${url}`, data, {
-    headers: config?.headers
-  })
+export const formatRelativeTime = (timestamp: Timestamp | string | number | Date): string => {
+  if (!timestamp) return ''
+
+  let date: Date
+
+  if (typeof timestamp === 'object' && 'seconds' in timestamp) {
+    date = new Date(Number(timestamp.seconds) * 1000)
+  } else if (typeof timestamp === 'string') {
+    date = new Date(timestamp)
+  } else if (typeof timestamp === 'number') {
+    date = new Date(timestamp)
+  } else {
+    date = timestamp
+  }
+
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+
+  const seconds = Math.floor(diff / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const hours = Math.floor(minutes / 60)
+  const days = Math.floor(hours / 24)
+
+  if (days > 0) return `${days}天前`
+  if (hours > 0) return `${hours}小时前`
+  if (minutes > 0) return `${minutes}分钟前`
+  return '刚刚'
 }
 
 /**
- * 通用 PUT 请求
+ * 创建 proto Timestamp 对象
  */
-export async function put<T = any>(
-  url: string, 
-  data?: any,
-  config?: { headers?: Record<string, string> }
-): Promise<UnifiedApiResponse<T>> {
-  return apiCall<T>(`PUT ${url}`, data, {
-    headers: config?.headers
-  })
-}
-
-/**
- * 通用 DELETE 请求
- */
-export async function del<T = any>(
-  url: string, 
-  config?: { params?: any; headers?: Record<string, string> }
-): Promise<UnifiedApiResponse<T>> {
-  return apiCall<T>(`DELETE ${url}`, config?.params, {
-    headers: config?.headers
-  })
-}
-
-// ========================================
-// 🏥 健康检查和监控
-// ========================================
-
-/**
- * API 健康检查
- */
-export async function healthCheck(): Promise<{
-  status: 'healthy' | 'unhealthy'
-  details: { http: boolean; grpc: boolean }
-  config: { protocol: string; endpoint: string }
-}> {
-  const health = await checkApiHealth()
-  const config = getApiConfig()
-  
+export const createTimestamp = (date: Date = new Date()): Timestamp => {
   return {
-    status: health.http ? 'healthy' : 'unhealthy',
-    details: health,
-    config: {
-      protocol: config.useGrpc ? 'gRPC' : 'HTTP',
-      endpoint: config.useGrpc ? config.grpcEndpoint : config.httpBaseUrl
-    }
+    seconds: Math.floor(date.getTime() / 1000).toString(),
+    nanos: (date.getTime() % 1000) * 1000000
   }
 }
 
 /**
- * 获取当前 API 配置信息
+ * 验证分页参数
  */
-export function getApiInfo() {
-  const config = getApiConfig()
-  
+export const validatePaginationParams = (params: PaginationParams): PaginationParams => {
+  const { page = 1, pageSize = 20, keyword } = params
+
   return {
-    protocol: config.useGrpc ? 'gRPC' : 'HTTP',
-    endpoint: config.useGrpc ? config.grpcEndpoint : config.httpBaseUrl,
-    debug: config.debug
+    page: Math.max(1, page),
+    pageSize: Math.min(Math.max(1, pageSize), 100), // 限制最大页面大小
+    keyword: keyword?.trim() || undefined
   }
 }
 
-// ========================================
-// 📊 工具函数
-// ========================================
-
 /**
- * 检查响应是否成功
+ * 构建查询参数
  */
-export function isApiSuccess<T>(response: UnifiedApiResponse<T>): response is [T, null] {
-  return response[0] !== null && response[1] === null
-}
+export const buildQueryParams = (params: Record<string, any>): Record<string, any> => {
+  const result: Record<string, any> = {}
 
-/**
- * 提取响应数据
- */
-export function extractApiData<T>(response: UnifiedApiResponse<T>): T | null {
-  return response[0]
-}
-
-/**
- * 提取响应错误
- */
-export function extractApiError<T>(response: UnifiedApiResponse<T>): Error | null {
-  return response[1]
-}
-
-/**
- * 创建分页参数
- */
-export function createPaginationParams(page: number, pageSize: number = 20): PaginationParams {
-  return { page, pageSize }
-}
-
-/**
- * 格式化错误消息
- */
-export function formatApiError(error: Error | null): string {
-  if (!error) return ''
-  
-  // 根据错误类型返回用户友好的消息
-  if (error.name?.startsWith('HTTP_')) {
-    const status = error.name.replace('HTTP_', '')
-    switch (status) {
-      case '401':
-        return '登录已过期，请重新登录'
-      case '403':
-        return '权限不足，无法访问'
-      case '404':
-        return '请求的资源不存在'
-      case '500':
-        return '服务器内部错误，请稍后重试'
-      default:
-        return error.message || '请求失败'
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      result[key] = value
     }
-  }
-  
-  return error.message || '未知错误'
+  })
+
+  return result
 }
 
 // ========================================
-// 🔧 批量请求工具
+// 🏥 健康检查 API
 // ========================================
 
 /**
- * 批量并行请求
+ * 检查 API 健康状态
  */
-export async function batchRequest<T = any>(
-  requests: Array<() => Promise<UnifiedApiResponse<T>>>
-): Promise<UnifiedApiResponse<T>[]> {
-  try {
-    const results = await Promise.allSettled(requests.map(req => req()))
-    
-    return results.map(result => {
-      if (result.status === 'fulfilled') {
-        return result.value
-      } else {
-        return [null, new Error(result.reason?.message || '批量请求失败')]
-      }
-    })
-  } catch (error) {
-    throw new Error(`批量请求执行失败: ${error}`)
-  }
+export const checkApiHealth = async () => {
+  return get<void, { status: 'healthy' | 'unhealthy'; timestamp: string; version?: string; uptime?: number }>('/api/health')
 }
 
 /**
- * 批量串行请求（有依赖关系时使用）
+ * 获取 API 配置信息
  */
-export async function sequentialRequest<T = any>(
-  requests: Array<() => Promise<UnifiedApiResponse<T>>>
-): Promise<UnifiedApiResponse<T>[]> {
-  const results: UnifiedApiResponse<T>[] = []
-  
-  for (const request of requests) {
-    try {
-      const result = await request()
-      results.push(result)
-      
-      // 如果请求失败，可以选择继续或停止
-      const [_data, error] = result
-      if (error) {
-        console.warn('串行请求中发现错误:', error.message)
-        // 继续执行后续请求
-      }
-    } catch (error) {
-      results.push([null, error as Error])
+export const getApiConfig = async () => {
+  return get<void, { version: string; environment: string; features: string[]; limits: { maxPageSize: number; defaultPageSize: number; maxRequestSize: number } }>('/api/config')
+}
+
+/**
+ * 获取系统信息
+ */
+export const getSystemInfo = async () => {
+  return get<void, { name: string; version: string; description: string; author: string; license: string; repository: string; buildTime: string; nodeVersion: string; environment: string }>('/api/system/info')
+}
+
+// ========================================
+// 🔍 搜索相关 API
+// ========================================
+
+/**
+ * 全局搜索
+ */
+export const globalSearch = async (keyword: string, types?: string[]) => {
+  return get<void, { users: any[]; roles: any[]; permissions: any[]; total: number }>('/api/search', {
+    params: {
+      keyword,
+      types: types?.join(',')
     }
-  }
-  
-  return results
+  })
 }
 
 // ========================================
-// 📤 导出所有工具
+// 📁 文件上传 API
 // ========================================
 
-export {
-  // 适配器相关
-  apiCall,
-  checkApiHealth,
-  getApiConfig,
-  // 类型
-  type AdapterResponse
-} 
+/**
+ * 上传文件
+ */
+export const uploadFile = async (file: File, category?: string) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  if (category) {
+    formData.append('category', category)
+  }
+
+  return post<FormData, { url: string; filename: string; size: number; mimeType: string; uploadTime: string }>('/api/upload', {
+    data: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+}
+
+/**
+ * 删除文件
+ */
+export const deleteFile = (url: string) => {
+  return post('/api/upload', {
+    data: { url }
+  })
+}

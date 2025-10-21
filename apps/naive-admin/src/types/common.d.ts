@@ -41,20 +41,20 @@ declare global {
   }
   // 分页表格接口data类型
   interface IPaginationResData<T extends Array> {
-    table_data: T
+    tableData: T
     header?: Record<string, string>
-    page_data: {
+    pageData: {
       count: number
       page: number
-      page_size: number
+      pageSize: number
     }
     /* 合计 */
-    total_data?: Record<string, string>
+    totalData?: Record<string, string>
   }
   interface IPaginationRequest {
     page: number
     // pageSize: number
-    page_size: number
+    pageSize: number
   }
   // 通用请求方法类型
   interface IRequest<Q, R> {
@@ -65,10 +65,10 @@ declare global {
     $message: MessageApi
     $loadingBar: LoadingBarApi
   }
-  
+
   declare module '*.vue' {
-    import type { DefineComponent } from 'vue';
-    const component: DefineComponent<{}, {}, any>;
-    export default component;
-  } 
+    import type { DefineComponent } from 'vue'
+    const component: DefineComponent<{}, {}, any>
+    export default component
+  }
 }

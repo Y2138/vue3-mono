@@ -1,6 +1,6 @@
-import { User as UserEntity, Prisma } from '@prisma/client';
-import { User as UserProto, LoginRequest, RegisterRequest, AuthResponse } from '../../shared/users';
-import { TimestampTransformer, ArrayTransformer, StringTransformer } from './common.transformer';
+import { User as UserEntity, Prisma } from '@prisma/client'
+import { User as UserProto, LoginRequest, RegisterRequest, AuthResponse } from '../../shared/users'
+import { TimestampTransformer, ArrayTransformer, StringTransformer } from './common.transformer'
 
 type UserWithRoles = Prisma.UserGetPayload<{
   include: {
@@ -10,7 +10,7 @@ type UserWithRoles = Prisma.UserGetPayload<{
       }
     }
   }
-}>;
+}>
 
 /**
  * 用户数据转换器
@@ -27,8 +27,8 @@ export const UserTransformer = {
       createdAt: TimestampTransformer.toProtobuf(entity.createdAt),
       updatedAt: TimestampTransformer.toProtobuf(entity.updatedAt),
       // 使用userRoles关联表获取角色ID
-      roleIds: ArrayTransformer.toArray(entity.userRoles?.map(ur => ur.role?.id) || []),
-    };
+      roleIds: ArrayTransformer.toArray(entity.userRoles?.map((ur) => ur.role?.id) || [])
+    }
   },
 
   /**
@@ -39,32 +39,32 @@ export const UserTransformer = {
     const entity: Partial<UserEntity> = {
       phone: proto.phone,
       username: StringTransformer.toNonEmptyString(proto.username),
-      isActive: proto.isActive,
-    };
+      isActive: proto.isActive
+    }
 
     // 时间戳通常由数据库管理，这里只在有值时才设置
     if (proto.createdAt) {
-      entity.createdAt = TimestampTransformer.fromProtobuf(proto.createdAt);
+      entity.createdAt = TimestampTransformer.fromProtobuf(proto.createdAt)
     }
     if (proto.updatedAt) {
-      entity.updatedAt = TimestampTransformer.fromProtobuf(proto.updatedAt);
+      entity.updatedAt = TimestampTransformer.fromProtobuf(proto.updatedAt)
     }
 
-    return entity;
+    return entity
   },
 
   /**
    * 创建认证响应
    */
-  createAuthResponse(user: UserEntity, token: string): AuthResponse {
-    const expiresInSeconds = parseInt(process.env.JWT_EXPIRES_IN || '86400', 10); // 默认24小时
-    const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
-    
+  createAuthResponse(user: UserWithRoles, token: string): AuthResponse {
+    const expiresInSeconds = parseInt(process.env.JWT_EXPIRES_IN || '86400', 10) // 默认24小时
+    const expiresAt = new Date(Date.now() + expiresInSeconds * 1000)
+
     return {
       user: this.toProtobuf(user),
       token,
-      expiresAt: TimestampTransformer.toProtobuf(expiresAt),
-    };
+      expiresAt: TimestampTransformer.toProtobuf(expiresAt)
+    }
   },
 
   /**
@@ -72,59 +72,59 @@ export const UserTransformer = {
    */
   validateLoginRequest(request: LoginRequest): { phone: string; password: string } {
     if (!request.phone || !request.password) {
-      throw new Error('Phone and password are required');
+      throw new Error('Phone and password are required')
     }
 
-    const phone = StringTransformer.cleanPhone(request.phone);
+    const phone = StringTransformer.cleanPhone(request.phone)
     if (!phone) {
-      throw new Error('Invalid phone number format');
+      throw new Error('Invalid phone number format')
     }
 
     if (request.password.length < 6) {
-      throw new Error('Password must be at least 6 characters');
+      throw new Error('Password must be at least 6 characters')
     }
 
     return {
       phone,
-      password: request.password,
-    };
+      password: request.password
+    }
   },
 
   /**
    * 验证注册请求
    */
-  validateRegisterRequest(request: RegisterRequest): { 
-    phone: string; 
-    username: string; 
-    password: string; 
+  validateRegisterRequest(request: RegisterRequest): {
+    phone: string
+    username: string
+    password: string
   } {
     if (!request.phone || !request.username || !request.password) {
-      throw new Error('Phone, username and password are required');
+      throw new Error('Phone, username and password are required')
     }
 
-    const phone = StringTransformer.cleanPhone(request.phone);
+    const phone = StringTransformer.cleanPhone(request.phone)
     if (!phone) {
-      throw new Error('Invalid phone number format');
+      throw new Error('Invalid phone number format')
     }
 
-    const username = StringTransformer.toNonEmptyString(request.username);
+    const username = StringTransformer.toNonEmptyString(request.username)
     if (!username) {
-      throw new Error('Username cannot be empty');
+      throw new Error('Username cannot be empty')
     }
 
     if (username.length < 2 || username.length > 20) {
-      throw new Error('Username must be between 2 and 20 characters');
+      throw new Error('Username must be between 2 and 20 characters')
     }
 
     if (request.password.length < 6) {
-      throw new Error('Password must be at least 6 characters');
+      throw new Error('Password must be at least 6 characters')
     }
 
     return {
       phone,
       username,
-      password: request.password,
-    };
+      password: request.password
+    }
   },
 
   /**
@@ -132,14 +132,14 @@ export const UserTransformer = {
    */
   toListItem(entity: UserWithRoles): UserProto {
     // 列表项可能不需要敏感信息
-    return this.toProtobuf(entity);
+    return this.toProtobuf(entity)
   },
 
   /**
    * 批量转换用户列表
    */
   toProtobufList(entities: any[]): UserProto[] {
-    return ArrayTransformer.toArray(entities).map(entity => this.toListItem(entity));
+    return ArrayTransformer.toArray(entities).map((entity) => this.toListItem(entity))
   },
 
   /**
@@ -149,7 +149,7 @@ export const UserTransformer = {
     return {
       phone: entity.phone,
       username: entity.username || '',
-      isActive: entity.isActive,
-    };
-  },
-};
+      isActive: entity.isActive
+    }
+  }
+}
