@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev:admin": "pnpm run -C apps/naive-admin dev",
-    "dev:server": "pnpm run -C server/nest-main start:dev",
+    "dev:server": "pnpm run -C server/nest-main dev",
     "lint": "oxlint",
     "lint:admin": "pnpm run -C apps/naive-admin lint",
     "lint:server": "pnpm run -C server/nest-main lint",

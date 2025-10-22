@@ -10,7 +10,7 @@ import { RbacModule } from './modules/rbac/rbac.module'
 import { HealthModule } from './health/health.module'
 import { PrismaModule } from './prisma/prisma.module'
 import { MonitoringInterceptor } from './interceptors/monitoring.interceptor'
-import { HybridAuthGuard } from './common/guards/hybrid-auth.guard'
+import { AuthGuard } from './common/guards/auth.guard'
 import { PermissionGuard } from './modules/rbac/guards/permission.guard'
 import { HttpExceptionFilter } from './common/filters'
 import { SecurityMiddleware } from './common/middleware/security.middleware'
@@ -52,7 +52,7 @@ import { ResponseInterceptor } from './common/response'
     // 全局认证守卫
     {
       provide: APP_GUARD,
-      useClass: HybridAuthGuard
+      useClass: AuthGuard
     },
     // 全局权限守卫
     {
@@ -60,10 +60,6 @@ import { ResponseInterceptor } from './common/response'
       useClass: PermissionGuard
     },
     // 全局异常过滤器
-    {
-      provide: APP_FILTER,
-      useClass: HttpExceptionFilter
-    },
     {
       provide: APP_FILTER,
       useClass: HttpExceptionFilter

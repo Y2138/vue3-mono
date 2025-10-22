@@ -6,11 +6,14 @@
 
 // Common types
 export type {
-  Timestamp,
   PaginationRequest,
   PaginationResponse,
   ResponseStatus,
-  ErrorDetail
+  ErrorDetail,
+  EnumItem,
+  EnumItemList,
+  EnumResponse,
+  EnumResponse_EnumsEntry
 } from './common';
 
 // Health types
@@ -54,5 +57,7 @@ export type {
   GetUsersResponse,
   RegisterRequest,
   CreateSuperAdminRequest,
+  GetUserEnumsRequest,
+  GetUserEnumsResponse,
   UserService
 } from './users';

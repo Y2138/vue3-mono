@@ -3,8 +3,8 @@ import { ApiTags, ApiOperation, ApiResponse as SwaggerApiResponse } from '@nestj
 import { BaseController } from '../../common/controllers/base.controller'
 import { ApiResponse, ApiErrorResponse } from '../../common/response/types'
 import { PermissionService } from './services/permission.service'
-import { RbacTransformer } from '../../common/transformers/rbac.transformer'
-import { Permission, CreatePermissionRequest, UpdatePermissionRequest, GetPermissionsRequest, GetPermissionsResponse, CheckPermissionRequest, CheckPermissionResponse } from '../../shared/rbac'
+import { Validator } from '../../common/validators'
+import { Permission, CreatePermissionRequest, UpdatePermissionRequest, GetPermissionsResponse, CheckPermissionRequest, CheckPermissionResponse } from '../../shared/rbac'
 
 /**
  * 权限管理 HTTP 控制器
@@ -36,43 +36,77 @@ export class PermissionHttpController extends BaseController {
     description: '成功获取权限列表'
   })
   async getPermissions(@Query('page') page: number = 1, @Query('pageSize') pageSize: number = 20, @Query('search') search?: string, @Query('isActive') isActive?: boolean, @Query('action') action?: string, @Query('resource') resource?: string): Promise<ApiResponse<GetPermissionsResponse> | ApiErrorResponse> {
-    try {
-      // 构建 proto 格式的请求
-      const request: GetPermissionsRequest = {
-        pagination: {
-          page,
-          pageSize
-        },
-        search,
-        isActive,
-        action,
-        resource
-      }
+    // 验证分页参数
+    Validator.numberRange(page, 1, 1000, '页码')
+    Validator.numberRange(pageSize, 1, 100, '每页数量')
 
-      const result = await this.permissionService.findMany({
-        page: request.pagination?.page || 1,
-        pageSize: request.pagination?.pageSize || 20,
-        search: request.search,
-        isActive: request.isActive,
-        action: request.action,
-        resource: request.resource
-      })
-
-      // 转换为 proto 格式的响应
-      const permissionsResponse: GetPermissionsResponse = {
-        permissions: result.permissions.map((permission) => RbacTransformer.permissionToProtobuf(permission)),
-        pagination: {
-          page: result.pagination.page,
-          pageSize: result.pagination.pageSize,
-          total: result.pagination.total,
-          totalPages: Math.ceil(result.pagination.total / result.pagination.pageSize)
-        }
-      }
-
-      return this.success(permissionsResponse, '获取权限列表成功')
-    } catch (error) {
-      return this.handleError(error, '获取权限列表失败')
+    // 验证可选参数
+    if (search !== undefined && search !== '') {
+      Validator.stringLength(search, 1, 100, '搜索关键词')
     }
+
+    if (action !== undefined && action !== '') {
+      Validator.actionName(action, '操作名称')
+    }
+
+    if (resource !== undefined && resource !== '') {
+      Validator.resourceName(resource, '资源名称')
+    }
+
+    const result = await this.permissionService.findMany({
+      page,
+      pageSize,
+      search,
+      isActive,
+      action,
+      resource
+    })
+
+    // 直接组装响应数据
+    const permissionsResponse: GetPermissionsResponse = {
+      permissions: result.permissions.map((permission) => ({
+        id: permission.id,
+        name: permission.name,
+        description: permission.description || '',
+        resource: permission.resource,
+        action: permission.action,
+        isActive: true, // 数据库中暂无此字段，默认为true
+        createdAt: this.formatDateTime(permission.createdAt),
+        updatedAt: this.formatDateTime(permission.updatedAt)
+      })),
+      pagination: {
+        page: result.pagination.page,
+        pageSize: result.pagination.pageSize,
+        total: result.pagination.total,
+        totalPages: Math.ceil(result.pagination.total / result.pagination.pageSize)
+      }
+    }
+
+    return this.success(permissionsResponse, '获取权限列表成功')
+  }
+
+  /**
+   * 获取权限统计信息
+   */
+  @Get('stats')
+  @ApiOperation({
+    summary: '获取权限统计信息',
+    description: '获取权限相关的统计数据'
+  })
+  @SwaggerApiResponse({
+    status: 200,
+    description: '成功获取统计信息'
+  })
+  async getPermissionStats(): Promise<
+    ApiResponse<{
+      totalPermissions: number
+      activePermissions: number
+      inactivePermissions: number
+      permissionsByResource: Record<string, number>
+    }>
+  > {
+    const stats = await this.permissionService.getStats()
+    return this.success(stats, '获取权限统计信息成功')
   }
 
   /**
@@ -92,19 +126,27 @@ export class PermissionHttpController extends BaseController {
     description: '权限不存在'
   })
   async getPermissionById(@Param('id') id: string): Promise<ApiResponse<Permission>> {
-    try {
-      const permission = await this.permissionService.findById(id)
-      if (!permission) {
-        return this.error('权限不存在', 404)
-      }
+    // 验证权限ID
+    Validator.uuid(id, '权限ID')
 
-      // 转换为 proto 格式
-      const permissionProto = RbacTransformer.permissionToProtobuf(permission)
-
-      return this.success(permissionProto, '获取权限详情成功')
-    } catch (error) {
-      return this.handleError(error, '获取权限详情失败')
+    const permission = await this.permissionService.findById(id)
+    if (!permission) {
+      return this.error('权限不存在', 404)
     }
+
+    // 直接组装权限数据
+    const permissionResponse: Permission = {
+      id: permission.id,
+      name: permission.name,
+      description: permission.description || '',
+      resource: permission.resource,
+      action: permission.action,
+      isActive: true, // 数据库中暂无此字段，默认为true
+      createdAt: this.formatDateTime(permission.createdAt),
+      updatedAt: this.formatDateTime(permission.updatedAt)
+    }
+
+    return this.success(permissionResponse, '获取权限详情成功')
   }
 
   /**
@@ -126,27 +168,43 @@ export class PermissionHttpController extends BaseController {
   })
   async createPermission(@Body() createPermissionRequest: CreatePermissionRequest): Promise<ApiResponse<Permission>> {
     try {
-      // 验证请求数据
-      const validatedRequest = RbacTransformer.validateCreatePermissionRequest(createPermissionRequest)
+      // 基础格式验证
+      Validator.permissionName(createPermissionRequest.name)
+      Validator.actionName(createPermissionRequest.action)
+      Validator.resourceName(createPermissionRequest.resource)
+
+      // 验证描述字段（可选）
+      if (createPermissionRequest.description) {
+        Validator.description(createPermissionRequest.description, 500, '权限描述')
+      }
 
       // 检查权限是否已存在
-      const existingPermission = await this.permissionService.findByActionAndResource(validatedRequest.action, validatedRequest.resource)
+      const existingPermission = await this.permissionService.findByActionAndResource(createPermissionRequest.action, createPermissionRequest.resource)
       if (existingPermission) {
         return this.error('该权限已存在', 409)
       }
 
       // 创建权限
       const permission = await this.permissionService.create({
-        name: validatedRequest.name,
-        action: validatedRequest.action,
-        resource: validatedRequest.resource,
-        description: validatedRequest.description
+        name: createPermissionRequest.name,
+        action: createPermissionRequest.action,
+        resource: createPermissionRequest.resource,
+        description: createPermissionRequest.description
       })
 
-      // 转换为 proto 格式
-      const permissionProto = RbacTransformer.permissionToProtobuf(permission)
+      // 直接组装权限数据
+      const permissionResponse: Permission = {
+        id: permission.id,
+        name: permission.name,
+        description: permission.description || '',
+        resource: permission.resource,
+        action: permission.action,
+        isActive: true, // 数据库中暂无此字段，默认为true
+        createdAt: this.formatDateTime(permission.createdAt),
+        updatedAt: this.formatDateTime(permission.updatedAt)
+      }
 
-      return this.success(permissionProto, '权限创建成功')
+      return this.success(permissionResponse, '权限创建成功')
     } catch (error) {
       return this.handleError(error, '权限创建失败')
     }
@@ -170,31 +228,53 @@ export class PermissionHttpController extends BaseController {
   })
   async updatePermission(@Param('id') id: string, @Body() updatePermissionRequest: UpdatePermissionRequest): Promise<ApiResponse<Permission>> {
     try {
+      // 验证权限ID
+      Validator.uuid(id, '权限ID')
+
       // 检查权限是否存在
       const existingPermission = await this.permissionService.findById(id)
       if (!existingPermission) {
         return this.error('权限不存在', 404)
       }
 
-      // 验证请求数据
-      const validatedRequest = RbacTransformer.validateUpdatePermissionRequest({
-        ...updatePermissionRequest,
-        id
-      })
+      // 验证更新字段（如果提供）
+      if (updatePermissionRequest.name !== undefined) {
+        Validator.permissionName(updatePermissionRequest.name)
+      }
+
+      if (updatePermissionRequest.action !== undefined) {
+        Validator.actionName(updatePermissionRequest.action)
+      }
+
+      if (updatePermissionRequest.resource !== undefined) {
+        Validator.resourceName(updatePermissionRequest.resource)
+      }
+
+      if (updatePermissionRequest.description !== undefined) {
+        Validator.description(updatePermissionRequest.description, 500, '权限描述')
+      }
 
       // 更新权限
       const updatedPermission = await this.permissionService.update(id, {
-        name: validatedRequest.name,
-        action: validatedRequest.action,
-        resource: validatedRequest.resource,
-        description: validatedRequest.description,
-        isActive: validatedRequest.isActive
+        name: updatePermissionRequest.name,
+        action: updatePermissionRequest.action,
+        resource: updatePermissionRequest.resource,
+        description: updatePermissionRequest.description
       })
 
-      // 转换为 proto 格式
-      const permissionProto = RbacTransformer.permissionToProtobuf(updatedPermission)
+      // 直接组装权限数据
+      const permissionResponse: Permission = {
+        id: updatedPermission.id,
+        name: updatedPermission.name,
+        description: updatedPermission.description || '',
+        resource: updatedPermission.resource,
+        action: updatedPermission.action,
+        isActive: true, // 数据库中暂无此字段，默认为true
+        createdAt: this.formatDateTime(updatedPermission.createdAt),
+        updatedAt: this.formatDateTime(updatedPermission.updatedAt)
+      }
 
-      return this.success(permissionProto, '权限更新成功')
+      return this.success(permissionResponse, '权限更新成功')
     } catch (error) {
       return this.handleError(error, '权限更新失败')
     }
@@ -279,11 +359,13 @@ export class PermissionHttpController extends BaseController {
   })
   async checkPermission(@Body() checkPermissionRequest: CheckPermissionRequest): Promise<ApiResponse<CheckPermissionResponse>> {
     try {
-      // 验证请求数据
-      const validatedRequest = RbacTransformer.validateCheckPermissionRequest(checkPermissionRequest)
+      // 基础格式验证
+      Validator.phone(checkPermissionRequest.userPhone, '用户手机号')
+      Validator.actionName(checkPermissionRequest.action, '操作名称')
+      Validator.resourceName(checkPermissionRequest.resource, '资源名称')
 
       // 执行权限检查
-      const hasPermission = await this.permissionService.checkUserPermission(validatedRequest.userPhone, validatedRequest.action, validatedRequest.resource)
+      const hasPermission = await this.permissionService.checkUserPermission(checkPermissionRequest.userPhone, checkPermissionRequest.action, checkPermissionRequest.resource)
 
       const response: CheckPermissionResponse = {
         hasPermission,
@@ -335,32 +417,4 @@ export class PermissionHttpController extends BaseController {
   // ========================================
   // 📊 权限统计相关接口
   // ========================================
-
-  /**
-   * 获取权限统计信息
-   */
-  @Get('stats')
-  @ApiOperation({
-    summary: '获取权限统计信息',
-    description: '获取权限相关的统计数据'
-  })
-  @SwaggerApiResponse({
-    status: 200,
-    description: '成功获取统计信息'
-  })
-  async getPermissionStats(): Promise<
-    ApiResponse<{
-      totalPermissions: number
-      activePermissions: number
-      inactivePermissions: number
-      permissionsByResource: Record<string, number>
-    }>
-  > {
-    try {
-      const stats = await this.permissionService.getStats()
-      return this.success(stats, '获取权限统计信息成功')
-    } catch (error) {
-      return this.handleError(error, '获取权限统计信息失败')
-    }
-  }
 }

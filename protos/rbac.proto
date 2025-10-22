@@ -21,9 +21,9 @@ message Permission {
   // 是否激活
   bool is_active = 6;
   // 创建时间
-  common.Timestamp created_at = 7;
+  string created_at = 7;
   // 更新时间
-  common.Timestamp updated_at = 8;
+  string updated_at = 8;
 }
 
 // 角色信息
@@ -37,9 +37,9 @@ message Role {
   // 是否激活
   bool is_active = 4;
   // 创建时间
-  common.Timestamp created_at = 5;
+  string created_at = 5;
   // 更新时间
-  common.Timestamp updated_at = 6;
+  string updated_at = 6;
   // 权限列表
   repeated Permission permissions = 7;
 }
@@ -186,19 +186,19 @@ message CheckPermissionResponse {
 service PermissionService {
   // 获取权限信息
   rpc GetPermission(GetPermissionRequest) returns (Permission);
-  
+
   // 获取权限列表
   rpc GetPermissions(GetPermissionsRequest) returns (GetPermissionsResponse);
-  
+
   // 创建权限
   rpc CreatePermission(CreatePermissionRequest) returns (Permission);
-  
+
   // 更新权限
   rpc UpdatePermission(UpdatePermissionRequest) returns (Permission);
-  
+
   // 删除权限
   rpc DeletePermission(GetPermissionRequest) returns (common.ResponseStatus);
-  
+
   // 检查用户权限
   rpc CheckPermission(CheckPermissionRequest) returns (CheckPermissionResponse);
 }
@@ -207,22 +207,22 @@ service PermissionService {
 service RoleService {
   // 获取角色信息
   rpc GetRole(GetRoleRequest) returns (Role);
-  
+
   // 获取角色列表
   rpc GetRoles(GetRolesRequest) returns (GetRolesResponse);
-  
+
   // 创建角色
   rpc CreateRole(CreateRoleRequest) returns (Role);
-  
+
   // 更新角色
   rpc UpdateRole(UpdateRoleRequest) returns (Role);
-  
+
   // 删除角色
   rpc DeleteRole(GetRoleRequest) returns (common.ResponseStatus);
-  
+
   // 分配角色权限
   rpc AssignRolePermissions(AssignRolePermissionsRequest) returns (common.ResponseStatus);
-  
+
   // 移除角色权限
   rpc RemoveRolePermissions(RemoveRolePermissionsRequest) returns (common.ResponseStatus);
-} 
+}

@@ -33,11 +33,11 @@ async function bootstrap() {
     const config = new DocumentBuilder().setTitle('NestJS REST API').setDescription('基于 NestJS 的 REST API 服务').setVersion('1.0').addBearerAuth().addTag('Authentication', '用户认证相关接口').addTag('Users', '用户管理相关接口').addTag('RBAC', '权限管理相关接口').addTag('System', '系统相关接口').build()
     const document = SwaggerModule.createDocument(app, config)
     SwaggerModule.setup('api', app, document)
-    logger.log(`Swagger documentation available at: http://localhost:${process.env.APP_PORT || '3000'}/api`)
+    logger.log(`Swagger documentation available at: http://localhost:${process.env.APP_PORT || '3030'}/api`)
   }
 
   // 启动 HTTP 服务
-  const httpPort = process.env.APP_PORT || 3000
+  const httpPort = process.env.APP_PORT || 3030
   await app.listen(httpPort)
   logger.log(`HTTP server is running on: http://localhost:${httpPort}`)
   logger.log('🚀 Application started successfully!')

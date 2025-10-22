@@ -1,5 +1,5 @@
 <template>
-  <n-config-provider :theme="themeVar" :locale="zhCN" :date-locale="dateZhCN" inline-theme-disabled>
+  <n-config-provider :theme="themeVar" :theme-overrides="themeOverrides" :locale="zhCN" :date-locale="dateZhCN" inline-theme-disabled>
     <n-dialog-provider>
       <n-message-provider>
         <n-loading-bar-provider>
@@ -16,14 +16,27 @@
 <script setup lang="ts">
 import { computed, toRefs } from 'vue'
 import Layout from '@/layouts/index.vue'
-import { RouterView, useRoute } from 'vue-router';
-import { useGlobalStore } from './store/modules/global';
-import { storeToRefs } from 'pinia';
-import { darkTheme, zhCN, dateZhCN } from 'naive-ui';
+import { RouterView, useRoute } from 'vue-router'
+import { useGlobalStore } from './store/modules/global'
+import { storeToRefs } from 'pinia'
+import { darkTheme, zhCN, dateZhCN, GlobalThemeOverrides } from 'naive-ui'
 
 const route = useRoute()
 const { fullPath } = toRefs(route)
 const { pageRefreshKey, theme } = storeToRefs(useGlobalStore())
+const themeOverrides: GlobalThemeOverrides = {
+  common: {
+    primaryColor: '#3954ff',
+    primaryColorHover: '#5c7cff',
+    primaryColorPressed: '#2540d9',
+    primaryColorSuppl: '#2540d9',
+    // color
+    textColorBase: '#3954ff'
+  },
+  Tag: {
+    textColorInfo: '#3954ff'
+  }
+}
 const themeVar = computed(() => {
   return theme.value === 'dark' ? darkTheme : null
 })
@@ -35,7 +48,6 @@ const showLayout = computed(() => {
   }
   return route.path !== '/login' && route.path !== '/register'
 })
-
 </script>
 
 <style scoped>

@@ -3,7 +3,6 @@ import { MessageApiInjection } from 'naive-ui/es/message/src/MessageProvider'
 
 // Vite 环境变量类型定义
 interface ImportMetaEnv {
-  readonly VITE_GRPC_ENDPOINT: string
   readonly VITE_API_URL: string
   readonly VITE_PREFER_GRPC: string
   readonly VITE_PROTO_DEBUG: string

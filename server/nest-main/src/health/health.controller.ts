@@ -1,9 +1,9 @@
 import { Controller, Get } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger'
+import { Public } from '../common/decorators/public.decorator'
 import { MonitoringService } from './monitoring.service'
 // import { GrpcHealthService } from './grpc-health.service'; // 已删除 gRPC 健康检查
 import { PrismaService } from '../prisma/prisma.service'
-import { HealthCheckResponse_ServingStatus as ServingStatus } from '../shared/health'
 
 interface HealthStatus {
   status: string
@@ -13,11 +13,11 @@ interface HealthStatus {
   services: {
     database: string
     redis: string
-    grpc: string
   }
 }
 
 @ApiTags('Health Check')
+@Public()
 @Controller('health')
 export class HealthController {
   constructor(private readonly monitoringService: MonitoringService, private readonly prismaService: PrismaService) {}
@@ -37,8 +37,7 @@ export class HealthController {
           type: 'object',
           properties: {
             database: { type: 'string', example: 'connected' },
-            redis: { type: 'string', example: 'connected' },
-            grpc: { type: 'string', example: 'running' }
+            redis: { type: 'string', example: 'connected' }
           }
         }
       }
@@ -58,8 +57,7 @@ export class HealthController {
       environment: process.env.NODE_ENV || 'development',
       services: {
         database: isPrismaHealthy ? 'connected' : 'error',
-        redis: 'connected', // 实际应用中可以检查Redis连接状态
-        grpc: isGrpcHealthy ? 'running' : 'degraded'
+        redis: 'connected' // 实际应用中可以检查Redis连接状态
       }
     }
   }

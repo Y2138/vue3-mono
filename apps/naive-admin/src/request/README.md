@@ -34,12 +34,12 @@ async function loginExample() {
     phone: '13800138000',
     password: 'password123'
   })
-  
+
   if (error) {
     console.error('登录失败:', error.message)
     return
   }
-  
+
   console.log('登录成功:', data)
 }
 ```
@@ -87,16 +87,19 @@ console.log(`当前协议: ${config.useGrpc ? 'gRPC' : 'HTTP'}`)
 ## 📖 核心设计理念
 
 ### 🎯 简洁优先
+
 - **一个适配器解决所有问题** - 不需要学习复杂的客户端架构
 - **统一的调用方式** - `apiCall(endpoint, data)` 适用于所有场景
 - **最小化配置** - 环境变量驱动，开箱即用
 
 ### 🔄 协议透明
+
 - **业务代码无感知** - HTTP/gRPC 切换对业务代码完全透明
 - **渐进式启用** - 默认 HTTP，可选择启用 gRPC
 - **自动降级** - gRPC 不可用时自动使用 HTTP
 
 ### 🛡️ 类型安全
+
 - **完整的 TypeScript 支持** - 所有 API 都有精确的类型定义
 - **统一的错误处理** - `[data, error]` 格式，类型安全的错误处理
 - **智能类型推导** - 根据 endpoint 自动推导返回类型
@@ -115,11 +118,7 @@ import { apiCall, type ApiResponse } from '@/request/api-adapter'
  * @param options - 额外选项
  * @returns Promise<[data, error]> 格式的响应
  */
-async function apiCall<T = any>(
-  endpoint: string,
-  data?: any,
-  options?: { timeout?: number; headers?: Record<string, string> }
-): Promise<ApiResponse<T>>
+async function apiCall<T = any>(endpoint: string, data?: any, options?: { timeout?: number; headers?: Record<string, string> }): Promise<ApiResponse<T>>
 ```
 
 ### 使用示例
@@ -156,8 +155,6 @@ const [data, error] = await apiCall('POST /upload', formData, {
 
 ```bash
 # .env.development
-VITE_USE_GRPC=false                      # 是否使用 gRPC 协议
-VITE_GRPC_ENDPOINT=http://localhost:9090  # gRPC 服务端点
 VITE_API_URL=http://localhost:3000       # HTTP API 基础URL
 VITE_API_DEBUG=true                      # 是否启用调试模式
 ```
@@ -188,18 +185,7 @@ console.log('API健康状态:', health)
 ### 用户管理 API (`users.ts`)
 
 ```typescript
-import { 
-  userLogin, 
-  userLogout, 
-  getCurrentUser,
-  getUserList,
-  createUser,
-  updateUser,
-  deleteUser,
-  hasPermission,
-  hasRole,
-  isAdmin
-} from '@/request/api/users'
+import { userLogin, userLogout, getCurrentUser, getUserList, createUser, updateUser, deleteUser, hasPermission, hasRole, isAdmin } from '@/request/api/users'
 
 // 用户认证
 const [loginResult, error] = await userLogin('phone', 'password')
@@ -217,14 +203,7 @@ const isUserAdmin = isAdmin()
 ### 权限管理 API (`rbac.ts`)
 
 ```typescript
-import { 
-  getPermissions, 
-  getRoles,
-  createPermission,
-  createRole,
-  checkPermission,
-  assignRole
-} from '@/request/api/rbac'
+import { getPermissions, getRoles, createPermission, createRole, checkPermission, assignRole } from '@/request/api/rbac'
 
 // 获取权限和角色
 const [permissions, error] = await getPermissions({ page: 1 })
@@ -240,14 +219,7 @@ const [success, error] = await assignRole('user123', 'role456')
 ### 专栏管理 API (`column.ts`)
 
 ```typescript
-import { 
-  api_getColumnList,
-  api_createColumn,
-  api_editColumn,
-  api_deleteColumn,
-  api_onlineColumn,
-  api_offlineColumn
-} from '@/request/api/column'
+import { api_getColumnList, api_createColumn, api_editColumn, api_deleteColumn, api_onlineColumn, api_offlineColumn } from '@/request/api/column'
 
 // 专栏操作
 const [columns, error] = await api_getColumnList({ page: 1, pageSize: 10 })
@@ -258,18 +230,7 @@ const [updated, error] = await api_editColumn({ xid: '123', columnName: '更新�
 ### 通用工具 API (`common.ts`)
 
 ```typescript
-import { 
-  get, 
-  post, 
-  put, 
-  del,
-  healthCheck,
-  getApiInfo,
-  isApiSuccess,
-  extractApiData,
-  formatApiError,
-  batchRequest
-} from '@/request/api/common'
+import { get, post, put, del, healthCheck, getApiInfo, isApiSuccess, extractApiData, formatApiError, batchRequest } from '@/request/api/common'
 
 // 通用 HTTP 方法（向后兼容）
 const [data, error] = await get('/api/users')
@@ -285,11 +246,7 @@ if (isApiSuccess(response)) {
 }
 
 // 批量请求
-const results = await batchRequest([
-  () => get('/api/users'),
-  () => get('/api/roles'),
-  () => get('/api/permissions')
-])
+const results = await batchRequest([() => get('/api/users'), () => get('/api/roles'), () => get('/api/permissions')])
 ```
 
 ## 🎯 最佳实践
@@ -359,15 +316,15 @@ const error = ref('')
 const loadUsers = async () => {
   loading.value = true
   error.value = ''
-  
+
   const [data, err] = await getUserList({ page: 1, pageSize: 20 })
-  
+
   if (err) {
     error.value = formatApiError(err)
   } else if (data) {
     users.value = data.items
   }
-  
+
   loading.value = false
 }
 
@@ -392,17 +349,17 @@ onMounted(loadUsers)
 ```typescript
 // 开发环境使用 gRPC（如果可用）
 if (import.meta.env.DEV) {
-  updateApiConfig({ 
-    useGrpc: true, 
-    debug: true 
+  updateApiConfig({
+    useGrpc: true,
+    debug: true
   })
 }
 
 // 生产环境默认使用 HTTP（稳定）
 if (import.meta.env.PROD) {
-  updateApiConfig({ 
-    useGrpc: false, 
-    debug: false 
+  updateApiConfig({
+    useGrpc: false,
+    debug: false
   })
 }
 
@@ -422,7 +379,7 @@ Request 模块配备了完整的测试体系，位于 `src/request/tests/` 目�
 ```
 src/request/tests/
 ├── unit/              # 单元测试
-├── integration/       # 集成测试  
+├── integration/       # 集成测试
 ├── manual/           # 手动验证
 └── README.md         # 测试文档
 ```
@@ -475,22 +432,25 @@ console.log('gRPC 结果:', { grpcResult, grpcError })
 
 ### 测试覆盖情况
 
-| 测试类型 | 文件数 | 测试用例 | 覆盖范围 |
-|---------|--------|----------|----------|
-| 单元测试 | 1个 | 16个 | API适配器核心功能 |
-| 集成测试 | 1个 | 20+个 | 业务API完整流程 |
-| 手动验证 | 1个 | 7步骤 | 浏览器真实环境 |
+| 测试类型 | 文件数 | 测试用例 | 覆盖范围           |
+| -------- | ------ | -------- | ------------------ |
+| 单元测试 | 1 个   | 16 个    | API 适配器核心功能 |
+| 集成测试 | 1 个   | 20+个    | 业务 API 完整流程  |
+| 手动验证 | 1 个   | 7 步骤   | 浏览器真实环境     |
 
 详细的测试文档和使用指南请查看：[tests/README.md](./tests/README.md)
 
 ## 🚨 注意事项
 
 ### 1. 响应格式统一
+
 所有 API 调用都返回 `[data, error]` 格式：
+
 - **成功时**: `[data, null]`
 - **失败时**: `[null, Error对象]`
 
 ### 2. 类型安全
+
 ```typescript
 // ✅ 正确：使用类型参数
 const [data, error] = await apiCall<UserInfo>('GET /users/123', {})
@@ -500,6 +460,7 @@ const [data, error] = await apiCall('GET /users/123', {})
 ```
 
 ### 3. 错误处理
+
 ```typescript
 // ✅ 正确：总是检查错误
 const [data, error] = await apiCall('GET /users', {})
@@ -514,6 +475,7 @@ const [data] = await apiCall('GET /users', {})
 ```
 
 ### 4. 协议切换
+
 - gRPC 模式目前会降级到 HTTP 调用
 - 协议切换对业务代码完全透明
 - 建议生产环境使用 HTTP 模式确保稳定性
@@ -527,7 +489,7 @@ const [data] = await apiCall('GET /users', {})
 import { get, post } from '@/request/axios'
 const data = await get('/api/users')
 
-// 新方式 ✅  
+// 新方式 ✅
 import { apiCall } from '@/request/api-adapter'
 const [data, error] = await apiCall('GET /users', {})
 
@@ -548,8 +510,9 @@ const [data, error] = await getUserList({ page: 1 })
 ## 📞 技术支持
 
 如有问题或建议，请：
+
 1. 查看本文档的示例代码
 2. 检查浏览器控制台的错误日志
 3. 联系开发团队
 
-💡 **提示**：新的 API 适配器大幅简化了原有的复杂架构，维护和使用都更加简单。 
+💡 **提示**：新的 API 适配器大幅简化了原有的复杂架构，维护和使用都更加简单。

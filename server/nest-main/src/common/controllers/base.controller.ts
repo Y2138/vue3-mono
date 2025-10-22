@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common'
 import { ApiResponse, ApiPaginatedResponse, ApiErrorResponse, PaginationInfo, ErrorInfo, RESPONSE_CODES, ERROR_TYPES } from '../response/types'
+import { TimeUtil } from '../utils/time.util'
 
 /**
  * 控制器基类
@@ -16,6 +17,38 @@ export abstract class BaseController {
    */
   constructor(controllerName: string) {
     this.logger = new Logger(controllerName)
+  }
+
+  // ==================== 时间格式化方法 ====================
+
+  /**
+   * 格式化日期时间为 YYYY-MM-DD HH:mm:ss 格式
+   * @param date 日期对象、时间戳或日期字符串
+   * @param format 自定义格式，默认为 YYYY-MM-DD HH:mm:ss
+   * @returns 格式化后的时间字符串
+   */
+  protected formatDateTime(date: Date | string | number, format?: string): string {
+    return TimeUtil.formatDateTime(date, format)
+  }
+
+  /**
+   * 格式化日期为 YYYY-MM-DD 格式
+   * @param date 日期对象、时间戳或日期字符串
+   * @param format 自定义格式，默认为 YYYY-MM-DD
+   * @returns 格式化后的日期字符串
+   */
+  protected formatDate(date: Date | string | number, format?: string): string {
+    return TimeUtil.formatDate(date, format)
+  }
+
+  /**
+   * 格式化时间为 HH:mm:ss 格式
+   * @param date 日期对象、时间戳或日期字符串
+   * @param format 自定义格式，默认为 HH:mm:ss
+   * @returns 格式化后的时间字符串
+   */
+  protected formatTime(date: Date | string | number, format?: string): string {
+    return TimeUtil.formatTime(date, format)
   }
 
   // ==================== 成功响应方法 ====================
@@ -311,7 +344,8 @@ export abstract class BaseController {
       return this.forbidden(error.message)
     }
 
-    if (error.status === 400 || error.message?.includes('validation')) {
+    // 处理 BadRequestException 和其他验证错误
+    if (error.status === 400 || error.name === 'BadRequestException' || error.message?.includes('validation') || error.message?.includes('格式不正确')) {
       return this.validationError(error.message, error.errors)
     }
 
@@ -358,6 +392,7 @@ export abstract class BaseController {
       return error.response
     }
 
-    return this.serverError(defaultMessage, error)
+    // 使用统一的错误处理逻辑
+    return this.handleOperationError(error)
   }
 }

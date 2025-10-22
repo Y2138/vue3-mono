@@ -5,7 +5,7 @@
 // source: rbac.proto
 
 /* eslint-disable */
-import type { PaginationRequest, PaginationResponse, ResponseStatus, Timestamp } from "./common";
+import type { PaginationRequest, PaginationResponse, ResponseStatus } from "./common";
 
 export const protobufPackage = "rbac";
 
@@ -24,11 +24,9 @@ export interface Permission {
   /** 是否激活 */
   isActive: boolean;
   /** 创建时间 */
-  createdAt?:
-    | Timestamp
-    | undefined;
+  createdAt: string;
   /** 更新时间 */
-  updatedAt?: Timestamp | undefined;
+  updatedAt: string;
 }
 
 /** 角色信息 */
@@ -42,13 +40,9 @@ export interface Role {
   /** 是否激活 */
   isActive: boolean;
   /** 创建时间 */
-  createdAt?:
-    | Timestamp
-    | undefined;
+  createdAt: string;
   /** 更新时间 */
-  updatedAt?:
-    | Timestamp
-    | undefined;
+  updatedAt: string;
   /** 权限列表 */
   permissions: Permission[];
 }

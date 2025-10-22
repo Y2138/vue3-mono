@@ -1,29 +1,12 @@
 <template>
   <n-flex size="small">
-    <n-tag
-      v-for="item in tabs"
-      :key="item.path"
-      class="cursor-pointer"
-      :type="item.path === tabStore.activeTabKey ? 'success' : 'default'"
-      closable
-      @click="handleTagClick(item)"
-      @contextmenu.prevent="handleContextMenu(item, $event)"
-      :on-close="() => handleTabClose(item)">
+    <n-tag v-for="item in tabs" :key="item.path" class="cursor-pointer" :type="item.path === tabStore.activeTabKey ? 'info' : 'default'" :bordered="false" closable @click="handleTagClick(item)" @contextmenu.prevent="handleContextMenu(item, $event)" :on-close="() => handleTabClose(item)">
       <span class="tabbar-span" :class="item.path === tabStore.activeTabKey ? 'active' : ''">
         {{ item.name }}
       </span>
     </n-tag>
   </n-flex>
-  <n-dropdown
-    placement="bottom-start"
-    trigger="manual"
-    :show="contextMenu.show"
-    :x="contextMenu.x"
-    :y="contextMenu.y"
-    :options="contextMenu.options"
-    :on-clickoutside="() => contextMenu.show = false"
-    @select="handleSelect">
-  </n-dropdown>
+  <n-dropdown placement="bottom-start" trigger="manual" :show="contextMenu.show" :x="contextMenu.x" :y="contextMenu.y" :options="contextMenu.options" :on-clickoutside="() => (contextMenu.show = false)" @select="handleSelect"> </n-dropdown>
 </template>
 
 <script setup lang="tsx">
@@ -98,7 +81,7 @@ const handleContextMenu = (item: ITabItem, e: MouseEvent) => {
     {
       key: 'refresh',
       label: '刷新',
-      icon: renderIcon('refresh'),
+      icon: renderIcon('refresh')
     },
     {
       type: 'divider',
@@ -106,19 +89,19 @@ const handleContextMenu = (item: ITabItem, e: MouseEvent) => {
     },
     {
       label: '关闭当前',
-      key: 'close',
+      key: 'close'
     },
     {
       label: '关闭其他',
-      key: 'closeOther',
+      key: 'closeOther'
     },
     {
       label: '关闭全部',
-      key: 'closeAll',
+      key: 'closeAll'
     },
     {
       label: '关闭右侧',
-      key: 'closeRight',
+      key: 'closeRight'
     }
   ]
 }
@@ -126,12 +109,12 @@ const handleContextMenu = (item: ITabItem, e: MouseEvent) => {
 
 <style scoped>
 .n-tag :deep(.tabbar-span:hover) {
-  color: var(--n-link-text-color-hover)
+  color: var(--n-link-text-color-hover);
 }
 :deep(.mx-context-menu-item) {
   cursor: pointer;
 }
 .n-tag .tabbar-span {
-  color: var(--n-text-color)
+  color: var(--n-text-color);
 }
 </style>

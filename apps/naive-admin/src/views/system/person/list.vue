@@ -1,5 +1,5 @@
 <template>
-  <SearchPanel :cols="4" labelWidth="80" :formModel="formModel" :searchLoading="loading" searchOnUpdate @search="refresh" @reset="handleReset">
+  <SearchPanel :cols="4" labelWidth="60" :formModel="formModel" :searchLoading="loading" searchOnUpdate @search="refresh" @reset="handleReset">
     <template #top>
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-lg font-semibold">人员管理</h2>
@@ -21,24 +21,29 @@
     </WrapCol>
 
     <WrapCol label="状态">
-      <n-select v-model:value="formModel.isActive" :options="statusOptions" placeholder="请选择状态" clearable />
+      <n-select v-model:value="formModel.isActive" :options="statusOptions as any" placeholder="请选择状态" clearable />
     </WrapCol>
 
     <WrapCol label="角色">
-      <n-select v-model:value="formModel.roleId" :options="roleOptions" placeholder="请选择角色" clearable />
+      <n-select v-model:value="formModel.roleId" :options="roleOptions as any" placeholder="请选择角色" clearable />
     </WrapCol>
   </SearchPanel>
 
   <n-data-table class="mt-4" :columns="tableColumns" :data="tableData" :pagination="pagination" :loading="loading" />
 </template>
 
-<script setup lang="ts">
-import { ref, h } from 'vue'
+<script setup lang="tsx">
+import { ref, onMounted } from 'vue'
 import { NButton, NTag, NIcon, NPopconfirm, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import useTablePage from '@/hooks/useTablePage'
-import { getUserList, deleteUser, type UserInfo } from '@/request/api/users'
-import type { SelectMixedOption } from 'naive-ui/es/select/src/interface'
+import { getUserList, deleteUser, getUserEnums, type UserInfo } from '@/request/api/users'
+// 自定义选项接口
+interface ISelectOption {
+  label: string
+  value: string | number | boolean | null
+  disabled?: boolean
+}
 import type { DataTableColumns } from 'naive-ui'
 import { usePageLoading } from '@/hooks/usePageLoading'
 
@@ -49,14 +54,14 @@ usePageLoading()
 const message = useMessage()
 
 // 图标组件定义
-const EditIcon = () => h(Icon, { icon: 'ion:create-outline', width: 16, height: 16 })
-const DeleteIcon = () => h(Icon, { icon: 'ion:trash-outline', width: 16, height: 16 })
+const EditIcon = () => <Icon icon="ion:create-outline" width={16} height={16} />
+const DeleteIcon = () => <Icon icon="ion:trash-outline" width={16} height={16} />
 
 // 搜索表单模型
 interface IFormModel {
   phone: string
   username: string
-  isActive: boolean | null
+  isActive: string | null
   roleId: string | null
 }
 
@@ -67,19 +72,58 @@ const formModel = ref<IFormModel>({
   roleId: null
 })
 
-// 状态选项
-const statusOptions = ref<SelectMixedOption[]>([
-  { label: '全部', value: null },
-  { label: '激活', value: true },
-  { label: '未激活', value: false }
-])
+// 状态选项 - 从 API 获取
+const statusOptions = ref<ISelectOption[]>([{ label: '全部', value: null }])
 
 // 角色选项（这里可以从角色管理API获取）
-const roleOptions = ref<SelectMixedOption[]>([
+const roleOptions = ref<ISelectOption[]>([
   { label: '全部', value: null },
   { label: '管理员', value: 'admin' },
   { label: '普通用户', value: 'user' }
 ])
+
+// 枚举数据
+const userEnums = ref<any>({})
+
+/**
+ * 获取用户枚举数据
+ */
+async function loadUserEnums() {
+  const { data, error } = await getUserEnums()
+
+  if (error) {
+    message.error(`获取枚举数据失败: ${error.message}`)
+    return
+  }
+
+  if (data?.enums) {
+    userEnums.value = data.enums
+
+    // 更新状态选项 - 将枚举值映射为前端需要的格式
+    if (data.enums.USER_STATUS) {
+      const statusEnumOptions = Object.values(data.enums.USER_STATUS)
+        .filter((item: any) => item.value === 1 || item.value === -1) // 只显示激活和下线状态
+        .map((item: any) => ({
+          label: item.label,
+          value: item.value === 1 ? 'true' : 'false', // 转换为字符串布尔值
+          disabled: item.disabled || false
+        }))
+
+      statusOptions.value = [{ label: '全部', value: null }, ...statusEnumOptions]
+    }
+
+    // 如果有用户类型枚举，也可以更新角色选项
+    if (data.enums.USER_TYPE) {
+      const typeEnumOptions = Object.values(data.enums.USER_TYPE).map((item: any) => ({
+        label: item.label,
+        value: item.value,
+        disabled: item.disabled || false
+      }))
+
+      roleOptions.value = [{ label: '全部', value: null }, ...typeEnumOptions]
+    }
+  }
+}
 
 // 请求参数类型
 interface IUserListRequest extends IPaginationRequest {
@@ -99,28 +143,31 @@ function handleReset() {
 }
 
 // 请求函数适配器
-const requestFn = async (params: IUserListRequest) => {
+const requestFn = async (params: IUserListRequest): Promise<[ResResult<IPaginationResData<UserInfo[]>>, null] | [null, any]> => {
   const requestParams = {
     page: params.page,
     pageSize: params.pageSize,
-    keyword: params.phone || params.username || undefined,
+    phone: params.phone || undefined,
+    username: params.username || undefined,
+    roleIds: params.roleId ? [params.roleId] : [],
     isActive: params.isActive
   }
 
-  const [data, error] = await getUserList(requestParams)
+  const [res, error] = await getUserList(requestParams)
 
   if (error) {
     return [null, error]
   }
+  const { list, pagination } = res?.data || {}
 
   // 适配返回数据格式
-  const adaptedData = {
+  const adaptedData: ResResult<IPaginationResData<UserInfo[]>> = {
     data: {
-      tableData: data?.items || [],
+      tableData: list || [],
       pageData: {
-        count: data?.pagination?.total || 0,
-        page: data?.pagination?.page || 1,
-        pageSize: data?.pagination?.pageSize || 30
+        count: Number(pagination?.total) || 0,
+        page: Number(pagination?.page) || 1,
+        pageSize: Number(pagination?.pageSize) || 30
       }
     }
   }
@@ -135,7 +182,7 @@ const dealParams = (): IUserListRequest => {
     pageSize: pagination.pageSize,
     phone: formModel.value.phone || undefined,
     username: formModel.value.username || undefined,
-    isActive: formModel.value.isActive,
+    isActive: formModel.value.isActive === 'true' ? true : formModel.value.isActive === 'false' ? false : undefined,
     roleId: formModel.value.roleId || undefined
   }
 }
@@ -163,15 +210,26 @@ const customColumns: DataTableColumns<UserInfo> = [
     key: 'isActive',
     width: 80,
     render: (row) => {
-      return h(
-        NTag,
-        {
-          type: row.isActive ? 'success' : 'error',
-          size: 'small'
-        },
-        {
-          default: () => (row.isActive ? '激活' : '未激活')
+      // 使用枚举数据渲染状态
+      if (userEnums.value.USER_STATUS) {
+        const statusEnum = Object.values(userEnums.value.USER_STATUS).find((item: any) => item.value === (row.isActive ? 1 : -1))
+
+        if (statusEnum) {
+          const tagType = (statusEnum as any).color === 'success' ? 'success' : (statusEnum as any).color === 'danger' ? 'error' : (statusEnum as any).color === 'warning' ? 'warning' : 'default'
+
+          return (
+            <NTag type={tagType} size="small">
+              {(statusEnum as any).label}
+            </NTag>
+          )
         }
+      }
+
+      // 兜底显示
+      return (
+        <NTag type={row.isActive ? 'success' : 'error'} size="small">
+          {row.isActive ? '激活' : '未激活'}
+        </NTag>
       )
     }
   },
@@ -181,40 +239,28 @@ const customColumns: DataTableColumns<UserInfo> = [
     width: 150,
     render: (row) => {
       if (!row.roleIds || row.roleIds.length === 0) {
-        return h(NTag, { type: 'default', size: 'small' }, { default: () => '无角色' })
-      }
-      return row.roleIds.map((roleId) =>
-        h(
-          NTag,
-          {
-            type: 'info',
-            size: 'small',
-            class: 'mr-1'
-          },
-          {
-            default: () => roleId
-          }
+        return (
+          <NTag type="default" size="small">
+            无角色
+          </NTag>
         )
-      )
+      }
+      return row.roleIds.map((roleId) => (
+        <NTag key={roleId} type="info" size="small" class="mr-1">
+          {roleId}
+        </NTag>
+      ))
     }
   },
   {
     title: '创建时间',
     key: 'createdAt',
-    width: 160,
-    render: (row) => {
-      if (!row.createdAt) return '-'
-      return new Date(row.createdAt.seconds * 1000).toLocaleString()
-    }
+    width: 160
   },
   {
     title: '更新时间',
     key: 'updatedAt',
-    width: 160,
-    render: (row) => {
-      if (!row.updatedAt) return '-'
-      return new Date(row.updatedAt.seconds * 1000).toLocaleString()
-    }
+    width: 160
   },
   {
     title: '操作',
@@ -222,44 +268,37 @@ const customColumns: DataTableColumns<UserInfo> = [
     width: 150,
     fixed: 'right',
     render: (row) => {
-      return [
-        h(
-          NButton,
-          {
-            size: 'small',
-            type: 'primary',
-            ghost: true,
-            onClick: () => handleEdit(row),
-            class: 'mr-2'
-          },
-          {
-            default: () => '编辑',
-            icon: () => h(NIcon, null, { default: () => h(EditIcon) })
-          }
-        ),
-        h(
-          NPopconfirm,
-          {
-            onPositiveClick: () => handleDelete(row.phone)
-          },
-          {
-            trigger: () =>
-              h(
-                NButton,
-                {
-                  size: 'small',
-                  type: 'error',
-                  ghost: true
-                },
-                {
-                  default: () => '删除',
-                  icon: () => h(NIcon, null, { default: () => h(DeleteIcon) })
-                }
+      return (
+        <div class="flex items-center">
+          <NButton size="small" type="primary" quaternary onClick={() => handleEdit(row)} class="mr-2">
+            {{
+              default: () => '编辑',
+              icon: () => (
+                <NIcon>
+                  <EditIcon />
+                </NIcon>
+              )
+            }}
+          </NButton>
+          <NPopconfirm onPositiveClick={() => handleDelete(row.phone)}>
+            {{
+              trigger: () => (
+                <NButton size="small" type="error" quaternary>
+                  {{
+                    default: () => '删除',
+                    icon: () => (
+                      <NIcon>
+                        <DeleteIcon />
+                      </NIcon>
+                    )
+                  }}
+                </NButton>
               ),
-            default: () => '确定删除该用户吗？'
-          }
-        )
-      ]
+              default: () => '确定删除该用户吗？'
+            }}
+          </NPopconfirm>
+        </div>
+      )
     }
   }
 ]
@@ -295,8 +334,13 @@ async function handleDelete(phone: string) {
   refresh() // 刷新列表
 }
 
-// 首次加载
-refresh()
+// 初始化数据
+onMounted(async () => {
+  // 加载枚举数据
+  await loadUserEnums()
+  // 首次加载用户列表
+  refresh()
+})
 </script>
 
 <style scoped>

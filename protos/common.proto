@@ -4,12 +4,6 @@ package common;
 
 option go_package = "./common";
 
-// 通用时间戳消息
-message Timestamp {
-  // 时间戳（ISO 8601 格式字符串）
-  string value = 1;
-}
-
 // 通用分页请求
 message PaginationRequest {
   // 页码，从1开始
@@ -48,4 +42,37 @@ message ErrorDetail {
   string message = 2;
   // 错误字段（用于表单验证错误）
   string field = 3;
-} 
+}
+
+// ========================================
+// 枚举相关定义
+// ========================================
+
+// 枚举项
+message EnumItem {
+  // 枚举值（支持字符串和数字）
+  oneof value_type {
+    string value_str = 1;
+    int32 value = 2;
+  }
+  // 显示标签
+  string label = 3;
+  // 是否禁用
+  optional bool disabled = 4;
+  // 扩展属性（JSON格式）
+  optional string extra = 5;
+}
+
+// 枚举项列表
+message EnumItemList {
+  // 枚举项数组
+  repeated EnumItem values = 1;
+}
+
+// 枚举响应
+message EnumResponse {
+  // 枚举项映射（每个枚举对应一个 EnumItem 数组）
+  map<string, EnumItemList> enums = 2;
+  // 版本信息
+  optional string version = 3;
+}

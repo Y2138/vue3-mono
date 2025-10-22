@@ -13,7 +13,7 @@ export class UserService {
   /**
    * 获取所有用户
    */
-  async findAll(options?: { search?: string; isActive?: boolean; page?: number; pageSize?: number }) {
+  async findAll(options?: { search?: string; phone?: string; username?: string; roleIds?: string[]; isActive?: boolean; page?: number; pageSize?: number }) {
     this.logger.log('获取所有用户')
 
     const page = options?.page || 1
@@ -23,10 +23,33 @@ export class UserService {
     // 构建查询条件
     const where: Prisma.UserWhereInput = {}
 
+    // 通用搜索（保持向后兼容）
     if (options?.search) {
       where.OR = [{ username: { contains: options.search } }, { phone: { contains: options.search } }]
     }
 
+    // 精确手机号查询
+    if (options?.phone) {
+      where.phone = { contains: options.phone }
+    }
+
+    // 精确用户名查询
+    if (options?.username) {
+      where.username = { contains: options.username }
+    }
+
+    // 角色ID查询
+    if (options?.roleIds && options.roleIds.length > 0) {
+      where.userRoles = {
+        some: {
+          roleId: {
+            in: options.roleIds
+          }
+        }
+      }
+    }
+
+    // 激活状态查询
     if (options?.isActive !== undefined) {
       where.isActive = options.isActive
     }

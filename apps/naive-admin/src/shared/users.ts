@@ -5,7 +5,7 @@
 // source: users.proto
 
 /* eslint-disable */
-import type { PaginationRequest, PaginationResponse, ResponseStatus, Timestamp } from "./common";
+import type { EnumResponse, PaginationRequest, PaginationResponse, ResponseStatus } from "./common";
 
 export const protobufPackage = "users";
 
@@ -18,14 +18,10 @@ export interface User {
   /** 是否激活 */
   isActive: boolean;
   /** 创建时间 */
-  createdAt?:
-    | Timestamp
-    | undefined;
+  createdAt: string;
   /** 更新时间 */
-  updatedAt?:
-    | Timestamp
-    | undefined;
-  /** 用户角色列表 */
+  updatedAt: string;
+  /** 用户角色列表（可选） */
   roleIds: string[];
 }
 
@@ -46,7 +42,7 @@ export interface AuthResponse {
   /** JWT token */
   token: string;
   /** token过期时间 */
-  expiresAt?: Timestamp | undefined;
+  expiresAt: string;
 }
 
 /** 获取用户请求 */
@@ -63,7 +59,7 @@ export interface CreateUserRequest {
   username: string;
   /** 密码 */
   password: string;
-  /** 角色ID列表 */
+  /** 角色ID列表（可选） */
   roleIds: string[];
 }
 
@@ -89,10 +85,16 @@ export interface GetUsersRequest {
   pagination?:
     | PaginationRequest
     | undefined;
-  /** 搜索关键词（可选） */
-  search?:
+  /** 手机号 */
+  phone?:
     | string
     | undefined;
+  /** 用户名 */
+  username?:
+    | string
+    | undefined;
+  /** 角色ID */
+  roleIds: string[];
   /** 是否激活过滤（可选） */
   isActive?: boolean | undefined;
 }
@@ -100,7 +102,7 @@ export interface GetUsersRequest {
 /** 用户列表响应 */
 export interface GetUsersResponse {
   /** 用户列表 */
-  users: User[];
+  list: User[];
   /** 分页信息 */
   pagination?: PaginationResponse | undefined;
 }
@@ -129,8 +131,22 @@ export interface CreateSuperAdminRequest {
   adminKey: string;
 }
 
+/** 获取用户枚举请求 */
+export interface GetUserEnumsRequest {
+  /** 可选：指定要获取的枚举类型 */
+  enumTypes: string[];
+}
+
+/** 获取用户枚举响应 */
+export interface GetUserEnumsResponse {
+  /** 枚举响应数据 */
+  data?: EnumResponse | undefined;
+}
+
 /** 用户服务定义 */
 export interface UserService {
+  /** 获取用户枚举 */
+  GetUserEnums(request: GetUserEnumsRequest): Promise<GetUserEnumsResponse>;
   /** 用户登录 */
   Login(request: LoginRequest): Promise<AuthResponse>;
   /** 用户注册 */

@@ -1,1 +1,1 @@
-export * from './hybrid-auth.guard'; 
+export * from './auth.guard'

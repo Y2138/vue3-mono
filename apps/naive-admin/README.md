@@ -326,12 +326,11 @@ server {
 
 ### 环境变量
 
-| 变量名               | 描述          | 默认值                  | 示例                       |
-| -------------------- | ------------- | ----------------------- | -------------------------- |
-| `VITE_API_URL`       | HTTP API 地址 | `http://localhost:3000` | `https://api.example.com`  |
-| `VITE_GRPC_ENDPOINT` | gRPC 服务地址 | `http://localhost:3000` | `https://grpc.example.com` |
-| `VITE_USE_GRPC`      | 是否启用 gRPC | `false`                 | `true/false`               |
-| `VITE_API_DEBUG`     | API 调试模式  | `false`                 | `true/false`               |
+| 变量名           | 描述          | 默认值                  | 示例                      |
+| ---------------- | ------------- | ----------------------- | ------------------------- |
+| `VITE_API_URL`   | HTTP API 地址 | `http://localhost:3030` | `https://api.example.com` |
+| `VITE_USE_GRPC`  | 是否启用 gRPC | `false`                 | `true/false`              |
+| `VITE_API_DEBUG` | API 调试模式  | `false`                 | `true/false`              |
 
 ### 开发工具
 

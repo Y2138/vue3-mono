@@ -1,4 +1,4 @@
-import type { CascaderProps, CheckboxGroupProps, DatePickerProps, FormItemRule, InputNumberProps, InputProps, RadioButtonProps, SelectProps, TimePickerProps, FormProps } from 'naive-ui'
+import type { CascaderProps, CheckboxGroupProps, DatePickerProps, FormItemRule, InputNumberProps, InputProps, RadioButtonProps, SelectProps, TimePickerProps } from 'naive-ui'
 
 export interface IOption {
   label: string

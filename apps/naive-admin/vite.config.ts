@@ -18,7 +18,7 @@ export default defineConfig(() => {
       Components({
         resolvers: [NaiveUiResolver()]
       }),
-      // 添加 Protobuf 插件
+      // 添加 Protobuf 插件 - 用于生成前端类型定义
       protobufPlugin({
         protoDir: path.resolve(__dirname, '../../protos'),
         outputDir: path.resolve(__dirname, './src/shared'),
@@ -112,32 +112,19 @@ export default defineConfig(() => {
       }
     },
     define: {
-      // 注入环境变量
-      __GRPC_ENDPOINT__: JSON.stringify(process.env.VITE_GRPC_ENDPOINT || 'http://localhost:3000'),
-      __API_URL__: JSON.stringify(process.env.VITE_API_URL || 'http://localhost:3000'),
-      __PREFER_GRPC__: JSON.stringify(process.env.VITE_PREFER_GRPC === 'true'),
+      __API_URL__: JSON.stringify(process.env.VITE_API_URL || 'http://localhost:3030'),
       __PROTO_DEBUG__: JSON.stringify(process.env.VITE_PROTO_DEBUG === 'true')
     },
     server: {
       port: 6767,
       proxy: {
         '/api': {
-          target: 'http://localhost:3000',
+          target: process.env.VITE_API_URL || 'http://localhost:3030',
           changeOrigin: true,
-          secure: false,
-          rewrite: (path) => path.replace(/^\/api/, '')
-        },
-        // 添加 gRPC-Web 代理支持
-        '/grpc': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-          secure: false,
-          ws: true // 支持 WebSocket
+          secure: false
+          // rewrite: (path) => path.replace(/^\/api/, '')
         }
       }
-    },
-    optimizeDeps: {
-      include: ['google-protobuf', 'grpc-web', '@grpc/grpc-js', '@grpc/proto-loader']
     },
     // 构建选项
     build: {

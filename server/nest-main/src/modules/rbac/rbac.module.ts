@@ -6,21 +6,11 @@ import { RbacInitService } from './services/rbac-init.service'
 import { RoleService } from './services/role.service'
 import { PermissionHttpController } from './permission.http.controller'
 import { RoleHttpController } from './role.http.controller'
-import { RbacTransformer } from '../../common/transformers/rbac.transformer'
 
 @Module({
   imports: [PrismaModule],
   controllers: [PermissionHttpController, RoleHttpController],
-  providers: [
-    RoleService,
-    PermissionService,
-    RbacSeedService,
-    RbacInitService,
-    {
-      provide: 'RBAC_TRANSFORMER',
-      useValue: RbacTransformer
-    }
-  ],
+  providers: [RoleService, PermissionService, RbacSeedService, RbacInitService],
   exports: [RoleService, PermissionService, RbacSeedService]
 })
 export class RbacModule {

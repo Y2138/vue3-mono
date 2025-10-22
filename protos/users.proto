@@ -15,10 +15,10 @@ message User {
   // 是否激活
   bool is_active = 3;
   // 创建时间
-  common.Timestamp created_at = 4;
+  string created_at = 4;
   // 更新时间
-  common.Timestamp updated_at = 5;
-  // 用户角色列表
+  string updated_at = 5;
+  // 用户角色列表（可选）
   repeated string role_ids = 6;
 }
 
@@ -37,7 +37,7 @@ message AuthResponse {
   // JWT token
   string token = 2;
   // token过期时间
-  common.Timestamp expires_at = 3;
+  string expires_at = 3;
 }
 
 // 获取用户请求
@@ -54,7 +54,7 @@ message CreateUserRequest {
   string username = 2;
   // 密码
   string password = 3;
-  // 角色ID列表
+  // 角色ID列表（可选）
   repeated string role_ids = 4;
 }
 
@@ -74,16 +74,20 @@ message UpdateUserRequest {
 message GetUsersRequest {
   // 分页信息
   common.PaginationRequest pagination = 1;
-  // 搜索关键词（可选）
-  optional string search = 2;
+  // 手机号
+  optional string phone = 2;
+  // 用户名
+  optional string username = 3;
+  // 角色ID
+  repeated string role_ids = 4;
   // 是否激活过滤（可选）
-  optional bool is_active = 3;
+  optional bool is_active = 5;
 }
 
 // 用户列表响应
 message GetUsersResponse {
   // 用户列表
-  repeated User users = 1;
+  repeated User list = 1;
   // 分页信息
   common.PaginationResponse pagination = 2;
 }
@@ -112,32 +116,47 @@ message CreateSuperAdminRequest {
   string admin_key = 4;
 }
 
+// 获取用户枚举请求
+message GetUserEnumsRequest {
+  // 可选：指定要获取的枚举类型
+  repeated string enum_types = 1;
+}
+
+// 获取用户枚举响应
+message GetUserEnumsResponse {
+  // 枚举响应数据
+  common.EnumResponse data = 1;
+}
+
 // 用户服务定义
 service UserService {
+  // 获取用户枚举
+  rpc GetUserEnums(GetUserEnumsRequest) returns (GetUserEnumsResponse);
+
   // 用户登录
   rpc Login(LoginRequest) returns (AuthResponse);
-  
+
   // 用户注册
   rpc Register(RegisterRequest) returns (AuthResponse);
-  
+
   // 获取当前用户信息
   rpc GetProfile(GetUserRequest) returns (User);
-  
+
   // 获取用户信息
   rpc GetUser(GetUserRequest) returns (User);
-  
+
   // 获取用户列表
   rpc GetUsers(GetUsersRequest) returns (GetUsersResponse);
-  
+
   // 创建用户
   rpc CreateUser(CreateUserRequest) returns (User);
-  
+
   // 更新用户
   rpc UpdateUser(UpdateUserRequest) returns (User);
-  
+
   // 删除用户
   rpc DeleteUser(GetUserRequest) returns (common.ResponseStatus);
-  
+
   // 创建超级管理员
   rpc CreateSuperAdmin(CreateSuperAdminRequest) returns (AuthResponse);
-} 
+}

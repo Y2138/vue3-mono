@@ -21,5 +21,6 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
     "types": ["vitest/globals", "@types/node", "@types/supertest"]
-  }
+  },
+  "include": ["src/**/*"]
 }

@@ -6,7 +6,8 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed, watchEffect, readonly } from 'vue'
-import { getPermissions, getRoles, checkPermission as checkUserPermission, checkPermissions as checkUserMultiplePermissions, assignRoles, revokeRoles, type Permission, type Role, type GetPermissionsParams, type GetRolesParams } from '@/request/api/rbac'
+import { getPermissions, getRoles, checkPermission as checkUserPermission, batchCheckPermissions, type PermissionInfo as Permission, type RoleInfo as Role, type CheckPermissionParams } from '@/request/api/rbac'
+import { assignUserRoles as assignRoles } from '@/request/api/users'
 import { useUserStore } from './user'
 
 // ========================================
@@ -42,7 +43,7 @@ export const usePermissionStore = defineStore('permission', () => {
   const permissionMap = computed(() => {
     const map = new Map<string, Permission>()
     permissions.value.forEach((permission) => {
-      map.set(permission.code, permission)
+      map.set(permission.id, permission)
     })
     return map
   })
@@ -51,7 +52,7 @@ export const usePermissionStore = defineStore('permission', () => {
   const roleMap = computed(() => {
     const map = new Map<string, Role>()
     roles.value.forEach((role) => {
-      map.set(role.code, role)
+      map.set(role.id, role)
     })
     return map
   })
@@ -105,8 +106,8 @@ export const usePermissionStore = defineStore('permission', () => {
         return false
       }
 
-      if (permissionList) {
-        permissions.value = permissionList
+      if (permissionList && permissionList.data && permissionList.data.permissions) {
+        permissions.value = permissionList.data.permissions
         lastUpdateTime.value = Date.now()
         return true
       }
@@ -135,7 +136,7 @@ export const usePermissionStore = defineStore('permission', () => {
       isRolesLoading.value = true
       roleError.value = null
 
-      const [roleList, error] = await rbacApi.getRoles({
+      const [roleList, error] = await getRoles({
         page: 1,
         pageSize: 1000, // 获取所有角色
         includePermissions: true
@@ -146,8 +147,8 @@ export const usePermissionStore = defineStore('permission', () => {
         return false
       }
 
-      if (roleList) {
-        roles.value = roleList
+      if (roleList && roleList.data && roleList.data.roles) {
+        roles.value = roleList.data.roles
         lastUpdateTime.value = Date.now()
         return true
       }
@@ -213,15 +214,15 @@ export const usePermissionStore = defineStore('permission', () => {
     const userRoleIds = currentUser.roleIds || []
     const userRolesList = roles.value.filter((role) => userRoleIds.includes(role.id))
 
-    // 提取角色代码
-    userRoles.value = userRolesList.map((role) => role.code)
+    // 提取角色ID
+    userRoles.value = userRolesList.map((role) => role.id)
 
     // 从角色中提取权限
     const permissionSet = new Set<string>()
     userRolesList.forEach((role) => {
       if (role.permissions) {
         role.permissions.forEach((permission) => {
-          permissionSet.add(permission)
+          permissionSet.add(permission.id)
         })
       }
     })
@@ -261,14 +262,18 @@ export const usePermissionStore = defineStore('permission', () => {
       // 如果本地没有，调用远程检查
       isCheckingPermission.value = true
 
-      const [hasPermission, error] = await checkUserPermission(userId, permission)
+      const [result, error] = await checkUserPermission({
+        userPhone: userId, // 假设 userId 是用户手机号
+        action: permission.split(':')[1] || 'read',
+        resource: permission.split(':')[0] || permission
+      })
 
       if (error) {
         console.warn('[Permission Store] Remote permission check failed:', error)
         return false
       }
 
-      return hasPermission
+      return result && result.data && typeof result.data === 'object' && 'hasPermission' in result.data ? result.data.hasPermission : false
     } catch (error) {
       console.error('[Permission Store] Check permission failed:', error)
       return false
@@ -360,8 +365,26 @@ export const usePermissionStore = defineStore('permission', () => {
       }, {} as Record<string, boolean>)
     }
 
-    // 使用rbacApi的批量检查功能
-    return await rbacApi.checkMultiplePermissions(userId, permissionCodes)
+    // 使用批量检查功能
+    const checkParams: CheckPermissionParams[] = permissionCodes.map((code) => ({
+      userPhone: userId, // 假设 userId 是用户手机号
+      action: code.split(':')[1] || 'read', // 从权限代码中提取动作
+      resource: code.split(':')[0] || code // 从权限代码中提取资源
+    }))
+
+    const [results, error] = await batchCheckPermissions(checkParams)
+
+    if (error || !results) {
+      return permissionCodes.reduce((acc, code) => {
+        acc[code] = false
+        return acc
+      }, {} as Record<string, boolean>)
+    }
+
+    return permissionCodes.reduce((acc, code, index) => {
+      acc[code] = (results && Array.isArray(results) && results[index]?.hasPermission) || false
+      return acc
+    }, {} as Record<string, boolean>)
   }
 
   // ========================================
@@ -377,7 +400,7 @@ export const usePermissionStore = defineStore('permission', () => {
     try {
       isLoading.value = true
 
-      const [success, error] = await rbacApi.assignUserRoles(userId, roleIds)
+      const [result, error] = await assignRoles(userId, roleIds)
 
       if (error) {
         roleError.value = error
@@ -390,7 +413,7 @@ export const usePermissionStore = defineStore('permission', () => {
         await refreshUserPermissions()
       }
 
-      return success
+      return !!result
     } catch (error) {
       console.error('[Permission Store] Assign roles failed:', error)
       roleError.value = '分配角色时发生错误'
@@ -409,7 +432,16 @@ export const usePermissionStore = defineStore('permission', () => {
     try {
       isLoading.value = true
 
-      const [success, error] = await rbacApi.revokeUserRoles(userId, roleIds)
+      // 撤销角色：通过重新分配角色来实现（移除指定角色）
+      const userStore = useUserStore()
+      const currentUser = userStore.userInfo
+      if (!currentUser || !currentUser.roleIds) {
+        roleError.value = '无法获取用户当前角色信息'
+        return false
+      }
+
+      const newRoleIds = currentUser.roleIds.filter((id) => !roleIds.includes(id))
+      const [result, error] = await assignRoles(userId, newRoleIds)
 
       if (error) {
         roleError.value = error
@@ -417,12 +449,11 @@ export const usePermissionStore = defineStore('permission', () => {
       }
 
       // 如果是当前用户，刷新权限
-      const userStore = useUserStore()
       if (userId === userStore.userProfile?.id) {
         await refreshUserPermissions()
       }
 
-      return success
+      return !!result
     } catch (error) {
       console.error('[Permission Store] Revoke roles failed:', error)
       roleError.value = '撤销角色时发生错误'

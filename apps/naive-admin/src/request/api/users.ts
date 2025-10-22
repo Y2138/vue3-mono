@@ -4,7 +4,16 @@
  */
 
 import { post, get, put, del, patch } from '../axios'
-import type { User, AuthResponse, LoginRequest, RegisterRequest } from '@/shared/users'
+import type { User, AuthResponse, LoginRequest, RegisterRequest, GetUsersRequest, GetUsersResponse } from '@/shared/users'
+// 使用 proto 生成的类型
+import type { EnumResponse as ProtoEnumResponse, EnumItem } from '@/shared/common'
+
+// 前端使用的枚举响应接口（转换后的）
+export interface EnumResponse {
+  domain: string
+  enums: Record<string, Record<string, EnumItem>>
+  version?: string
+}
 
 // ========================================
 // 🔐 用户认证相关类型（基于 proto 定义）
@@ -84,10 +93,44 @@ export const logout = async () => {
 // ========================================
 
 /**
+ * 获取用户模块枚举
+ */
+export const getUserEnums = async (): Promise<{ data: EnumResponse; error?: any }> => {
+  try {
+    const [result, error] = await get<void, ProtoEnumResponse>('/api/users/enums')
+
+    if (error) {
+      return { data: { domain: '', enums: {} }, error }
+    }
+
+    if (result?.data) {
+      // proto 的 map 类型在 ts-proto 中生成为普通对象，直接转换 items
+      const convertedEnums: Record<string, Record<string, EnumItem>> = {}
+
+      for (const [key, config] of Object.entries(result.data.enums)) {
+        convertedEnums[key] = config.items
+      }
+
+      return {
+        data: {
+          domain: result.data.domain,
+          enums: convertedEnums,
+          version: result.data.version
+        }
+      }
+    }
+
+    return { data: { domain: '', enums: {} } }
+  } catch (error) {
+    return { data: { domain: '', enums: {} }, error }
+  }
+}
+
+/**
  * 获取用户列表
  */
-export const getUserList = async (params?: UserListParams) => {
-  return get<void, UserListResponse>('/api/users/list', { params })
+export const getUserList = async (params?: GetUsersRequest) => {
+  return get<void, GetUsersResponse>('/api/users/list', { params })
 }
 
 /**

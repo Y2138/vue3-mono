@@ -1,9 +1,9 @@
 # Vue3 Admin 登录注册功能需求文档
 
 > **功能目标**：为 Vue3 Admin 系统实现完整的用户认证功能，包括登录、注册、密码重置、会话管理等
-> 
+>
 > **技术栈**：Vue 3 + TypeScript + Pinia + Naive UI + gRPC/HTTP 双协议
-> 
+>
 > **设计理念**：现代化用户体验、安全性优先、响应式设计、无障碍访问
 
 ## 📋 功能概览
@@ -224,16 +224,16 @@ interface AuthState {
   isAuthenticated: boolean
   isLoading: boolean
   error: string | null
-  
+
   // 表单状态
   loginForm: LoginForm
   registerForm: RegisterForm
   forgotPasswordForm: ForgotPasswordForm
-  
+
   // 验证码状态
   captchaCountdown: number
   canSendCaptcha: boolean
-  
+
   // 安全状态
   failedAttempts: number
   isLocked: boolean
@@ -246,16 +246,16 @@ interface AuthActions {
   register: (userData: RegisterForm) => Promise<boolean>
   logout: () => Promise<void>
   resetPassword: (data: ForgotPasswordForm) => Promise<boolean>
-  
+
   // 验证码操作
   sendVerificationCode: (phone: string) => Promise<boolean>
   verifyCode: (phone: string, code: string) => Promise<boolean>
-  
+
   // 表单操作
   updateLoginForm: (data: Partial<LoginForm>) => void
   updateRegisterForm: (data: Partial<RegisterForm>) => void
   resetForms: () => void
-  
+
   // 安全操作
   checkSecurityStatus: () => void
   unlockAccount: () => void
@@ -472,22 +472,22 @@ message DeviceInfo {
 service AuthService {
   // 用户登录
   rpc Login(LoginRequest) returns (AuthResponse);
-  
+
   // 用户注册
   rpc Register(RegisterRequest) returns (AuthResponse);
-  
+
   // 发送验证码
   rpc SendVerificationCode(SendVerificationCodeRequest) returns (VerificationCodeResponse);
-  
+
   // 验证验证码
   rpc VerifyCode(VerifyCodeRequest) returns (VerificationCodeResponse);
-  
+
   // 密码重置
   rpc ResetPassword(ForgotPasswordRequest) returns (AuthResponse);
-  
+
   // 刷新 Token
   rpc RefreshToken(RefreshTokenRequest) returns (AuthResponse);
-  
+
   // 用户登出
   rpc Logout(LogoutRequest) returns (LogoutResponse);
 }
@@ -503,15 +503,15 @@ service AuthService {
 ```typescript
 const validatePhone = (phone: string): ValidationResult => {
   const phoneRegex = /^1[3-9]\d{9}$/
-  
+
   if (!phone) {
     return { isValid: false, message: '请输入手机号' }
   }
-  
+
   if (!phoneRegex.test(phone)) {
     return { isValid: false, message: '请输入正确的手机号格式' }
   }
-  
+
   return { isValid: true, message: '' }
 }
 ```
@@ -521,34 +521,34 @@ const validatePhone = (phone: string): ValidationResult => {
 const validatePassword = (password: string): ValidationResult => {
   const minLength = 8
   const maxLength = 20
-  
+
   if (!password) {
     return { isValid: false, message: '请输入密码' }
   }
-  
+
   if (password.length < minLength) {
     return { isValid: false, message: `密码长度不能少于${minLength}位` }
   }
-  
+
   if (password.length > maxLength) {
     return { isValid: false, message: `密码长度不能超过${maxLength}位` }
   }
-  
+
   // 检查复杂度
   const hasLower = /[a-z]/.test(password)
   const hasUpper = /[A-Z]/.test(password)
   const hasNumber = /\d/.test(password)
   const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password)
-  
+
   const complexity = [hasLower, hasUpper, hasNumber, hasSpecial].filter(Boolean).length
-  
+
   if (complexity < 3) {
-    return { 
-      isValid: false, 
-      message: '密码必须包含大写字母、小写字母、数字和特殊字符中的至少3种' 
+    return {
+      isValid: false,
+      message: '密码必须包含大写字母、小写字母、数字和特殊字符中的至少3种'
     }
   }
-  
+
   return { isValid: true, message: '密码强度合格' }
 }
 ```
@@ -559,23 +559,23 @@ const validateUsername = (username: string): ValidationResult => {
   const minLength = 2
   const maxLength = 20
   const usernameRegex = /^[a-zA-Z0-9\u4e00-\u9fa5_-]+$/
-  
+
   if (!username) {
     return { isValid: false, message: '请输入用户名' }
   }
-  
+
   if (username.length < minLength) {
     return { isValid: false, message: `用户名长度不能少于${minLength}位` }
   }
-  
+
   if (username.length > maxLength) {
     return { isValid: false, message: `用户名长度不能超过${maxLength}位` }
   }
-  
+
   if (!usernameRegex.test(username)) {
     return { isValid: false, message: '用户名只能包含字母、数字、中文、下划线和连字符' }
   }
-  
+
   return { isValid: true, message: '' }
 }
 ```
@@ -672,12 +672,12 @@ const errorMessages: ErrorMessages = {
   .auth-container {
     padding: 20px;
   }
-  
+
   .auth-form {
     width: 100%;
     max-width: 400px;
   }
-  
+
   .auth-logo {
     width: 80px;
     height: 80px;
@@ -689,7 +689,7 @@ const errorMessages: ErrorMessages = {
   .auth-container {
     padding: 40px;
   }
-  
+
   .auth-form {
     width: 450px;
   }
@@ -700,7 +700,7 @@ const errorMessages: ErrorMessages = {
   .auth-container {
     padding: 60px;
   }
-  
+
   .auth-form {
     width: 500px;
   }
@@ -721,19 +721,19 @@ describe('表单验证', () => {
       isValid: true,
       message: ''
     })
-    
+
     expect(validatePhone('12345678901')).toEqual({
       isValid: false,
       message: '请输入正确的手机号格式'
     })
   })
-  
+
   test('密码强度验证', () => {
     expect(validatePassword('Abc123!@#')).toEqual({
       isValid: true,
       message: '密码强度合格'
     })
-    
+
     expect(validatePassword('123')).toEqual({
       isValid: false,
       message: '密码长度不能少于8位'
@@ -750,22 +750,22 @@ describe('认证 API', () => {
       user: { phone: '13800138000', username: 'test' },
       token: 'mock-token'
     }
-    
+
     const result = await login({
       phone: '13800138000',
       password: 'password123'
     })
-    
+
     expect(result[0]).toEqual(mockResponse)
     expect(result[1]).toBeNull()
   })
-  
+
   test('登录失败', async () => {
     const result = await login({
       phone: '13800138000',
       password: 'wrong-password'
     })
-    
+
     expect(result[0]).toBeNull()
     expect(result[1]).toBe('手机号或密码错误')
   })
@@ -780,17 +780,17 @@ describe('登录流程', () => {
   test('完整登录流程', async () => {
     // 1. 访问登录页面
     await page.goto('/login')
-    
+
     // 2. 填写登录表单
     await page.fill('[data-testid="phone-input"]', '13800138000')
     await page.fill('[data-testid="password-input"]', 'password123')
-    
+
     // 3. 点击登录按钮
     await page.click('[data-testid="login-button"]')
-    
+
     // 4. 验证跳转到首页
     await expect(page).toHaveURL('/')
-    
+
     // 5. 验证用户信息显示
     await expect(page.locator('[data-testid="user-name"]')).toHaveText('test')
   })
@@ -810,13 +810,13 @@ describe('安全防护', () => {
         password: 'wrong-password'
       })
     }
-    
+
     // 验证账户被锁定
     const result = await login({
       phone: '13800138000',
       password: 'correct-password'
     })
-    
+
     expect(result[1]).toBe('账户已被锁定，请30分钟后再试')
   })
 })
@@ -854,7 +854,7 @@ const preloadAuthResources = () => {
   // 预加载认证页面
   import('@/views/auth/Login.vue')
   import('@/views/auth/Register.vue')
-  
+
   // 预加载认证 API
   import('@/request/api/auth')
 }
@@ -867,7 +867,7 @@ const preloadAuthResources = () => {
 ### 1. 环境变量配置
 ```bash
 # 认证相关配置
-VITE_AUTH_API_URL=http://localhost:3000/auth
+VITE_AUTH_API_URL=http://localhost:3030/auth
 VITE_AUTH_GRPC_ENDPOINT=http://localhost:50051
 VITE_AUTH_TOKEN_KEY=auth_token
 VITE_AUTH_REFRESH_TOKEN_KEY=refresh_token
@@ -958,8 +958,8 @@ export default defineConfig({
 
 ---
 
-**文档版本**：v1.0  
-**创建时间**：2024-01-XX  
-**最后更新**：2024-01-XX  
-**负责人**：开发团队  
-**审核状态**：待审核 
+**文档版本**：v1.0
+**创建时间**：2024-01-XX
+**最后更新**：2024-01-XX
+**负责人**：开发团队
+**审核状态**：待审核

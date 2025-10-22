@@ -8,12 +8,6 @@
 
 export const protobufPackage = "common";
 
-/** 通用时间戳消息 */
-export interface Timestamp {
-  /** 时间戳（ISO 8601 格式字符串） */
-  value: string;
-}
-
 /** 通用分页请求 */
 export interface PaginationRequest {
   /** 页码，从1开始 */
@@ -52,4 +46,40 @@ export interface ErrorDetail {
   message: string;
   /** 错误字段（用于表单验证错误） */
   field: string;
+}
+
+/** 枚举项 */
+export interface EnumItem {
+  /** 枚举值（支持字符串和数字） */
+  valueType?:
+    | { $case: "valueStr"; valueStr: string }
+    | { $case: "value"; value: number }
+    | undefined;
+  /** 显示标签 */
+  label: string;
+  /** 是否禁用 */
+  disabled?:
+    | boolean
+    | undefined;
+  /** 扩展属性（JSON格式） */
+  extra?: string | undefined;
+}
+
+/** 枚举项列表 */
+export interface EnumItemList {
+  /** 枚举项数组 */
+  values: EnumItem[];
+}
+
+/** 枚举响应 */
+export interface EnumResponse {
+  /** 枚举项映射（每个枚举对应一个 EnumItem 数组） */
+  enums: Map<string, EnumItemList>;
+  /** 版本信息 */
+  version?: string | undefined;
+}
+
+export interface EnumResponse_EnumsEntry {
+  key: string;
+  value?: EnumItemList | undefined;
 }

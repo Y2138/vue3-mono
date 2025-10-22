@@ -10,6 +10,7 @@
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
+    "dev": "concurrently \"npm run start:dev\" \"npm run proto:watch\"",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
@@ -22,12 +23,10 @@
     "proto:gen": "protoc --plugin=protoc-gen-ts_proto=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./src/shared --ts_proto_opt=nestJs=false --ts_proto_opt=addGrpcMetadata=false --ts_proto_opt=addNestjsRestParameter=false --proto_path=../../protos ../../protos/*.proto",
     "proto:watch": "nodemon --watch ../../protos --ext proto --exec \"npm run proto:gen\"",
     "dev:with-proto": "concurrently \"npm run proto:watch\" \"npm run start:dev\"",
-    "test:grpc": "ts-node src/utils/grpc-client/connection-test.ts",
-    "test:grpc:simple": "ts-node src/utils/grpc-client/connection-test.ts simple",
-    "test:grpc:batch": "ts-node src/utils/grpc-client/connection-test.ts batch",
     "test:performance": "ts-node src/scripts/performance-test.ts",
     "optimize:errors": "ts-node src/scripts/error-handling-optimizer.ts",
-    "validate:stage5": "ts-node src/scripts/validate-stage5.ts"
+    "validate:stage5": "ts-node src/scripts/validate-stage5.ts",
+    "init:admin": "ts-node src/scripts/init-admin.ts"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.6.2",
@@ -51,6 +50,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "crypto": "^1.0.1",
+    "dayjs": "^1.11.18",
     "dotenv": "^16.0.0",
     "ioredis": "^5.6.0",
     "passport": "^0.7.0",
@@ -85,5 +85,8 @@
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0"
+  },
+  "volta": {
+    "node": "22.21.0"
   }
 }

@@ -144,17 +144,6 @@ export const buildQueryParams = (params: Record<string, any>): Record<string, an
   return result
 }
 
-// ========================================
-// 🏥 健康检查 API
-// ========================================
-
-/**
- * 检查 API 健康状态
- */
-export const checkApiHealth = async () => {
-  return get<void, { status: 'healthy' | 'unhealthy'; timestamp: string; version?: string; uptime?: number }>('/api/health')
-}
-
 /**
  * 获取 API 配置信息
  */
