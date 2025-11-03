@@ -99,13 +99,35 @@ server/nest-main/
 
 ### 响应处理架构
 
-项目采用响应拦截器 + BaseController + 异常过滤器的模式进行响应处理：
+项目采用统一异常处理 + BaseController + 响应拦截器的模式进行响应处理：
 
+- **HttpExceptionFilter**：全局异常过滤器，统一处理所有异常并转换为标准响应格式
+- **自定义异常类**：业务异常、验证异常、数据不存在异常等，提供语义化的错误处理
+- **BaseController**：提供统一的成功响应方法和异常抛出辅助方法
 - **ResponseInterceptor**：负责日志记录和性能监控
-- **BaseController**：提供统一的响应方法，如 `success`、`paginated`、`notFound` 等
-- **异常过滤器**：专门处理异常，转换为统一的错误响应格式
-- **响应构建器**：支持链式调用，用于特殊场景
-- **统一格式**：HTTP API 使用统一的响应格式
+- **统一响应格式**：所有 API 返回一致的 JSON 结构
+
+#### 错误处理策略
+
+1. **HTTP 状态码策略**：
+
+   - `401` - 身份认证失败
+   - `403` - 权限不足
+   - `404` - API 端点不存在
+   - `200` - 其他所有错误（业务错误、验证错误等）
+
+2. **响应体格式**：
+   ```json
+   {
+     "success": false,
+     "code": 400,
+     "message": "用户友好的错误信息",
+     "error": {
+       "type": "BUSINESS_ERROR",
+       "details": { "field": "value" }
+     }
+   }
+   ```
 
 详细设计请参考 [响应处理架构](./docs/response-architecture.md)。
 
@@ -179,7 +201,7 @@ export class YourFeatureService {
 #### 4. 实现 Controller 层
 
 ```typescript
-// HTTP Controller
+// HTTP Controller - 新的错误处理方式
 @Controller('your-features')
 export class YourFeatureController extends BaseController {
   constructor(private readonly service: YourFeatureService) {
@@ -188,21 +210,41 @@ export class YourFeatureController extends BaseController {
 
   @Post()
   async create(@Body() data: CreateYourFeatureDto): Promise<ApiResponse<YourFeature>> {
-    return this.safeExecute(() => this.service.create(data), '创建成功')
+    // 参数验证 - 验证失败会自动抛出 ValidationException
+    Validator.stringLength(data.name, 1, 50, '名称')
+
+    // 业务逻辑 - 直接调用服务，异常会被 HttpExceptionFilter 统一处理
+    const feature = await this.service.create(data)
+    return this.success(feature, '创建成功')
   }
 
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<ApiResponse<YourFeature>> {
-    try {
-      const feature = await this.service.findById(id)
-      if (!feature) {
-        return this.notFound('资源')
-      }
-      return this.success(feature, '获取成功')
-    } catch (error) {
-      // 异常会被 HttpExceptionFilter 捕获并格式化
-      throw error
+    // 参数验证
+    Validator.uuid(id, 'ID')
+
+    // 查询数据
+    const feature = await this.service.findById(id)
+
+    // 使用 BaseController 的断言方法，数据不存在时自动抛出 DataNotFoundException
+    this.assertDataExists(feature, '资源', id)
+
+    return this.success(feature, '获取成功')
+  }
+
+  @Post(':id')
+  async update(@Param('id') id: string, @Body() data: UpdateYourFeatureDto): Promise<ApiResponse<YourFeature>> {
+    // 检查资源是否存在
+    const existing = await this.service.findById(id)
+    this.assertDataExists(existing, '资源', id)
+
+    // 检查业务规则
+    if (data.status === 'archived' && existing.hasActiveChildren) {
+      this.throwBusinessError('存在活跃子项目，无法归档')
     }
+
+    const updated = await this.service.update(id, data)
+    return this.success(updated, '更新成功')
   }
 }
 ```

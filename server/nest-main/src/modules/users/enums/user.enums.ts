@@ -13,7 +13,7 @@ export const USER_ENUMS = {
       value: 1,
       label: '待激活',
       disabled: false,
-      extra: { color: 'info', description: '用户账户等待激活' }
+      extra: JSON.stringify({ color: 'info', description: '用户账户等待激活' })
     },
     ACTIVE: {
       value: 2,
@@ -59,3 +59,31 @@ export const USER_ENUMS = {
     }
   } as Record<string, EnumItem>
 } as const
+
+/**
+ * 获取用户状态描述
+ * @param status 状态值
+ * @returns 状态描述
+ */
+export function getUserStatusDesc(status: number): string {
+  // 从 USER_STATUS 枚举中查找对应的 label
+  const statusEntry = Object.values(USER_ENUMS.USER_STATUS).find((item) => item.value === status)
+  return statusEntry?.label || '未知状态'
+}
+
+/**
+ * 获取用户状态的扩展信息
+ * @param status 状态值
+ * @returns 扩展信息对象
+ */
+export function getUserStatusExtra(status: number): { color?: string; description?: string } {
+  const statusEntry = Object.values(USER_ENUMS.USER_STATUS).find((item) => item.value === status)
+  if (statusEntry?.extra) {
+    try {
+      return JSON.parse(statusEntry.extra)
+    } catch {
+      return {}
+    }
+  }
+  return {}
+}

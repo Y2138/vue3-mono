@@ -98,7 +98,7 @@ REDIS_PORT=6379
 
 # JWT 配置
 JWT_SECRET=change-this-jwt-secret-to-something-secure
-JWT_EXPIRES_IN=24h
+JWT_EXPIRES_IN=7d
 
 # 日志配置
 LOG_LEVEL=info
@@ -110,14 +110,14 @@ EOF
 # 构建镜像
 build_images() {
     log_info "构建应用镜像..."
-    
+
     if [[ $BUILD_FLAG == true ]]; then
         log_info "强制重新构建镜像（--no-cache）"
         docker-compose build --no-cache
     else
         docker-compose build
     fi
-    
+
     log_success "镜像构建完成"
 }
 
@@ -133,20 +133,20 @@ pull_images() {
 # 基础部署
 deploy_basic() {
     log_info "开始基础部署..."
-    
+
     check_env_files
     pull_images
     build_images
-    
+
     # 启动基础服务
     docker-compose up -d postgres redis nest-app
-    
+
     log_info "等待服务启动..."
     sleep 10
-    
+
     # 检查服务状态
     check_services
-    
+
     log_success "基础部署完成！"
     log_info "HTTP 端口: 3000"
     log_info "gRPC 端口: 50051"
@@ -157,20 +157,20 @@ deploy_basic() {
 # 带 Nginx 的部署
 deploy_with_nginx() {
     log_info "开始带 Nginx 的部署..."
-    
+
     check_env_files
     pull_images
     build_images
-    
+
     # 启动服务（包含 Nginx）
     docker-compose --profile with-nginx up -d
-    
+
     log_info "等待服务启动..."
     sleep 15
-    
+
     # 检查服务状态
     check_services
-    
+
     log_success "Nginx 部署完成！"
     log_info "HTTP 端口: 80"
     log_info "gRPC 端口: 50051"
@@ -180,20 +180,20 @@ deploy_with_nginx() {
 # 监控部署
 deploy_monitoring() {
     log_info "开始完整监控部署..."
-    
+
     check_env_files
     pull_images
     build_images
-    
+
     # 启动所有服务（包含监控）
     docker-compose --profile monitoring up -d
-    
+
     log_info "等待服务启动..."
     sleep 20
-    
+
     # 检查服务状态
     check_services
-    
+
     log_success "监控部署完成！"
     log_info "应用端口: 3000"
     log_info "gRPC 端口: 50051"
@@ -204,17 +204,17 @@ deploy_monitoring() {
 # 开发模式部署
 deploy_dev() {
     log_info "开始开发模式部署..."
-    
+
     # 创建开发环境配置
     if [[ ! -f ".env.development" ]]; then
         cp .env.production .env.development
         sed -i 's/NODE_ENV=production/NODE_ENV=development/' .env.development
         sed -i 's/LOG_LEVEL=info/LOG_LEVEL=debug/' .env.development
     fi
-    
+
     # 使用开发配置启动
     docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres redis
-    
+
     log_success "开发环境部署完成！"
     log_info "数据库端口: 5432"
     log_info "Redis 端口: 6379"
@@ -224,16 +224,16 @@ deploy_dev() {
 # 检查服务状态
 check_services() {
     log_info "检查服务状态..."
-    
+
     # 检查容器状态
     if [[ $VERBOSE == true ]]; then
         docker-compose ps
     fi
-    
+
     # 检查健康状态
     local retry_count=0
     local max_retries=30
-    
+
     while [[ $retry_count -lt $max_retries ]]; do
         if curl -f http://localhost:3000/health &> /dev/null; then
             log_success "应用健康检查通过"
@@ -244,7 +244,7 @@ check_services() {
             ((retry_count++))
         fi
     done
-    
+
     if [[ $retry_count -eq $max_retries ]]; then
         log_error "应用启动超时，请检查日志"
         docker-compose logs nest-app
@@ -264,7 +264,7 @@ clean_environment() {
     log_warning "这将删除所有容器、网络和数据卷！"
     read -p "确定要继续吗？(y/N): " -n 1 -r
     echo
-    
+
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         log_info "清理环境..."
         docker-compose --profile with-nginx --profile monitoring down -v --remove-orphans
@@ -289,7 +289,7 @@ main() {
     BUILD_FLAG=false
     PULL_FLAG=false
     MODE=""
-    
+
     while [[ $# -gt 0 ]]; do
         case $1 in
             -h|--help)
@@ -319,17 +319,17 @@ main() {
                 ;;
         esac
     done
-    
+
     # 检查模式
     if [[ -z $MODE ]]; then
         log_error "请指定部署模式"
         show_help
         exit 1
     fi
-    
+
     # 检查 Docker 环境
     check_docker
-    
+
     # 根据模式执行相应操作
     case $MODE in
         basic)
@@ -361,4 +361,4 @@ main() {
 }
 
 # 执行主函数
-main "$@" 
+main "$@"

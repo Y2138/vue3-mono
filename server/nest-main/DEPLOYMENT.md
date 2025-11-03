@@ -190,7 +190,7 @@ REDIS_PORT=6379
 
 # JWT 配置
 JWT_SECRET=your-super-secret-jwt-key     # ⚠️ 必须修改
-JWT_EXPIRES_IN=24h
+JWT_EXPIRES_IN=7d
 
 # 日志配置
 LOG_LEVEL=info              # error|warn|info|debug|verbose

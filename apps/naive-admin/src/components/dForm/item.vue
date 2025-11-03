@@ -48,21 +48,22 @@ const defaultRule: FormItemRule = {
   trigger: ['blur', 'change']
 }
 const mergedRule = computed(() => {
-  if (props.rule?.message)
-    return {
-      ...defaultRule,
-      ...props.rule
-    }
+  if (props.required) {
+    return [defaultRule, ...(Array.isArray(props.rules) ? props.rules : [props.rules])] as FormItemRule[]
+  }
+  return props.rules
 })
 
 // 组件筛选项
 const curOptions = computed(() => {
   const { optionsKey } = props
-  const { options } = props.props || {}
-  if (optionsKey) {
-    return props.selectOptions[optionsKey] || options || []
+  if (props.props && 'options' in props.props) {
+    return props.props.options || []
   }
-  return options || []
+  if (optionsKey) {
+    return props.selectOptions[optionsKey] || []
+  }
+  return []
 })
 // 判断当前组件是否展示
 const showComp = computed(() => {

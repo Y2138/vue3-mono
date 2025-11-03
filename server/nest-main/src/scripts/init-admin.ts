@@ -52,7 +52,8 @@ async function initAdmin() {
     logger.log(`📋 用户信息:`)
     logger.log(`   用户名: ${result.user.username}`)
     logger.log(`   手机号: ${result.user.phone}`)
-    logger.log(`   状态: ${result.user.isActive ? '已激活' : '未激活'}`)
+    const statusNames = { 1: '待激活', 2: '激活', 3: '下线', 4: '锁定' }
+    logger.log(`   状态: ${statusNames[result.user.status] || '未知'}`)
     logger.log(`   角色: ${result.user.userRoles?.map((ur) => ur.role?.name).join(', ') || '无'}`)
     logger.log(`🔑 JWT Token: ${result.token}`)
 

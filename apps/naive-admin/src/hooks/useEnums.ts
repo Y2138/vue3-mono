@@ -155,13 +155,14 @@ export function useEnums<T>(options: useEnumsOptions<T>): useEnumsReturn<T> {
 
       try {
         const result = await api()
+        console.log('1022 enums===>', result)
         // 如果有默认值，则合并数据
         if (defaultValue) {
           data.value = merge((defaultValue || {}) as T, result?.data || {})
         } else {
           data.value = result?.data || ({} as T)
         }
-
+        console.log('1022 data.value===>', data.value)
         // 如果提供了缓存键，则缓存结果
         if (key) {
           setEnums(key, data.value)

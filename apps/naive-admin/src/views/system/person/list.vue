@@ -21,31 +21,31 @@
     </WrapCol>
 
     <WrapCol label="状态">
-      <n-select v-model:value="formModel.isActive" :options="statusOptions as any" placeholder="请选择状态" clearable />
+      <n-select v-model:value="formModel.status" :options="userEnums.userStatus as any" placeholder="请选择状态" clearable />
     </WrapCol>
 
     <WrapCol label="角色">
-      <n-select v-model:value="formModel.roleId" :options="roleOptions as any" placeholder="请选择角色" clearable />
+      <n-select v-model:value="formModel.roleId" :options="userEnums.userType as any" placeholder="请选择角色" clearable />
     </WrapCol>
   </SearchPanel>
 
   <n-data-table class="mt-4" :columns="tableColumns" :data="tableData" :pagination="pagination" :loading="loading" />
+
+  <!-- 新增人员弹窗 -->
+  <CreateUserModal v-model:visible="showCreateModal" @success="handleCreateSuccess" />
 </template>
 
 <script setup lang="tsx">
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { NButton, NTag, NIcon, NPopconfirm, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import useTablePage from '@/hooks/useTablePage'
-import { getUserList, deleteUser, getUserEnums, type UserInfo } from '@/request/api/users'
-// 自定义选项接口
-interface ISelectOption {
-  label: string
-  value: string | number | boolean | null
-  disabled?: boolean
-}
+import { getUserList, deleteUser, getUserEnums, updateUserStatusByAction, type UserInfo } from '@/request/api/users'
+import { useEnums } from '@/hooks/useEnums'
 import type { DataTableColumns } from 'naive-ui'
 import { usePageLoading } from '@/hooks/usePageLoading'
+import { EnumItem } from '@/shared'
+import CreateUserModal from './CreateUserModal.vue'
 
 // 页面加载状态
 usePageLoading()
@@ -53,83 +53,45 @@ usePageLoading()
 // 消息提示
 const message = useMessage()
 
+// 新增人员弹窗状态
+const showCreateModal = ref(false)
+
 // 图标组件定义
 const EditIcon = () => <Icon icon="ion:create-outline" width={16} height={16} />
 const DeleteIcon = () => <Icon icon="ion:trash-outline" width={16} height={16} />
+const ActivateIcon = () => <Icon icon="ion:checkmark-circle-outline" width={16} height={16} />
+const DeactivateIcon = () => <Icon icon="ion:remove-circle-outline" width={16} height={16} />
+const LockIcon = () => <Icon icon="ion:lock-closed-outline" width={16} height={16} />
+const UnlockIcon = () => <Icon icon="ion:lock-open-outline" width={16} height={16} />
 
 // 搜索表单模型
 interface IFormModel {
   phone: string
   username: string
-  isActive: string | null
+  status: number | null
   roleId: string | null
 }
 
 const formModel = ref<IFormModel>({
   phone: '',
   username: '',
-  isActive: null,
+  status: null,
   roleId: null
 })
 
-// 状态选项 - 从 API 获取
-const statusOptions = ref<ISelectOption[]>([{ label: '全部', value: null }])
-
-// 角色选项（这里可以从角色管理API获取）
-const roleOptions = ref<ISelectOption[]>([
-  { label: '全部', value: null },
-  { label: '管理员', value: 'admin' },
-  { label: '普通用户', value: 'user' }
-])
-
-// 枚举数据
-const userEnums = ref<any>({})
-
-/**
- * 获取用户枚举数据
- */
-async function loadUserEnums() {
-  const { data, error } = await getUserEnums()
-
-  if (error) {
-    message.error(`获取枚举数据失败: ${error.message}`)
-    return
-  }
-
-  if (data?.enums) {
-    userEnums.value = data.enums
-
-    // 更新状态选项 - 将枚举值映射为前端需要的格式
-    if (data.enums.USER_STATUS) {
-      const statusEnumOptions = Object.values(data.enums.USER_STATUS)
-        .filter((item: any) => item.value === 1 || item.value === -1) // 只显示激活和下线状态
-        .map((item: any) => ({
-          label: item.label,
-          value: item.value === 1 ? 'true' : 'false', // 转换为字符串布尔值
-          disabled: item.disabled || false
-        }))
-
-      statusOptions.value = [{ label: '全部', value: null }, ...statusEnumOptions]
-    }
-
-    // 如果有用户类型枚举，也可以更新角色选项
-    if (data.enums.USER_TYPE) {
-      const typeEnumOptions = Object.values(data.enums.USER_TYPE).map((item: any) => ({
-        label: item.label,
-        value: item.value,
-        disabled: item.disabled || false
-      }))
-
-      roleOptions.value = [{ label: '全部', value: null }, ...typeEnumOptions]
-    }
-  }
-}
+// 使用 useEnums hook 获取用户枚举数据
+const { data: userEnums } = useEnums<Record<string, EnumItem[]>>({
+  api: getUserEnums,
+  key: 'user-enums',
+  refresh: true,
+  defaultValue: {}
+})
 
 // 请求参数类型
 interface IUserListRequest extends IPaginationRequest {
   phone?: string
   username?: string
-  isActive?: boolean
+  statusList?: number[]
   roleId?: string
 }
 
@@ -137,7 +99,7 @@ interface IUserListRequest extends IPaginationRequest {
 function handleReset() {
   formModel.value.phone = ''
   formModel.value.username = ''
-  formModel.value.isActive = null
+  formModel.value.status = null
   formModel.value.roleId = null
   refresh(true)
 }
@@ -150,7 +112,7 @@ const requestFn = async (params: IUserListRequest): Promise<[ResResult<IPaginati
     phone: params.phone || undefined,
     username: params.username || undefined,
     roleIds: params.roleId ? [params.roleId] : [],
-    isActive: params.isActive
+    statusList: params.statusList && params.statusList.length > 0 ? params.statusList : []
   }
 
   const [res, error] = await getUserList(requestParams)
@@ -182,7 +144,7 @@ const dealParams = (): IUserListRequest => {
     pageSize: pagination.pageSize,
     phone: formModel.value.phone || undefined,
     username: formModel.value.username || undefined,
-    isActive: formModel.value.isActive === 'true' ? true : formModel.value.isActive === 'false' ? false : undefined,
+    statusList: formModel.value.status ? [formModel.value.status] : [],
     roleId: formModel.value.roleId || undefined
   }
 }
@@ -207,28 +169,22 @@ const customColumns: DataTableColumns<UserInfo> = [
   },
   {
     title: '状态',
-    key: 'isActive',
+    key: 'status',
     width: 80,
     render: (row) => {
-      // 使用枚举数据渲染状态
-      if (userEnums.value.USER_STATUS) {
-        const statusEnum = Object.values(userEnums.value.USER_STATUS).find((item: any) => item.value === (row.isActive ? 1 : -1))
-
-        if (statusEnum) {
-          const tagType = (statusEnum as any).color === 'success' ? 'success' : (statusEnum as any).color === 'danger' ? 'error' : (statusEnum as any).color === 'warning' ? 'warning' : 'default'
-
-          return (
-            <NTag type={tagType} size="small">
-              {(statusEnum as any).label}
-            </NTag>
-          )
-        }
+      // 使用新的 status 和 statusDesc 字段
+      if (row.status !== undefined && row.statusDesc) {
+        const tagType = row.status === 2 ? 'success' : row.status === 1 ? 'info' : row.status === 3 ? 'warning' : 'error'
+        return (
+          <NTag type={tagType} size="small">
+            {row.statusDesc}
+          </NTag>
+        )
       }
-
-      // 兜底显示
+      // 兜底显示（向后兼容）
       return (
-        <NTag type={row.isActive ? 'success' : 'error'} size="small">
-          {row.isActive ? '激活' : '未激活'}
+        <NTag type="default" size="small">
+          未知状态
         </NTag>
       )
     }
@@ -265,12 +221,15 @@ const customColumns: DataTableColumns<UserInfo> = [
   {
     title: '操作',
     key: 'actions',
-    width: 150,
+    width: 250,
     fixed: 'right',
     render: (row) => {
+      const statusActions = getStatusActions(row)
+
       return (
-        <div class="flex items-center">
-          <NButton size="small" type="primary" quaternary onClick={() => handleEdit(row)} class="mr-2">
+        <div class="flex items-center flex-wrap gap-1">
+          {/* 编辑按钮 */}
+          <NButton size="small" type="primary" quaternary onClick={() => handleEdit(row)}>
             {{
               default: () => '编辑',
               icon: () => (
@@ -280,6 +239,29 @@ const customColumns: DataTableColumns<UserInfo> = [
               )
             }}
           </NButton>
+
+          {/* 状态操作按钮 */}
+          {statusActions.map((action, index) => (
+            <NPopconfirm key={index} onPositiveClick={action.action}>
+              {{
+                trigger: () => (
+                  <NButton size="small" type={action.type} quaternary>
+                    {{
+                      default: () => action.label,
+                      icon: () => (
+                        <NIcon>
+                          <action.icon />
+                        </NIcon>
+                      )
+                    }}
+                  </NButton>
+                ),
+                default: () => action.confirmText
+              }}
+            </NPopconfirm>
+          ))}
+
+          {/* 删除按钮 */}
           <NPopconfirm onPositiveClick={() => handleDelete(row.phone)}>
             {{
               trigger: () => (
@@ -314,8 +296,12 @@ tableColumns.value = customColumns
 
 // 操作函数
 function handleCreate() {
-  // TODO: 跳转到新增用户页面或打开新增用户弹窗
-  message.info('新增用户功能待实现')
+  showCreateModal.value = true
+}
+
+function handleCreateSuccess(user: UserInfo) {
+  message.success(`人员 ${user.username} 新增成功`)
+  refresh() // 刷新列表
 }
 
 function handleEdit(user: UserInfo) {
@@ -334,13 +320,108 @@ async function handleDelete(phone: string) {
   refresh() // 刷新列表
 }
 
-// 初始化数据
-onMounted(async () => {
-  // 加载枚举数据
-  await loadUserEnums()
-  // 首次加载用户列表
-  refresh()
-})
+// 状态操作函数
+async function handleActivate(phone: string) {
+  const [, error] = await updateUserStatusByAction(phone, 'activate')
+  if (error) {
+    message.error(`激活失败: ${error.message}`)
+    return
+  }
+
+  message.success('用户激活成功')
+  refresh() // 刷新列表
+}
+
+async function handleDeactivate(phone: string) {
+  const [, error] = await updateUserStatusByAction(phone, 'deactivate')
+  if (error) {
+    message.error(`下线失败: ${error.message}`)
+    return
+  }
+
+  message.success('用户下线成功')
+  refresh() // 刷新列表
+}
+
+async function handleLock(phone: string) {
+  const [, error] = await updateUserStatusByAction(phone, 'lock')
+  if (error) {
+    message.error(`锁定失败: ${error.message}`)
+    return
+  }
+
+  message.success('用户锁定成功')
+  refresh() // 刷新列表
+}
+
+async function handleUnlock(phone: string) {
+  const [, error] = await updateUserStatusByAction(phone, 'unlock')
+  if (error) {
+    message.error(`解锁失败: ${error.message}`)
+    return
+  }
+
+  message.success('用户解锁成功')
+  refresh() // 刷新列表
+}
+
+// 根据用户状态获取可用的操作按钮
+function getStatusActions(user: UserInfo) {
+  const actions = []
+
+  switch (user.status) {
+    case 1: // 待激活
+      actions.push({
+        label: '激活',
+        type: 'success' as const,
+        icon: ActivateIcon,
+        action: () => handleActivate(user.phone),
+        confirmText: '确定激活该用户吗？'
+      })
+      break
+    case 2: // 激活
+      actions.push(
+        {
+          label: '下线',
+          type: 'warning' as const,
+          icon: DeactivateIcon,
+          action: () => handleDeactivate(user.phone),
+          confirmText: '确定下线该用户吗？'
+        },
+        {
+          label: '锁定',
+          type: 'error' as const,
+          icon: LockIcon,
+          action: () => handleLock(user.phone),
+          confirmText: '确定锁定该用户吗？'
+        }
+      )
+      break
+    case 3: // 下线
+      actions.push({
+        label: '激活',
+        type: 'success' as const,
+        icon: ActivateIcon,
+        action: () => handleActivate(user.phone),
+        confirmText: '确定激活该用户吗？'
+      })
+      break
+    case 4: // 锁定
+      actions.push({
+        label: '解锁',
+        type: 'info' as const,
+        icon: UnlockIcon,
+        action: () => handleUnlock(user.phone),
+        confirmText: '确定解锁该用户吗？'
+      })
+      break
+  }
+
+  return actions
+}
+
+// 首次加载用户列表
+refresh()
 </script>
 
 <style scoped>

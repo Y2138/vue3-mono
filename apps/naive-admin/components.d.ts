@@ -7,7 +7,6 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    ApiStatus: typeof import('./src/components/api-status/index.vue')['default']
     DCheckbox: typeof import('./src/components/dForm/components/dCheckbox.vue')['default']
     DDatePicker: typeof import('./src/components/dForm/components/dDatePicker.vue')['default']
     DRadio: typeof import('./src/components/dForm/components/dRadio.vue')['default']

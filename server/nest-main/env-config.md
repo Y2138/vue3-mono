@@ -5,6 +5,7 @@
 ## 配置文件说明
 
 请根据不同环境创建对应的配置文件：
+
 - `.env.development` - 开发环境配置
 - `.env.production` - 生产环境配置
 
@@ -85,7 +86,7 @@ REDIS_PASSWORD=your-production-redis-password
 
 # JWT 安全配置（生产环境必须使用强密钥）
 JWT_SECRET=your-super-secure-production-secret-key-please-change-this
-JWT_EXPIRES_IN=24h
+JWT_EXPIRES_IN=7d
 
 # 日志配置
 LOG_LEVEL=warn
@@ -131,26 +132,31 @@ HEALTH_CHECK_INTERVAL=30000
 ## 环境变量说明
 
 ### 基础配置
+
 - `NODE_ENV`: Node.js 运行环境 (`development` | `production`)
 - `APP_ENV`: 应用环境标识
 - `APP_PORT`: HTTP 服务端口
 - `GRPC_PORT`: gRPC 服务端口
 
 ### 数据库配置
+
 - `DATABASE_URL`: Prisma 数据库连接字符串，包含所有连接信息
 - `REDIS_*`: Redis 缓存连接配置
 
 ### 安全配置
+
 - `JWT_SECRET`: JWT 密钥（生产环境必须使用强密钥）
 - `JWT_EXPIRES_IN`: JWT 过期时间
 - `BCRYPT_ROUNDS`: 密码加密轮数
 
 ### 日志配置
+
 - `LOG_LEVEL`: 日志级别 (`debug` | `info` | `warn` | `error`)
 - `ENABLE_REQUEST_LOGGING`: 是否启用请求日志
 - Prisma 日志配置在 `prisma.module.ts` 中通过 PrismaClient 初始化选项设置
 
 ### gRPC 配置
+
 - `GRPC_MAX_RECEIVE_MESSAGE_LENGTH`: gRPC 最大接收消息长度
 - `GRPC_MAX_SEND_MESSAGE_LENGTH`: gRPC 最大发送消息长度
 - `GRPC_KEEPALIVE_*`: gRPC 保活配置
@@ -163,7 +169,8 @@ HEALTH_CHECK_INTERVAL=30000
 
 ## 安全提醒
 
-⚠️ **重要**: 
+⚠️ **重要**:
+
 - 生产环境必须修改所有默认密钥和敏感配置
 - 不要将包含真实配置的环境变量文件提交到版本控制系统
-- 定期更换生产环境的密钥和凭据 
+- 定期更换生产环境的密钥和凭据

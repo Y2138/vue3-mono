@@ -1,4 +1,4 @@
-import type { CascaderProps, CheckboxGroupProps, DatePickerProps, FormItemRule, InputNumberProps, InputProps, RadioButtonProps, SelectProps, TimePickerProps } from 'naive-ui'
+import type { CascaderProps, CheckboxGroupProps, DatePickerProps, FormInst, FormItemRule, InputNumberProps, InputProps, RadioButtonProps, SelectProps, TimePickerProps } from 'naive-ui'
 
 export interface IOption {
   label: string
@@ -26,7 +26,8 @@ type WithConfig<T> = T & {
   isText?: boolean
   textKey?: string
   optionsKey?: string
-  rule?: FormItemRule
+  required?: boolean
+  rules?: FormItemRule | FormItemRule[]
   width?: number | string
   /* 内部组件插槽，${valueKey}_${innerSlots[i]}来使用插槽 */
   innerSlots?: string[]
@@ -48,3 +49,5 @@ export type DFormRootProp = {
   disabled?: boolean
   inline?: boolean
 }
+
+export type DFormRootInst = FormInst

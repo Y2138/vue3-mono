@@ -1,7 +1,7 @@
 <template>
-  <n-form ref="formRef" v-bind="unref(nFormProps)" :model="formModel">
+  <n-form ref="dRootFormRef" v-bind="unref(nFormProps)" :model="formModel">
     <template v-for="item in formConfigs" :key="item.valueKey">
-      <d-form-item v-model:form-model="formModel" :selectOptions="selectOptions" v-bind="item" :path="item.valueKey" :rule="item.rule"> </d-form-item>
+      <d-form-item v-model:form-model="formModel" :selectOptions="selectOptions" v-bind="item" :path="item.valueKey" :rule="item.rules"> </d-form-item>
     </template>
   </n-form>
 </template>
@@ -9,7 +9,8 @@
 <script setup lang="ts">
 import DFormItem from './item.vue'
 import type { DFormRootProp } from './types'
-import { unref, withDefaults } from 'vue'
+import { unref, withDefaults, useTemplateRef } from 'vue'
+import type { FormInst } from 'naive-ui'
 
 defineOptions({
   name: 'DFormRoot'
@@ -26,4 +27,11 @@ const props = withDefaults(defineProps<DFormRootProp>(), {
 })
 
 const { formConfigs, selectOptions, ...nFormProps } = props
+
+const formRef = useTemplateRef<FormInst>('dRootFormRef')
+
+defineExpose({
+  validate: () => formRef.value?.validate(),
+  restoreValidation: () => formRef.value?.restoreValidation()
+})
 </script>

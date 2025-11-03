@@ -3,17 +3,9 @@
  * 使用标准 HTTP/REST API，但保持 proto 类型定义
  */
 
-import { post, get, put, del, patch } from '../axios'
+import { post, get, patch } from '../axios'
 import type { User, AuthResponse, LoginRequest, RegisterRequest, GetUsersRequest, GetUsersResponse } from '@/shared/users'
-// 使用 proto 生成的类型
-import type { EnumResponse as ProtoEnumResponse, EnumItem } from '@/shared/common'
-
-// 前端使用的枚举响应接口（转换后的）
-export interface EnumResponse {
-  domain: string
-  enums: Record<string, Record<string, EnumItem>>
-  version?: string
-}
+import type { EnumItem, EnumResponse } from './common'
 
 // ========================================
 // 🔐 用户认证相关类型（基于 proto 定义）
@@ -33,11 +25,25 @@ export interface CreateUserParams {
   roleIds?: string[]
 }
 
+export interface CreateUserFormParams {
+  phone: string
+  username: string
+}
+
 export interface UpdateUserParams {
-  phone: string // 用于路径参数
+  phone: string
   username?: string
-  isActive?: boolean
+  status?: number
   roleIds?: string[]
+}
+
+export interface UpdateUserStatusParams {
+  phone: string
+  status: number // 1-待激活，2-激活，3-下线，4-锁定
+}
+
+export interface DeleteUserParams {
+  phone: string
 }
 
 export interface UserListParams {
@@ -95,34 +101,21 @@ export const logout = async () => {
 /**
  * 获取用户模块枚举
  */
-export const getUserEnums = async (): Promise<{ data: EnumResponse; error?: any }> => {
+export const getUserEnums = async (): Promise<{ data: Record<string, EnumItem[]>; error?: any }> => {
   try {
-    const [result, error] = await get<void, ProtoEnumResponse>('/api/users/enums')
+    const [result, error] = await get<void, EnumResponse>('/api/users/enums')
 
     if (error) {
-      return { data: { domain: '', enums: {} }, error }
+      return { data: {}, error }
     }
-
     if (result?.data) {
-      // proto 的 map 类型在 ts-proto 中生成为普通对象，直接转换 items
-      const convertedEnums: Record<string, Record<string, EnumItem>> = {}
-
-      for (const [key, config] of Object.entries(result.data.enums)) {
-        convertedEnums[key] = config.items
-      }
-
       return {
-        data: {
-          domain: result.data.domain,
-          enums: convertedEnums,
-          version: result.data.version
-        }
+        data: result.data.enums
       }
     }
-
-    return { data: { domain: '', enums: {} } }
+    return { data: {} }
   } catch (error) {
-    return { data: { domain: '', enums: {} }, error }
+    return { data: {}, error }
   }
 }
 
@@ -137,29 +130,35 @@ export const getUserList = async (params?: GetUsersRequest) => {
  * 根据手机号获取用户详情
  */
 export const getUserByPhone = async (phone: string) => {
-  return get<void, UserInfo>(`/api/users/${phone}`)
+  return get<void, UserInfo>('/api/users/detail', { params: { phone } })
 }
 
 /**
- * 创建用户
+ * 创建用户（完整信息）
  */
 export const createUser = async (params: CreateUserParams) => {
   return post<CreateUserParams, UserInfo>('/api/users', { data: params })
 }
 
 /**
+ * 新增人员（表单方式）
+ */
+export const createUserForm = async (params: CreateUserFormParams) => {
+  return post<CreateUserFormParams, UserInfo>('/api/users/add', { data: params })
+}
+
+/**
  * 更新用户信息
  */
 export const updateUser = async (params: UpdateUserParams) => {
-  const { phone, ...updateData } = params
-  return put<Omit<UpdateUserParams, 'phone'>, UserInfo>(`/api/users/${phone}`, { data: updateData })
+  return post<UpdateUserParams, UserInfo>('/api/users/update', { data: params })
 }
 
 /**
  * 删除用户
  */
 export const deleteUser = async (phone: string) => {
-  return del<void, void>(`/api/users/${phone}`)
+  return post<DeleteUserParams, void>('/api/users/delete', { data: { phone } })
 }
 
 /**
@@ -198,6 +197,25 @@ export const getUserRoles = async (phone: string) => {
 }
 
 // ========================================
+// 🔄 用户状态操作 API
+// ========================================
+
+/**
+ * 用户状态操作请求类型
+ */
+export interface UserStatusActionRequest {
+  /** 操作类型：activate-激活，deactivate-下线，lock-锁定，unlock-解锁 */
+  action: 'activate' | 'deactivate' | 'lock' | 'unlock'
+}
+
+/**
+ * 统一的用户状态操作接口
+ */
+export const updateUserStatusByAction = async (phone: string, action: UserStatusActionRequest['action']) => {
+  return post<UserStatusActionRequest, UserInfo>(`/api/users/${phone}/status`, { data: { action } })
+}
+
+// ========================================
 // 📊 用户统计 API
 // ========================================
 
@@ -214,18 +232,4 @@ export const getUserStats = async () => {
       newUsersToday: number
     }
   >('/api/users/stats')
-}
-
-/**
- * 检查手机号是否已存在
- */
-export const checkPhoneExists = async (phone: string) => {
-  return get<void, { exists: boolean }>(`/api/users/check-phone/${phone}`)
-}
-
-/**
- * 检查用户名是否已存在
- */
-export const checkUsernameExists = async (username: string) => {
-  return get<void, { exists: boolean }>(`/api/users/check-username/${username}`)
 }

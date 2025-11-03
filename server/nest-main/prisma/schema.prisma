@@ -11,7 +11,7 @@ model User {
   phone    String   @id
   username String
   password String
-  isActive Boolean  @default(false)
+  status   Int      @default(1) // 1: 待激活, 2: 激活, 3: 下线, 4: 锁定
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   userRoles UserRole[]

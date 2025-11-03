@@ -1,30 +1,40 @@
 ---
-description: 
+description:
 globs: *.vue,*.ts
 alwaysApply: false
 ---
 
 ## 样式书写规范
+
 样式相关遵守 [styles-guide.mdc](mdc:.cursor/rules/frontend/styles-guide.mdc) 规范
-## ts代码规范
-ts代码书写遵守 [ts-standards.mdc](mdc:.cursor/rules/frontend/ts-standards.mdc) 规范
-## vue3代码规范
-vue代码书写遵守 [vue3-guide.mdc](mdc:.cursor/rules/frontend/vue3-guide.mdc) 规范
+
+## ts 代码规范
+
+ts 代码书写遵守 [ts-standards.mdc](mdc:.cursor/rules/frontend/ts-standards.mdc) 规范
+
+## vue3 代码规范
+
+vue 代码书写遵守 [vue3-guide.mdc](mdc:.cursor/rules/frontend/vue3-guide.mdc) 规范
+
 ## 动画规范
+
 动画需求请先用 context7 查询 Montion for vue 的文档
 
 ## 命名约定
+
 - 对于目录使用小写字母和横杠（例如：components/auth-wizard），对于变量使用驼峰命名法。
-- 使用具有描述性的变量名/常量名。此外，事件函数应以“handle”为前缀命名，例如“handleClick”对应onClick，在元素上实现可访问性特性，例如，一个标签应该有tabindex="0"、aria-label、on:click 和 on:keydown 以及类似的属性。
-- 使用带有辅助动词的描述性变量名（例如isLoading、hasError）。
+- 使用具有描述性的变量名/常量名。此外，事件函数应以“handle”为前缀命名，例如“handleClick”对应 onClick，在元素上实现可访问性特性，例如，一个标签应该有 tabindex="0"、aria-label、on:click 和 on:keydown 以及类似的属性。
+- 使用带有辅助动词的描述性变量名（例如 isLoading、hasError）。
 - 对于常量字面量，全部用大写字母加下划线命名。
-- 对于纯函数使用function命名，以提升清晰度；除此之外 使用const而不是function命名函数，例如“const toggle = () =>”。如果可能，还应定义类型。
+- 对于纯函数使用 function 命名，以提升清晰度；除此之外 使用 const 而不是 function 命名函数，例如“const toggle = () =>”。如果可能，还应定义类型。
 - 倾向于对函数使用具名导出。
 
 ## 代码风格
-- import的书写顺序：vue相关库、其它第三方库、项目中的js/ts文件、项目中的vue组件、type文件。
-- 尽量减少函数入参，函数入参不应超过3个，超过3个请使用对象来聚合。
+
+- import 的书写顺序：vue 相关库、其它第三方库、项目中的 js/ts 文件、项目中的 vue 组件、type 文件。
+- 尽量减少函数入参，函数入参不应超过 3 个，超过 3 个请使用对象来聚合。
 
 ## 请求处理
-- 项目统一封装了axios，请仔细查看封装后的请求使用规范，包含出入参数的格式。
-- 遵循项目的请求规范，定义接口使用方式即可。
+
+- 项目统一封装了 axios，请仔细查看封装后的请求使用规范，包含出入参数的格式。
+- 遵循项目的请求规范，接口统一封装为方法放在 @/request/api 下，按模块拆分，方法名以 `api_{function}` 命名

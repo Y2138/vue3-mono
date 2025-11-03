@@ -12,7 +12,9 @@ import { UserHttpController } from './user.http.controller'
     PrismaModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your-secret-key',
-      signOptions: { expiresIn: '1d' }
+      signOptions: {
+        expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as any
+      }
     })
   ],
   controllers: [UserHttpController],

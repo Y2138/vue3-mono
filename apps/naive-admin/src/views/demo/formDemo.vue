@@ -37,10 +37,12 @@ const formConfigs: IFormConfig[] = [
     valueKey: 'text1',
     comp: 'n-input',
     label: '输入框1',
-    rule: {
-      required: true,
-      message: '该项必填'
-    },
+    rules: [
+      {
+        required: true,
+        message: '该项必填'
+      }
+    ],
     props: {
       placeholder: '请输入第一个选项'
     }
@@ -49,11 +51,13 @@ const formConfigs: IFormConfig[] = [
     valueKey: 'number1',
     comp: 'n-input-number',
     label: '数字输入框',
-    rule: {
-      required: true,
-      type: 'number',
-      message: '请输入数字'
-    },
+    rules: [
+      {
+        required: true,
+        type: 'number',
+        message: '请输入数字'
+      }
+    ],
     props: {
       placeholder: '请填写数字'
     }
@@ -62,9 +66,11 @@ const formConfigs: IFormConfig[] = [
     valueKey: 'date1',
     comp: 'd-date-picker',
     label: '日期1',
-    rule: {
-      required: true
-    },
+    rules: [
+      {
+        required: true
+      }
+    ],
     props: {
       placeholder: '请选择日期'
     }
@@ -74,17 +80,21 @@ const formConfigs: IFormConfig[] = [
     comp: 'n-select',
     label: '选择框1',
     optionsKey: 'select1',
-    rule: {
-      required: true
-    }
+    rules: [
+      {
+        required: true
+      }
+    ]
   },
   {
     valueKey: 'daterange1',
     comp: 'd-date-picker',
     label: '日期范围选择',
-    rule: {
-      required: true
-    },
+    rules: [
+      {
+        required: true
+      }
+    ],
     props: {
       type: 'daterange'
     }

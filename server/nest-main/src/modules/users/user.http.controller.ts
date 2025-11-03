@@ -1,12 +1,20 @@
-import { Controller, Post, Get, Body, Param, Query, HttpCode, HttpStatus, ConflictException, UnauthorizedException } from '@nestjs/common'
+import { Controller, Post, Get, Body, Param, Query, HttpCode, HttpStatus, UnauthorizedException } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse as SwaggerApiResponse } from '@nestjs/swagger'
 import { BaseController } from '../../common/controllers/base.controller'
 import { Public } from '../../common/decorators/public.decorator'
 import { ApiResponse } from '../../common/response/types'
 import { UserService } from './user.service'
-import { User, AuthResponse, GetUsersResponse, LoginRequest, RegisterRequest, CreateUserRequest, UpdateUserRequest } from '../../shared/users'
+import { User, AuthResponse, GetUsersResponse, LoginRequest, RegisterRequest, CreateUserRequest, CreateUserFormRequest, UpdateUserRequest } from '../../shared/users'
 import { Validator } from '../../common/validators'
-import { USER_ENUMS } from './enums/user.enums'
+import { USER_ENUMS, getUserStatusDesc } from './enums/user.enums'
+
+/**
+ * 用户状态操作请求
+ */
+interface UserStatusActionRequest {
+  /** 操作类型：activate-激活，deactivate-下线，lock-锁定，unlock-解锁 */
+  action: 'activate' | 'deactivate' | 'lock' | 'unlock'
+}
 
 /**
  * 用户认证和管理 HTTP 控制器
@@ -36,20 +44,15 @@ export class UserHttpController extends BaseController {
     description: '成功获取用户模块枚举配置'
   })
   async getUserEnums() {
-    try {
-      const enumResponse = {
-        enums: {
-          userStatus: Object.values(USER_ENUMS.USER_STATUS),
-          userType: Object.values(USER_ENUMS.USER_TYPE)
-        },
-        version: '1.0.0'
-      }
-
-      return this.success(enumResponse, '获取用户模块枚举成功')
-    } catch (error) {
-      this.logger.error('获取用户模块枚举失败', error)
-      return this.error('获取用户模块枚举失败')
+    const enumResponse = {
+      enums: {
+        userStatus: Object.values(USER_ENUMS.USER_STATUS),
+        userType: Object.values(USER_ENUMS.USER_TYPE)
+      },
+      version: '1.0.0'
     }
+
+    return this.success(enumResponse, '获取用户模块枚举成功')
   }
 
   // ========================================
@@ -75,39 +78,36 @@ export class UserHttpController extends BaseController {
     description: '登录失败，手机号或密码错误'
   })
   async login(@Body() loginRequest: LoginRequest): Promise<ApiResponse<AuthResponse>> {
-    try {
-      // 基础格式验证
-      Validator.phone(loginRequest.phone)
-      Validator.password(loginRequest.password)
+    // 基础格式验证
+    Validator.phone(loginRequest.phone)
+    Validator.password(loginRequest.password)
 
-      // 执行登录逻辑
-      const result = await this.userService.login({
-        phone: loginRequest.phone,
-        password: loginRequest.password
-      })
+    // 执行登录逻辑
+    const result = await this.userService.login({
+      phone: loginRequest.phone,
+      password: loginRequest.password
+    })
 
-      if (!result) {
-        throw new UnauthorizedException('手机号或密码错误')
-      }
-
-      // 直接组装响应数据
-      const authResponse: AuthResponse = {
-        user: {
-          phone: result.user.phone,
-          username: result.user.username || '',
-          isActive: result.user.isActive,
-          createdAt: this.formatDateTime(result.user.createdAt),
-          updatedAt: this.formatDateTime(result.user.updatedAt),
-          roleIds: result.user.userRoles?.map((ur) => ur.role?.id).filter(Boolean) || []
-        },
-        token: result.token,
-        expiresAt: this.formatDateTime(new Date(Date.now() + 24 * 60 * 60 * 1000))
-      }
-
-      return this.success(authResponse, '登录成功')
-    } catch (error) {
-      return this.handleError(error, '登录失败')
+    if (!result) {
+      throw new UnauthorizedException('手机号或密码错误')
     }
+
+    // 直接组装响应数据
+    const authResponse: AuthResponse = {
+      user: {
+        phone: result.user.phone,
+        username: result.user.username || '',
+        status: result.user.status,
+        statusDesc: getUserStatusDesc(result.user.status),
+        createdAt: this.formatDateTime(result.user.createdAt),
+        updatedAt: this.formatDateTime(result.user.updatedAt),
+        roleIds: result.user.userRoles?.map((ur) => ur.role?.id).filter(Boolean) || []
+      },
+      token: result.token,
+      expiresAt: this.formatDateTime(new Date(Date.now() + 24 * 60 * 60 * 1000))
+    }
+
+    return this.success(authResponse, '登录成功')
   }
 
   /**
@@ -129,43 +129,40 @@ export class UserHttpController extends BaseController {
     description: '注册失败，手机号已存在'
   })
   async register(@Body() registerRequest: RegisterRequest): Promise<ApiResponse<AuthResponse>> {
-    try {
-      // 基础格式验证
-      Validator.phone(registerRequest.phone)
-      Validator.username(registerRequest.username)
-      Validator.password(registerRequest.password)
+    // 基础格式验证
+    Validator.phone(registerRequest.phone)
+    Validator.username(registerRequest.username)
+    Validator.password(registerRequest.password)
 
-      // 业务验证 - 检查手机号是否已存在
-      const existingUser = await this.userService.findOne(registerRequest.phone)
-      if (existingUser) {
-        throw new ConflictException('该手机号已被注册')
-      }
-
-      // 执行注册逻辑
-      const result = await this.userService.register({
-        phone: registerRequest.phone,
-        username: registerRequest.username,
-        password: registerRequest.password
-      })
-
-      // 直接组装响应数据
-      const authResponse: AuthResponse = {
-        user: {
-          phone: result.user.phone,
-          username: result.user.username || '',
-          isActive: result.user.isActive,
-          createdAt: this.formatDateTime(result.user.createdAt),
-          updatedAt: this.formatDateTime(result.user.updatedAt),
-          roleIds: result.user.userRoles?.map((ur) => ur.role?.id).filter(Boolean) || []
-        },
-        token: result.token,
-        expiresAt: this.formatDateTime(new Date(Date.now() + 24 * 60 * 60 * 1000))
-      }
-
-      return this.success(authResponse, '注册成功')
-    } catch (error) {
-      return this.handleError(error, '注册失败')
+    // 业务验证 - 检查手机号是否已存在
+    const existingUser = await this.userService.findOne(registerRequest.phone)
+    if (existingUser) {
+      this.throwConflictError('该手机号已被注册')
     }
+
+    // 执行注册逻辑
+    const result = await this.userService.register({
+      phone: registerRequest.phone,
+      username: registerRequest.username,
+      password: registerRequest.password
+    })
+
+    // 直接组装响应数据
+    const authResponse: AuthResponse = {
+      user: {
+        phone: result.user.phone,
+        username: result.user.username || '',
+        status: result.user.status,
+        statusDesc: getUserStatusDesc(result.user.status),
+        createdAt: this.formatDateTime(result.user.createdAt),
+        updatedAt: this.formatDateTime(result.user.updatedAt),
+        roleIds: result.user.userRoles?.map((ur) => ur.role?.id).filter(Boolean) || []
+      },
+      token: result.token,
+      expiresAt: this.formatDateTime(new Date(Date.now() + 24 * 60 * 60 * 1000))
+    }
+
+    return this.success(authResponse, '注册成功')
   }
 
   /**
@@ -185,15 +182,14 @@ export class UserHttpController extends BaseController {
     Validator.phone(phone)
 
     const user = await this.userService.findOne(phone)
-    if (!user) {
-      return this.error('用户不存在', 404)
-    }
+    this.assertDataExists(user, '用户', phone)
 
     // 直接组装用户数据
     const userResponse: User = {
       phone: user.phone,
       username: user.username || '',
-      isActive: user.isActive,
+      status: user.status,
+      statusDesc: getUserStatusDesc(user.status),
       createdAt: this.formatDateTime(user.createdAt),
       updatedAt: this.formatDateTime(user.updatedAt),
       roleIds: user.userRoles?.map((ur) => ur.role?.id).filter(Boolean) || []
@@ -288,7 +284,8 @@ export class UserHttpController extends BaseController {
       list: result.data.map((user) => ({
         phone: user.phone,
         username: user.username || '',
-        isActive: user.isActive,
+        status: user.status,
+        statusDesc: getUserStatusDesc(user.status),
         createdAt: this.formatDateTime(user.createdAt),
         updatedAt: this.formatDateTime(user.updatedAt),
         roleIds: user.userRoles?.map((ur) => ur.role?.id).filter(Boolean) || []
@@ -383,15 +380,14 @@ export class UserHttpController extends BaseController {
     Validator.phone(phone)
 
     const user = await this.userService.findOne(phone)
-    if (!user) {
-      return this.error('用户不存在', 404)
-    }
+    this.assertDataExists(user, '用户', phone)
 
     // 直接组装用户数据
     const userResponse: User = {
       phone: user.phone,
       username: user.username || '',
-      isActive: user.isActive,
+      status: user.status,
+      statusDesc: getUserStatusDesc(user.status),
       createdAt: this.formatDateTime(user.createdAt),
       updatedAt: this.formatDateTime(user.updatedAt),
       roleIds: user.userRoles?.map((ur) => ur.role?.id).filter(Boolean) || []
@@ -418,44 +414,94 @@ export class UserHttpController extends BaseController {
     description: '手机号已存在'
   })
   async createUser(@Body() createUserRequest: CreateUserRequest): Promise<ApiResponse<User>> {
-    try {
-      // 基础格式验证
-      Validator.phone(createUserRequest.phone)
-      Validator.username(createUserRequest.username)
-      Validator.password(createUserRequest.password)
+    console.log('createUserRequest ==>', createUserRequest)
+    // 基础格式验证
+    Validator.phone(createUserRequest.phone)
+    Validator.username(createUserRequest.username)
+    Validator.password(createUserRequest.password)
 
-      // 验证角色ID数组（如果提供）
-      if (createUserRequest.roleIds && createUserRequest.roleIds.length > 0) {
-        Validator.arrayNotEmpty(createUserRequest.roleIds, '角色列表')
-      }
-
-      // 检查手机号是否已存在
-      const existingUser = await this.userService.findOne(createUserRequest.phone)
-      if (existingUser) {
-        throw new ConflictException('该手机号已被注册')
-      }
-
-      // 创建用户
-      const user = await this.userService.create({
-        phone: createUserRequest.phone,
-        username: createUserRequest.username,
-        password: createUserRequest.password
-      })
-
-      // 直接组装用户数据
-      const userResponse: User = {
-        phone: user.phone,
-        username: user.username || '',
-        isActive: user.isActive,
-        createdAt: this.formatDateTime(user.createdAt),
-        updatedAt: this.formatDateTime(user.updatedAt),
-        roleIds: user.userRoles?.map((ur) => ur.role?.id).filter(Boolean) || []
-      }
-
-      return this.success(userResponse, '用户创建成功')
-    } catch (error) {
-      return this.handleError(error, '用户创建失败')
+    // 验证角色ID数组（如果提供）
+    if (createUserRequest.roleIds && createUserRequest.roleIds.length > 0) {
+      Validator.arrayNotEmpty(createUserRequest.roleIds, '角色列表')
     }
+
+    // 检查手机号是否已存在
+    const existingUser = await this.userService.findOne(createUserRequest.phone)
+    if (existingUser) {
+      this.throwConflictError('该手机号已被注册')
+    }
+
+    // 创建用户
+    const user = await this.userService.create({
+      phone: createUserRequest.phone,
+      username: createUserRequest.username,
+      password: createUserRequest.password
+    })
+
+    // 直接组装用户数据
+    const userResponse: User = {
+      phone: user.phone,
+      username: user.username || '',
+      status: user.status,
+      statusDesc: getUserStatusDesc(user.status),
+      createdAt: this.formatDateTime(user.createdAt),
+      updatedAt: this.formatDateTime(user.updatedAt),
+      roleIds: user.userRoles?.map((ur) => ur.role?.id).filter(Boolean) || []
+    }
+
+    return this.success(userResponse, '用户创建成功')
+  }
+
+  /**
+   * 新增人员（表单方式）
+   */
+  @Post('users/add')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: '新增人员',
+    description: '通过表单方式新增人员，系统自动生成默认密码'
+  })
+  @SwaggerApiResponse({
+    status: 201,
+    description: '人员新增成功'
+  })
+  @SwaggerApiResponse({
+    status: 409,
+    description: '手机号已存在'
+  })
+  async addUser(@Body() createUserFormRequest: CreateUserFormRequest): Promise<ApiResponse<User>> {
+    // 基础格式验证
+    Validator.phone(createUserFormRequest.phone)
+    Validator.username(createUserFormRequest.username)
+
+    // 检查手机号是否已存在
+    const existingUser = await this.userService.findOne(createUserFormRequest.phone)
+    if (existingUser) {
+      this.throwConflictError('该手机号已被注册')
+    }
+
+    // 生成默认密码：Aa + 手机号后6位
+    const defaultPassword = `Aa${createUserFormRequest.phone.slice(-6)}!`
+
+    // 创建用户
+    const user = await this.userService.create({
+      phone: createUserFormRequest.phone,
+      username: createUserFormRequest.username,
+      password: defaultPassword
+    })
+
+    // 直接组装用户数据
+    const userResponse: User = {
+      phone: user.phone,
+      username: user.username || '',
+      status: user.status,
+      statusDesc: getUserStatusDesc(user.status),
+      createdAt: this.formatDateTime(user.createdAt),
+      updatedAt: this.formatDateTime(user.updatedAt),
+      roleIds: user.userRoles?.map((ur) => ur.role?.id).filter(Boolean) || []
+    }
+
+    return this.success(userResponse, '人员新增成功')
   }
 
   /**
@@ -475,45 +521,40 @@ export class UserHttpController extends BaseController {
     description: '用户不存在'
   })
   async updateUser(@Param('phone') phone: string, @Body() updateUserRequest: UpdateUserRequest): Promise<ApiResponse<User>> {
-    try {
-      // 验证路径参数
-      Validator.phone(phone)
+    // 验证路径参数
+    Validator.phone(phone)
 
-      // 验证更新字段（如果提供）
-      if (updateUserRequest.username !== undefined) {
-        Validator.username(updateUserRequest.username)
-      }
-
-      if (updateUserRequest.roleIds && updateUserRequest.roleIds.length > 0) {
-        Validator.arrayNotEmpty(updateUserRequest.roleIds, '角色列表')
-      }
-
-      // 检查用户是否存在
-      const existingUser = await this.userService.findOne(phone)
-      if (!existingUser) {
-        return this.error('用户不存在', 404)
-      }
-
-      // 更新用户信息
-      const updatedUser = await this.userService.update(phone, {
-        username: updateUserRequest.username,
-        isActive: updateUserRequest.isActive
-      })
-
-      // 直接组装用户数据
-      const userResponse: User = {
-        phone: updatedUser.phone,
-        username: updatedUser.username || '',
-        isActive: updatedUser.isActive,
-        createdAt: this.formatDateTime(updatedUser.createdAt),
-        updatedAt: this.formatDateTime(updatedUser.updatedAt),
-        roleIds: updatedUser.userRoles?.map((ur) => ur.role?.id).filter(Boolean) || []
-      }
-
-      return this.success(userResponse, '用户信息更新成功')
-    } catch (error) {
-      return this.handleError(error, '用户信息更新失败')
+    // 验证更新字段（如果提供）
+    if (updateUserRequest.username !== undefined) {
+      Validator.username(updateUserRequest.username)
     }
+
+    if (updateUserRequest.roleIds && updateUserRequest.roleIds.length > 0) {
+      Validator.arrayNotEmpty(updateUserRequest.roleIds, '角色列表')
+    }
+
+    // 检查用户是否存在
+    const existingUser = await this.userService.findOne(phone)
+    this.assertDataExists(existingUser, '用户', phone)
+
+    // 更新用户信息
+    const updatedUser = await this.userService.update(phone, {
+      username: updateUserRequest.username,
+      status: updateUserRequest.status
+    })
+
+    // 直接组装用户数据
+    const userResponse: User = {
+      phone: updatedUser.phone,
+      username: updatedUser.username || '',
+      status: updatedUser.status,
+      statusDesc: getUserStatusDesc(updatedUser.status),
+      createdAt: this.formatDateTime(updatedUser.createdAt),
+      updatedAt: this.formatDateTime(updatedUser.updatedAt),
+      roleIds: updatedUser.userRoles?.map((ur) => ur.role?.id).filter(Boolean) || []
+    }
+
+    return this.success(userResponse, '用户信息更新成功')
   }
 
   /**
@@ -535,14 +576,94 @@ export class UserHttpController extends BaseController {
   async deleteUser(@Param('phone') phone: string): Promise<ApiResponse<void>> {
     // 检查用户是否存在
     const existingUser = await this.userService.findOne(phone)
-    if (!existingUser) {
-      return this.error('用户不存在', 404)
-    }
+    this.assertDataExists(existingUser, '用户', phone)
 
     // 删除用户
     await this.userService.remove(phone)
 
     return this.success(undefined, '用户删除成功')
+  }
+
+  // ========================================
+  // 📊 用户状态操作相关接口
+  // ========================================
+
+  /**
+   * 用户状态操作统一接口
+   */
+  @Post('users/:phone/status')
+  @ApiOperation({
+    summary: '用户状态操作',
+    description: '统一的用户状态操作接口，支持激活、下线、锁定、解锁操作'
+  })
+  @SwaggerApiResponse({
+    status: 200,
+    description: '状态操作成功'
+  })
+  @SwaggerApiResponse({
+    status: 400,
+    description: '无效的操作类型'
+  })
+  @SwaggerApiResponse({
+    status: 404,
+    description: '用户不存在'
+  })
+  async updateUserStatus(@Param('phone') phone: string, @Body() request: UserStatusActionRequest): Promise<ApiResponse<User>> {
+    // 验证手机号格式
+    Validator.phone(phone)
+
+    // 验证操作类型
+    const validActions = ['activate', 'deactivate', 'lock', 'unlock'] as const
+    if (!validActions.includes(request.action)) {
+      this.throwValidationError(`无效的操作类型: ${request.action}，支持的操作: ${validActions.join(', ')}`)
+    }
+
+    // 检查用户是否存在
+    const existingUser = await this.userService.findOne(phone)
+    this.assertDataExists(existingUser, '用户', phone)
+
+    // 根据操作类型调用相应的服务方法
+    let updatedUser
+    let successMessage = ''
+    let targetStatus: number
+
+    switch (request.action) {
+      case 'activate':
+        targetStatus = 2 // 激活状态
+        successMessage = '用户激活成功'
+        break
+      case 'deactivate':
+        targetStatus = 3 // 下线状态
+        successMessage = '用户下线成功'
+        break
+      case 'lock':
+        targetStatus = 4 // 锁定状态
+        successMessage = '用户锁定成功'
+        break
+      case 'unlock':
+        targetStatus = 2 // 解锁实际是激活状态
+        successMessage = '用户解锁成功'
+        break
+      default:
+        // TypeScript 会确保这里不会被执行
+        this.throwValidationError(`不支持的操作类型: ${request.action}`)
+    }
+
+    // 统一调用更新状态方法
+    updatedUser = await this.userService.updateUserStatus(phone, targetStatus)
+
+    // 直接组装用户数据
+    const userResponse: User = {
+      phone: updatedUser.phone,
+      username: updatedUser.username || '',
+      status: updatedUser.status,
+      statusDesc: getUserStatusDesc(updatedUser.status),
+      createdAt: this.formatDateTime(updatedUser.createdAt),
+      updatedAt: this.formatDateTime(updatedUser.updatedAt),
+      roleIds: updatedUser.userRoles?.map((ur) => ur.role?.id).filter(Boolean) || []
+    }
+
+    return this.success(userResponse, successMessage)
   }
 
   // ========================================

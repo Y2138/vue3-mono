@@ -4,7 +4,7 @@
  */
 
 import { get, post } from '../axios'
-import type { PaginationRequest, PaginationResponse, Timestamp } from '@/shared/common'
+import type { PaginationRequest, PaginationResponse, EnumItem } from '@/shared/common'
 
 // ========================================
 // 🔄 通用响应类型（基于 proto 定义）
@@ -20,7 +20,7 @@ export interface ApiResponse<T = any> {
 }
 
 // 使用 proto 生成的分页类型
-export type PaginationParams = Omit<PaginationRequest, 'toJSON' | 'fromJSON' | 'create' | 'decode' | 'encode' | 'fromPartial'>
+type PaginationParams = Omit<PaginationRequest, 'toJSON' | 'fromJSON' | 'create' | 'decode' | 'encode' | 'fromPartial'>
 export type PaginationData<T = any> = Omit<PaginationResponse, 'toJSON' | 'fromJSON' | 'create' | 'decode' | 'encode' | 'fromPartial' | 'items'> & {
   items: T[]
 }
@@ -40,94 +40,15 @@ export interface ResponseStatus {
   errors?: ErrorDetail[]
 }
 
+export { type EnumItem } from '@/shared/common'
+export interface EnumResponse {
+  enums: Record<string, EnumItem[]>
+  version?: string
+}
+
 // ========================================
 // 🔧 通用工具函数
 // ========================================
-
-/**
- * 格式化 proto Timestamp 为日期字符串
- */
-export const formatTimestamp = (timestamp: Timestamp | string | number | Date): string => {
-  if (!timestamp) return ''
-
-  let date: Date
-
-  if (typeof timestamp === 'object' && 'seconds' in timestamp) {
-    // Protobuf Timestamp 格式
-    date = new Date(Number(timestamp.seconds) * 1000)
-  } else if (typeof timestamp === 'string') {
-    date = new Date(timestamp)
-  } else if (typeof timestamp === 'number') {
-    // 如果是毫秒时间戳
-    date = new Date(timestamp)
-  } else {
-    date = timestamp
-  }
-
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  })
-}
-
-/**
- * 格式化时间戳为相对时间
- */
-export const formatRelativeTime = (timestamp: Timestamp | string | number | Date): string => {
-  if (!timestamp) return ''
-
-  let date: Date
-
-  if (typeof timestamp === 'object' && 'seconds' in timestamp) {
-    date = new Date(Number(timestamp.seconds) * 1000)
-  } else if (typeof timestamp === 'string') {
-    date = new Date(timestamp)
-  } else if (typeof timestamp === 'number') {
-    date = new Date(timestamp)
-  } else {
-    date = timestamp
-  }
-
-  const now = new Date()
-  const diff = now.getTime() - date.getTime()
-
-  const seconds = Math.floor(diff / 1000)
-  const minutes = Math.floor(seconds / 60)
-  const hours = Math.floor(minutes / 60)
-  const days = Math.floor(hours / 24)
-
-  if (days > 0) return `${days}天前`
-  if (hours > 0) return `${hours}小时前`
-  if (minutes > 0) return `${minutes}分钟前`
-  return '刚刚'
-}
-
-/**
- * 创建 proto Timestamp 对象
- */
-export const createTimestamp = (date: Date = new Date()): Timestamp => {
-  return {
-    seconds: Math.floor(date.getTime() / 1000).toString(),
-    nanos: (date.getTime() % 1000) * 1000000
-  }
-}
-
-/**
- * 验证分页参数
- */
-export const validatePaginationParams = (params: PaginationParams): PaginationParams => {
-  const { page = 1, pageSize = 20, keyword } = params
-
-  return {
-    page: Math.max(1, page),
-    pageSize: Math.min(Math.max(1, pageSize), 100), // 限制最大页面大小
-    keyword: keyword?.trim() || undefined
-  }
-}
 
 /**
  * 构建查询参数
@@ -142,20 +63,6 @@ export const buildQueryParams = (params: Record<string, any>): Record<string, an
   })
 
   return result
-}
-
-/**
- * 获取 API 配置信息
- */
-export const getApiConfig = async () => {
-  return get<void, { version: string; environment: string; features: string[]; limits: { maxPageSize: number; defaultPageSize: number; maxRequestSize: number } }>('/api/config')
-}
-
-/**
- * 获取系统信息
- */
-export const getSystemInfo = async () => {
-  return get<void, { name: string; version: string; description: string; author: string; license: string; repository: string; buildTime: string; nodeVersion: string; environment: string }>('/api/system/info')
 }
 
 // ========================================

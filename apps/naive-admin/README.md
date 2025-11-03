@@ -28,7 +28,7 @@ apps/naive-admin/
 │   │   │   ├── permission.ts # 权限状态
 │   │   │   └── global.ts    # 全局状态
 │   ├── request/             # API层
-│   │   ├── api-adapter.ts   # 统一API适配器
+│   │   ├── axios.ts         # 请求axios封装
 │   │   ├── api/             # 业务API
 │   │   │   ├── users.ts     # 用户API
 │   │   │   ├── rbac.ts      # 权限API
@@ -268,18 +268,6 @@ pnpm run test:watch
 
 # 测试覆盖率
 pnpm run test:coverage
-```
-
-### 测试结构
-
-```
-src/request/tests/
-├── unit/              # 单元测试
-│   └── api-adapter.test.ts
-├── integration/       # 集成测试
-│   └── integration.test.ts
-└── manual/           # 手动验证
-    └── manual-test.ts
 ```
 
 ## 🚀 构建部署

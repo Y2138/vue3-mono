@@ -15,8 +15,10 @@ export interface User {
   phone: string;
   /** 用户名 */
   username: string;
-  /** 是否激活 */
-  isActive: boolean;
+  /** 用户状态：1-待激活，2-激活，3-下线，4-锁定 */
+  status: number;
+  /** 状态描述 */
+  statusDesc: string;
   /** 创建时间 */
   createdAt: string;
   /** 更新时间 */
@@ -71,12 +73,34 @@ export interface UpdateUserRequest {
   username?:
     | string
     | undefined;
-  /** 是否激活（可选） */
-  isActive?:
-    | boolean
+  /** 用户状态（可选）：1-待激活，2-激活，3-下线，4-锁定 */
+  status?:
+    | number
     | undefined;
   /** 角色ID列表（可选） */
   roleIds: string[];
+}
+
+/** 删除用户请求 */
+export interface DeleteUserRequest {
+  /** 手机号 */
+  phone: string;
+}
+
+/** 用户状态变更请求 */
+export interface UpdateUserStatusRequest {
+  /** 手机号 */
+  phone: string;
+  /** 新状态：1-待激活，2-激活，3-下线，4-锁定 */
+  status: number;
+}
+
+/** 创建用户表单请求 */
+export interface CreateUserFormRequest {
+  /** 手机号 */
+  phone: string;
+  /** 用户名 */
+  username: string;
 }
 
 /** 用户列表请求 */
@@ -95,8 +119,8 @@ export interface GetUsersRequest {
     | undefined;
   /** 角色ID */
   roleIds: string[];
-  /** 是否激活过滤（可选） */
-  isActive?: boolean | undefined;
+  /** 状态列表（可选） */
+  statusList: number[];
 }
 
 /** 用户列表响应 */

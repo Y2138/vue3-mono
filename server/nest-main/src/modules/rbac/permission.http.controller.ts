@@ -130,9 +130,7 @@ export class PermissionHttpController extends BaseController {
     Validator.uuid(id, '权限ID')
 
     const permission = await this.permissionService.findById(id)
-    if (!permission) {
-      return this.error('权限不存在', 404)
-    }
+    this.assertDataExists(permission, '权限', id)
 
     // 直接组装权限数据
     const permissionResponse: Permission = {
@@ -167,47 +165,43 @@ export class PermissionHttpController extends BaseController {
     description: '权限已存在'
   })
   async createPermission(@Body() createPermissionRequest: CreatePermissionRequest): Promise<ApiResponse<Permission>> {
-    try {
-      // 基础格式验证
-      Validator.permissionName(createPermissionRequest.name)
-      Validator.actionName(createPermissionRequest.action)
-      Validator.resourceName(createPermissionRequest.resource)
+    // 基础格式验证
+    Validator.permissionName(createPermissionRequest.name)
+    Validator.actionName(createPermissionRequest.action)
+    Validator.resourceName(createPermissionRequest.resource)
 
-      // 验证描述字段（可选）
-      if (createPermissionRequest.description) {
-        Validator.description(createPermissionRequest.description, 500, '权限描述')
-      }
-
-      // 检查权限是否已存在
-      const existingPermission = await this.permissionService.findByActionAndResource(createPermissionRequest.action, createPermissionRequest.resource)
-      if (existingPermission) {
-        return this.error('该权限已存在', 409)
-      }
-
-      // 创建权限
-      const permission = await this.permissionService.create({
-        name: createPermissionRequest.name,
-        action: createPermissionRequest.action,
-        resource: createPermissionRequest.resource,
-        description: createPermissionRequest.description
-      })
-
-      // 直接组装权限数据
-      const permissionResponse: Permission = {
-        id: permission.id,
-        name: permission.name,
-        description: permission.description || '',
-        resource: permission.resource,
-        action: permission.action,
-        isActive: true, // 数据库中暂无此字段，默认为true
-        createdAt: this.formatDateTime(permission.createdAt),
-        updatedAt: this.formatDateTime(permission.updatedAt)
-      }
-
-      return this.success(permissionResponse, '权限创建成功')
-    } catch (error) {
-      return this.handleError(error, '权限创建失败')
+    // 验证描述字段（可选）
+    if (createPermissionRequest.description) {
+      Validator.description(createPermissionRequest.description, 500, '权限描述')
     }
+
+    // 检查权限是否已存在
+    const existingPermission = await this.permissionService.findByActionAndResource(createPermissionRequest.action, createPermissionRequest.resource)
+    if (existingPermission) {
+      this.throwConflictError('该权限已存在')
+    }
+
+    // 创建权限
+    const permission = await this.permissionService.create({
+      name: createPermissionRequest.name,
+      action: createPermissionRequest.action,
+      resource: createPermissionRequest.resource,
+      description: createPermissionRequest.description
+    })
+
+    // 直接组装权限数据
+    const permissionResponse: Permission = {
+      id: permission.id,
+      name: permission.name,
+      description: permission.description || '',
+      resource: permission.resource,
+      action: permission.action,
+      isActive: true, // 数据库中暂无此字段，默认为true
+      createdAt: this.formatDateTime(permission.createdAt),
+      updatedAt: this.formatDateTime(permission.updatedAt)
+    }
+
+    return this.success(permissionResponse, '权限创建成功')
   }
 
   /**
@@ -227,57 +221,51 @@ export class PermissionHttpController extends BaseController {
     description: '权限不存在'
   })
   async updatePermission(@Param('id') id: string, @Body() updatePermissionRequest: UpdatePermissionRequest): Promise<ApiResponse<Permission>> {
-    try {
-      // 验证权限ID
-      Validator.uuid(id, '权限ID')
+    // 验证权限ID
+    Validator.uuid(id, '权限ID')
 
-      // 检查权限是否存在
-      const existingPermission = await this.permissionService.findById(id)
-      if (!existingPermission) {
-        return this.error('权限不存在', 404)
-      }
+    // 检查权限是否存在
+    const existingPermission = await this.permissionService.findById(id)
+    this.assertDataExists(existingPermission, '权限', id)
 
-      // 验证更新字段（如果提供）
-      if (updatePermissionRequest.name !== undefined) {
-        Validator.permissionName(updatePermissionRequest.name)
-      }
-
-      if (updatePermissionRequest.action !== undefined) {
-        Validator.actionName(updatePermissionRequest.action)
-      }
-
-      if (updatePermissionRequest.resource !== undefined) {
-        Validator.resourceName(updatePermissionRequest.resource)
-      }
-
-      if (updatePermissionRequest.description !== undefined) {
-        Validator.description(updatePermissionRequest.description, 500, '权限描述')
-      }
-
-      // 更新权限
-      const updatedPermission = await this.permissionService.update(id, {
-        name: updatePermissionRequest.name,
-        action: updatePermissionRequest.action,
-        resource: updatePermissionRequest.resource,
-        description: updatePermissionRequest.description
-      })
-
-      // 直接组装权限数据
-      const permissionResponse: Permission = {
-        id: updatedPermission.id,
-        name: updatedPermission.name,
-        description: updatedPermission.description || '',
-        resource: updatedPermission.resource,
-        action: updatedPermission.action,
-        isActive: true, // 数据库中暂无此字段，默认为true
-        createdAt: this.formatDateTime(updatedPermission.createdAt),
-        updatedAt: this.formatDateTime(updatedPermission.updatedAt)
-      }
-
-      return this.success(permissionResponse, '权限更新成功')
-    } catch (error) {
-      return this.handleError(error, '权限更新失败')
+    // 验证更新字段（如果提供）
+    if (updatePermissionRequest.name !== undefined) {
+      Validator.permissionName(updatePermissionRequest.name)
     }
+
+    if (updatePermissionRequest.action !== undefined) {
+      Validator.actionName(updatePermissionRequest.action)
+    }
+
+    if (updatePermissionRequest.resource !== undefined) {
+      Validator.resourceName(updatePermissionRequest.resource)
+    }
+
+    if (updatePermissionRequest.description !== undefined) {
+      Validator.description(updatePermissionRequest.description, 500, '权限描述')
+    }
+
+    // 更新权限
+    const updatedPermission = await this.permissionService.update(id, {
+      name: updatePermissionRequest.name,
+      action: updatePermissionRequest.action,
+      resource: updatePermissionRequest.resource,
+      description: updatePermissionRequest.description
+    })
+
+    // 直接组装权限数据
+    const permissionResponse: Permission = {
+      id: updatedPermission.id,
+      name: updatedPermission.name,
+      description: updatedPermission.description || '',
+      resource: updatedPermission.resource,
+      action: updatedPermission.action,
+      isActive: true, // 数据库中暂无此字段，默认为true
+      createdAt: this.formatDateTime(updatedPermission.createdAt),
+      updatedAt: this.formatDateTime(updatedPermission.updatedAt)
+    }
+
+    return this.success(permissionResponse, '权限更新成功')
   }
 
   /**
@@ -297,20 +285,14 @@ export class PermissionHttpController extends BaseController {
     description: '权限不存在'
   })
   async deletePermission(@Param('id') id: string): Promise<ApiResponse<void>> {
-    try {
-      // 检查权限是否存在
-      const existingPermission = await this.permissionService.findById(id)
-      if (!existingPermission) {
-        return this.error('权限不存在', 404)
-      }
+    // 检查权限是否存在
+    const existingPermission = await this.permissionService.findById(id)
+    this.assertDataExists(existingPermission, '权限', id)
 
-      // 删除权限
-      await this.permissionService.delete(id)
+    // 删除权限
+    await this.permissionService.delete(id)
 
-      return this.success(undefined, '权限删除成功')
-    } catch (error) {
-      return this.handleError(error, '权限删除失败')
-    }
+    return this.success(undefined, '权限删除成功')
   }
 
   /**
@@ -326,19 +308,13 @@ export class PermissionHttpController extends BaseController {
     description: '批量删除成功'
   })
   async batchDeletePermissions(@Body() body: { ids: string[] }): Promise<ApiResponse<void>> {
-    try {
-      const { ids } = body
-      if (!ids || !Array.isArray(ids) || ids.length === 0) {
-        return this.error('请提供要删除的权限ID列表', 400)
-      }
+    const { ids } = body
+    this.assert(ids && Array.isArray(ids) && ids.length > 0, '请提供要删除的权限ID列表')
 
-      // 批量删除权限
-      await this.permissionService.batchDelete(ids)
+    // 批量删除权限
+    await this.permissionService.batchDelete(ids)
 
-      return this.success(undefined, `成功删除 ${ids.length} 个权限`)
-    } catch (error) {
-      return this.handleError(error, '批量删除权限失败')
-    }
+    return this.success(undefined, `成功删除 ${ids.length} 个权限`)
   }
 
   // ========================================
@@ -358,24 +334,20 @@ export class PermissionHttpController extends BaseController {
     description: '权限检查完成'
   })
   async checkPermission(@Body() checkPermissionRequest: CheckPermissionRequest): Promise<ApiResponse<CheckPermissionResponse>> {
-    try {
-      // 基础格式验证
-      Validator.phone(checkPermissionRequest.userPhone, '用户手机号')
-      Validator.actionName(checkPermissionRequest.action, '操作名称')
-      Validator.resourceName(checkPermissionRequest.resource, '资源名称')
+    // 基础格式验证
+    Validator.phone(checkPermissionRequest.userPhone, '用户手机号')
+    Validator.actionName(checkPermissionRequest.action, '操作名称')
+    Validator.resourceName(checkPermissionRequest.resource, '资源名称')
 
-      // 执行权限检查
-      const hasPermission = await this.permissionService.checkUserPermission(checkPermissionRequest.userPhone, checkPermissionRequest.action, checkPermissionRequest.resource)
+    // 执行权限检查
+    const hasPermission = await this.permissionService.checkUserPermission(checkPermissionRequest.userPhone, checkPermissionRequest.action, checkPermissionRequest.resource)
 
-      const response: CheckPermissionResponse = {
-        hasPermission,
-        matchedPermissions: [] // 简化实现，不返回匹配的权限详情
-      }
-
-      return this.success(response, '权限检查完成')
-    } catch (error) {
-      return this.handleError(error, '权限检查失败')
+    const response: CheckPermissionResponse = {
+      hasPermission,
+      matchedPermissions: [] // 简化实现，不返回匹配的权限详情
     }
+
+    return this.success(response, '权限检查完成')
   }
 
   /**
@@ -391,27 +363,21 @@ export class PermissionHttpController extends BaseController {
     description: '批量权限检查完成'
   })
   async batchCheckPermissions(@Body() body: { userPhone: string; permissions: Array<{ action: string; resource: string }> }): Promise<ApiResponse<CheckPermissionResponse[]>> {
-    try {
-      const { userPhone, permissions } = body
-      if (!userPhone || !permissions || !Array.isArray(permissions)) {
-        return this.error('请提供用户手机号和权限列表', 400)
-      }
+    const { userPhone, permissions } = body
+    this.assert(!!(userPhone && permissions && Array.isArray(permissions)), '请提供用户手机号和权限列表')
 
-      // 批量检查权限
-      const results = await Promise.all(
-        permissions.map(async (perm) => {
-          const hasPermission = await this.permissionService.checkUserPermission(userPhone, perm.action, perm.resource)
-          return {
-            hasPermission,
-            matchedPermissions: [] // 简化实现，不返回匹配的权限详情
-          }
-        })
-      )
+    // 批量检查权限
+    const results = await Promise.all(
+      permissions.map(async (perm) => {
+        const hasPermission = await this.permissionService.checkUserPermission(userPhone, perm.action, perm.resource)
+        return {
+          hasPermission,
+          matchedPermissions: [] // 简化实现，不返回匹配的权限详情
+        }
+      })
+    )
 
-      return this.success(results, '批量权限检查完成')
-    } catch (error) {
-      return this.handleError(error, '批量权限检查失败')
-    }
+    return this.success(results, '批量权限检查完成')
   }
 
   // ========================================

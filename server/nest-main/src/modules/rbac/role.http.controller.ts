@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, HttpCode, HttpStatus, NotFoundException } from '@nestjs/common'
+import { Controller, Get, Post, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common'
 import { RoleService } from './services/role.service'
 import { Validator } from '../../common/validators'
 import { BaseController } from '../../common/controllers/base.controller'
@@ -99,9 +99,7 @@ export class RoleHttpController extends BaseController {
     Validator.uuid(id, '角色ID')
 
     const role = await this.roleService.findById(id)
-    if (!role) {
-      return this.notFound('角色')
-    }
+    this.assertDataExists(role, '角色', id)
 
     // 直接组装角色数据
     const roleResponse = {
@@ -145,60 +143,59 @@ export class RoleHttpController extends BaseController {
       })
     }
 
-    return this.safeExecute(async () => {
-      const role = await this.roleService.create(createDto)
+    const role = await this.roleService.create(createDto)
 
-      // 直接组装角色数据
-      return {
-        id: role.id,
-        name: role.name,
-        description: role.description || '',
-        createdAt: this.formatDateTime(role.createdAt),
-        updatedAt: this.formatDateTime(role.updatedAt),
-        permissions:
-          role.rolePermissions?.map((rp) => ({
-            id: rp.permission.id,
-            name: rp.permission.name,
-            description: rp.permission.description || '',
-            resource: rp.permission.resource,
-            action: rp.permission.action,
-            createdAt: this.formatDateTime(rp.permission.createdAt),
-            updatedAt: this.formatDateTime(rp.permission.updatedAt)
-          })) || []
-      }
-    }, '创建角色成功')
+    // 直接组装角色数据
+    const roleResponse = {
+      id: role.id,
+      name: role.name,
+      description: role.description || '',
+      createdAt: this.formatDateTime(role.createdAt),
+      updatedAt: this.formatDateTime(role.updatedAt),
+      permissions:
+        role.rolePermissions?.map((rp) => ({
+          id: rp.permission.id,
+          name: rp.permission.name,
+          description: rp.permission.description || '',
+          resource: rp.permission.resource,
+          action: rp.permission.action,
+          createdAt: this.formatDateTime(rp.permission.createdAt),
+          updatedAt: this.formatDateTime(rp.permission.updatedAt)
+        })) || []
+    }
+
+    return this.success(roleResponse, '创建角色成功')
   }
 
   @Post('update/:id')
   async updateRole(@Param('id') id: string, @Body() updateDto: UpdateRoleDto): Promise<ApiResponse<any>> {
     this.logger.log(`Updating role ${id}: ${JSON.stringify(updateDto)}`)
 
-    return this.safeExecute(async () => {
-      const role = await this.roleService.update(id, updateDto)
-      if (!role) {
-        throw new NotFoundException(`角色 ${id} 不存在`)
-      }
-      // 直接组装角色数据
-      return {
-        id: role.id,
-        name: role.name,
-        description: role.description || '',
-        isActive: true, // 数据库中暂无此字段，默认为true
-        createdAt: this.formatDateTime(role.createdAt),
-        updatedAt: this.formatDateTime(role.updatedAt),
-        permissions:
-          role.rolePermissions?.map((rp) => ({
-            id: rp.permission.id,
-            name: rp.permission.name,
-            description: rp.permission.description || '',
-            resource: rp.permission.resource,
-            action: rp.permission.action,
-            isActive: true, // 数据库中暂无此字段，默认为true
-            createdAt: this.formatDateTime(rp.permission.createdAt),
-            updatedAt: this.formatDateTime(rp.permission.updatedAt)
-          })) || []
-      }
-    }, '更新角色成功')
+    const role = await this.roleService.update(id, updateDto)
+    this.assertDataExists(role, '角色', id)
+
+    // 直接组装角色数据
+    const roleResponse = {
+      id: role.id,
+      name: role.name,
+      description: role.description || '',
+      isActive: true, // 数据库中暂无此字段，默认为true
+      createdAt: this.formatDateTime(role.createdAt),
+      updatedAt: this.formatDateTime(role.updatedAt),
+      permissions:
+        role.rolePermissions?.map((rp) => ({
+          id: rp.permission.id,
+          name: rp.permission.name,
+          description: rp.permission.description || '',
+          resource: rp.permission.resource,
+          action: rp.permission.action,
+          isActive: true, // 数据库中暂无此字段，默认为true
+          createdAt: this.formatDateTime(rp.permission.createdAt),
+          updatedAt: this.formatDateTime(rp.permission.updatedAt)
+        })) || []
+    }
+
+    return this.success(roleResponse, '更新角色成功')
   }
 
   @Post('delete/:id')
@@ -206,105 +203,100 @@ export class RoleHttpController extends BaseController {
   async deleteRole(@Param('id') id: string): Promise<ApiResponse<null>> {
     this.logger.log(`Deleting role with ID: ${id}`)
 
-    return this.safeExecute(async () => {
-      await this.roleService.delete(id)
-      return null
-    }, `角色删除成功`)
+    await this.roleService.delete(id)
+    return this.success(null, '角色删除成功')
   }
 
   @Post(':id/permissions')
   async assignPermissions(@Param('id') roleId: string, @Body() assignDto: AssignPermissionsDto): Promise<ApiResponse<any>> {
     this.logger.log(`Assigning permissions to role ${roleId}: ${JSON.stringify(assignDto)}`)
 
-    return this.safeExecute(async () => {
-      const role = await this.roleService.addPermissions(roleId, assignDto.permissionIds)
-      if (!role) {
-        throw new NotFoundException('角色不存在，无法分配权限')
-      }
-      // 直接组装角色数据
-      return {
-        id: role.id,
-        name: role.name,
-        description: role.description || '',
-        isActive: true, // 数据库中暂无此字段，默认为true
-        createdAt: this.formatDateTime(role.createdAt),
-        updatedAt: this.formatDateTime(role.updatedAt),
-        permissions:
-          role.rolePermissions?.map((rp) => ({
-            id: rp.permission.id,
-            name: rp.permission.name,
-            description: rp.permission.description || '',
-            resource: rp.permission.resource,
-            action: rp.permission.action,
-            isActive: true, // 数据库中暂无此字段，默认为true
-            createdAt: this.formatDateTime(rp.permission.createdAt),
-            updatedAt: this.formatDateTime(rp.permission.updatedAt)
-          })) || []
-      }
-    }, `权限已成功分配给角色`)
+    const role = await this.roleService.addPermissions(roleId, assignDto.permissionIds)
+    this.assertDataExists(role, '角色', roleId)
+
+    // 直接组装角色数据
+    const roleResponse = {
+      id: role!.id,
+      name: role!.name,
+      description: role!.description || '',
+      isActive: true, // 数据库中暂无此字段，默认为true
+      createdAt: this.formatDateTime(role!.createdAt),
+      updatedAt: this.formatDateTime(role!.updatedAt),
+      permissions:
+        role!.rolePermissions?.map((rp) => ({
+          id: rp.permission.id,
+          name: rp.permission.name,
+          description: rp.permission.description || '',
+          resource: rp.permission.resource,
+          action: rp.permission.action,
+          isActive: true, // 数据库中暂无此字段，默认为true
+          createdAt: this.formatDateTime(rp.permission.createdAt),
+          updatedAt: this.formatDateTime(rp.permission.updatedAt)
+        })) || []
+    }
+
+    return this.success(roleResponse, '权限已成功分配给角色')
   }
 
   @Post(':id/permissions/remove')
   async removePermissions(@Param('id') roleId: string, @Body() removeDto: RemovePermissionsDto): Promise<ApiResponse<any>> {
     this.logger.log(`Removing permissions from role ${roleId}: ${JSON.stringify(removeDto)}`)
 
-    return this.safeExecute(async () => {
-      const role = await this.roleService.removePermissions(roleId, removeDto.permissionIds)
-      if (!role) {
-        throw new NotFoundException('角色不存在，无法移除权限')
-      }
-      // 直接组装角色数据
-      return {
-        id: role.id,
-        name: role.name,
-        description: role.description || '',
-        isActive: true, // 数据库中暂无此字段，默认为true
-        createdAt: this.formatDateTime(role.createdAt),
-        updatedAt: this.formatDateTime(role.updatedAt),
-        permissions:
-          role.rolePermissions?.map((rp) => ({
-            id: rp.permission.id,
-            name: rp.permission.name,
-            description: rp.permission.description || '',
-            resource: rp.permission.resource,
-            action: rp.permission.action,
-            isActive: true, // 数据库中暂无此字段，默认为true
-            createdAt: this.formatDateTime(rp.permission.createdAt),
-            updatedAt: this.formatDateTime(rp.permission.updatedAt)
-          })) || []
-      }
-    }, `权限已成功从角色移除`)
+    const role = await this.roleService.removePermissions(roleId, removeDto.permissionIds)
+    this.assertDataExists(role, '角色', roleId)
+
+    // 直接组装角色数据
+    const roleResponse = {
+      id: role!.id,
+      name: role!.name,
+      description: role!.description || '',
+      isActive: true, // 数据库中暂无此字段，默认为true
+      createdAt: this.formatDateTime(role!.createdAt),
+      updatedAt: this.formatDateTime(role!.updatedAt),
+      permissions:
+        role!.rolePermissions?.map((rp) => ({
+          id: rp.permission.id,
+          name: rp.permission.name,
+          description: rp.permission.description || '',
+          resource: rp.permission.resource,
+          action: rp.permission.action,
+          isActive: true, // 数据库中暂无此字段，默认为true
+          createdAt: this.formatDateTime(rp.permission.createdAt),
+          updatedAt: this.formatDateTime(rp.permission.updatedAt)
+        })) || []
+    }
+
+    return this.success(roleResponse, '权限已成功从角色移除')
   }
 
   @Post(':id/permissions/set')
   async setPermissions(@Param('id') roleId: string, @Body() setDto: AssignPermissionsDto): Promise<ApiResponse<any>> {
     this.logger.log(`Setting permissions for role ${roleId}: ${JSON.stringify(setDto)}`)
 
-    return this.safeExecute(async () => {
-      const role = await this.roleService.setPermissions(roleId, setDto.permissionIds)
-      if (!role) {
-        throw new NotFoundException('角色不存在，无法设置权限')
-      }
-      // 直接组装角色数据
-      return {
-        id: role.id,
-        name: role.name,
-        description: role.description || '',
-        isActive: true, // 数据库中暂无此字段，默认为true
-        createdAt: this.formatDateTime(role.createdAt),
-        updatedAt: this.formatDateTime(role.updatedAt),
-        permissions:
-          role.rolePermissions?.map((rp) => ({
-            id: rp.permission.id,
-            name: rp.permission.name,
-            description: rp.permission.description || '',
-            resource: rp.permission.resource,
-            action: rp.permission.action,
-            isActive: true, // 数据库中暂无此字段，默认为true
-            createdAt: this.formatDateTime(rp.permission.createdAt),
-            updatedAt: this.formatDateTime(rp.permission.updatedAt)
-          })) || []
-      }
-    }, `角色权限设置成功`)
+    const role = await this.roleService.setPermissions(roleId, setDto.permissionIds)
+    this.assertDataExists(role, '角色', roleId)
+
+    // 直接组装角色数据
+    const roleResponse = {
+      id: role!.id,
+      name: role!.name,
+      description: role!.description || '',
+      isActive: true, // 数据库中暂无此字段，默认为true
+      createdAt: this.formatDateTime(role!.createdAt),
+      updatedAt: this.formatDateTime(role!.updatedAt),
+      permissions:
+        role!.rolePermissions?.map((rp) => ({
+          id: rp.permission.id,
+          name: rp.permission.name,
+          description: rp.permission.description || '',
+          resource: rp.permission.resource,
+          action: rp.permission.action,
+          isActive: true, // 数据库中暂无此字段，默认为true
+          createdAt: this.formatDateTime(rp.permission.createdAt),
+          updatedAt: this.formatDateTime(rp.permission.updatedAt)
+        })) || []
+    }
+
+    return this.success(roleResponse, '角色权限设置成功')
   }
 }

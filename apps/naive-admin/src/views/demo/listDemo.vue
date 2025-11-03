@@ -26,7 +26,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import useTablePage from '@/hooks/useTablePage'
-import { apiCall } from '@/request/api-adapter'
+import { post } from '@/request/axios'
 import type { SelectMixedOption } from 'naive-ui/es/select/src/interface'
 import { format } from 'date-fns'
 import { usePageLoading } from '@/hooks/usePageLoading'
@@ -94,7 +94,7 @@ function handleRadioChange(type: string) {
   refresh(true)
 }
 
-const requestFn = (data: IReq) => apiCall<IReq, IPaginationResData<IRes[]>>('/statistics/zhzww-vip/list', { params: data })
+const requestFn = (data: IReq) => post<IReq, IPaginationResData<IRes[]>>('/statistics/zhzww-vip/list', { params: data })
 const dealParams = (): IReq => {
   const { daterange, ...rest } = formModel.value
   const params: IReq = {

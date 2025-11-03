@@ -94,8 +94,13 @@ export class AuthGuard implements CanActivate {
       // 获取用户信息（包含角色和权限）
       const user = await this.authService.validateUser(payload.sub)
 
-      if (!user || !user.isActive) {
-        throw new UnauthorizedException('用户不存在或未激活')
+      if (!user || user.status !== 2) {
+        const statusMessages = {
+          1: '用户账户待激活',
+          3: '用户账户已下线',
+          4: '用户账户已被锁定'
+        }
+        throw new UnauthorizedException(user ? statusMessages[user.status] || '用户状态异常' : '用户不存在')
       }
 
       this.logger.debug(`User validated: ${user.phone}, roles: ${user.userRoles?.map((r) => r.role.name).join(', ')}`)

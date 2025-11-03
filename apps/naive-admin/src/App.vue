@@ -35,6 +35,9 @@ const themeOverrides: GlobalThemeOverrides = {
   },
   Tag: {
     textColorInfo: '#3954ff'
+  },
+  Dialog: {
+    contentMargin: '16px 0'
   }
 }
 const themeVar = computed(() => {

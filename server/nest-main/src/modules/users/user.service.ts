@@ -1,8 +1,9 @@
-import { Injectable, Logger, NotFoundException, BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common'
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common'
 import { PrismaService } from '../../prisma/prisma.service'
 import { Prisma } from '@prisma/client'
 import { JwtService } from '@nestjs/jwt'
 import * as bcrypt from 'bcryptjs'
+import { DataNotFoundException, ValidationException, ConflictException, BusinessRuleException } from '../../common/exceptions'
 
 @Injectable()
 export class UserService {
@@ -13,7 +14,7 @@ export class UserService {
   /**
    * 获取所有用户
    */
-  async findAll(options?: { search?: string; phone?: string; username?: string; roleIds?: string[]; isActive?: boolean; page?: number; pageSize?: number }) {
+  async findAll(options?: { search?: string; phone?: string; username?: string; roleIds?: string[]; statusList?: number[]; page?: number; pageSize?: number }) {
     this.logger.log('获取所有用户')
 
     const page = options?.page || 1
@@ -49,9 +50,9 @@ export class UserService {
       }
     }
 
-    // 激活状态查询
-    if (options?.isActive !== undefined) {
-      where.isActive = options.isActive
+    // 状态列表查询
+    if (options?.statusList && options.statusList.length > 0) {
+      where.status = { in: options.statusList }
     }
 
     // 查询总数
@@ -84,6 +85,8 @@ export class UserService {
 
   /**
    * 根据手机号获取用户
+   * @param phone 手机号
+   * @returns 用户信息或 null
    */
   async findOne(phone: string) {
     this.logger.log(`根据手机号 ${phone} 获取用户`)
@@ -95,15 +98,6 @@ export class UserService {
       where: { phone },
       include: { userRoles: { include: { role: true } } }
     })
-
-    if (!user) {
-      this.logger.error(`用户 ${phone} 不存在`)
-      // 使用自定义错误对象，添加实体类型和标识符信息
-      const error = new NotFoundException(`用户 ${phone} 不存在`)
-      ;(error as any).entityType = '用户'
-      ;(error as any).identifier = phone
-      throw error
-    }
 
     return user
   }
@@ -121,7 +115,7 @@ export class UserService {
 
     // 验证用户名
     if (!data.username || data.username.trim().length === 0) {
-      throw new BadRequestException('用户名不能为空')
+      throw new ValidationException('用户名不能为空')
     }
 
     // 验证密码
@@ -130,18 +124,14 @@ export class UserService {
       // 加密密码
       data.password = await bcrypt.hash(data.password, 10)
     } else {
-      throw new BadRequestException('密码不能为空')
+      throw new ValidationException('密码不能为空')
     }
 
     // 检查手机号是否已存在
-    try {
-      await this.findOne(data.phone as string)
+    const existingUser = await this.findOne(data.phone as string)
+
+    if (existingUser) {
       throw new ConflictException(`手机号 ${data.phone} 已被注册`)
-    } catch (error) {
-      // 如果是 NotFoundException，说明用户不存在，可以继续创建
-      if (!(error instanceof NotFoundException)) {
-        throw error
-      }
     }
 
     return this.prisma.client.user.create({
@@ -159,29 +149,28 @@ export class UserService {
     // 验证手机号格式
     this.validatePhone(phone)
 
-    // 检查用户是否存在
-    await this.findOne(phone)
+    // 验证用户存在（由 Controller 层处理异常）
+    const existingUser = await this.findOne(phone)
+    if (!existingUser) {
+      throw new DataNotFoundException('用户', phone)
+    }
 
     // 如果更新手机号，验证新手机号格式
     if (data.phone) {
       this.validatePhone(data.phone as string)
 
       // 检查新手机号是否已存在
-      try {
-        await this.findOne(data.phone as string)
+      const existingUserWithNewPhone = await this.findOne(data.phone as string)
+
+      if (existingUserWithNewPhone) {
         throw new ConflictException(`手机号 ${data.phone} 已被注册`)
-      } catch (error) {
-        // 如果是 NotFoundException，说明新手机号未被注册，可以继续更新
-        if (!(error instanceof NotFoundException)) {
-          throw error
-        }
       }
     }
 
     // 如果更新用户名，验证用户名
     if (data.username && data.username !== undefined) {
       if (typeof data.username === 'string' && data.username.trim().length === 0) {
-        throw new BadRequestException('用户名不能为空')
+        throw new ValidationException('用户名不能为空')
       }
     }
 
@@ -207,8 +196,11 @@ export class UserService {
     // 验证手机号格式
     this.validatePhone(phone)
 
-    // 检查用户是否存在
-    await this.findOne(phone)
+    // 验证用户存在（由 Controller 层处理异常）
+    const existingUser = await this.findOne(phone)
+    if (!existingUser) {
+      throw new DataNotFoundException('用户', phone)
+    }
 
     return this.prisma.client.user.delete({
       where: { phone },
@@ -235,6 +227,9 @@ export class UserService {
 
       // 获取用户信息
       const user = await this.findOne(loginInput.phone)
+      if (!user) {
+        throw new UnauthorizedException('手机号或密码错误')
+      }
 
       // 生成 token
       const token = this.jwtService.sign({
@@ -248,7 +243,7 @@ export class UserService {
         expiresIn: parseInt(process.env.JWT_EXPIRES_IN || '86400', 10)
       }
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (error instanceof DataNotFoundException) {
         throw new UnauthorizedException('手机号或密码错误')
       }
       throw error
@@ -265,14 +260,10 @@ export class UserService {
     this.validatePhone(registerInput.phone)
 
     // 检查手机号是否已存在
-    try {
-      await this.findOne(registerInput.phone)
+    const existingUser = await this.findOne(registerInput.phone)
+
+    if (existingUser) {
       throw new ConflictException(`手机号 ${registerInput.phone} 已被注册`)
-    } catch (error) {
-      // 如果是 NotFoundException，说明用户不存在，可以继续注册
-      if (!(error instanceof NotFoundException)) {
-        throw error
-      }
     }
 
     // 获取普通用户角色
@@ -281,7 +272,7 @@ export class UserService {
     })
 
     if (!normalRole) {
-      throw new Error('普通用户角色不存在')
+      throw new BusinessRuleException('普通用户角色不存在')
     }
 
     // 创建新用户
@@ -289,7 +280,7 @@ export class UserService {
       phone: registerInput.phone,
       username: registerInput.username,
       password: registerInput.password,
-      isActive: true,
+      status: 2, // 激活状态
       userRoles: {
         create: [
           {
@@ -344,15 +335,24 @@ export class UserService {
 
     if (!user) {
       this.logger.error(`用户 ${phone} 不存在`)
-      // 使用自定义错误对象，添加实体类型和标识符信息
-      const error = new NotFoundException(`用户 ${phone} 不存在`)
-      ;(error as any).entityType = '用户'
-      ;(error as any).identifier = phone
-      throw error
+      return null
     }
 
-    if (!user.isActive) {
-      throw new UnauthorizedException('用户未激活')
+    // 检查用户状态：只有激活状态(2)的用户才能正常使用
+    if (user.status !== 2) {
+      const statusMessages = {
+        1: '用户账户待激活',
+        3: '用户账户已下线',
+        4: '用户账户已被锁定'
+      }
+      // 使用业务规则异常，提供更多上下文
+      throw new BusinessRuleException(statusMessages[user.status] || '用户状态异常', {
+        currentStatus: user.status,
+        requiredStatus: 2,
+        statusMapping: statusMessages,
+        userPhone: user.phone,
+        phone: user.phone
+      })
     }
 
     return user
@@ -376,14 +376,10 @@ export class UserService {
     }
 
     // 检查手机号是否已存在
-    try {
-      await this.findOne(input.phone)
+    const existingUser = await this.findOne(input.phone)
+
+    if (existingUser) {
       throw new ConflictException(`手机号 ${input.phone} 已被注册`)
-    } catch (error) {
-      // 如果是 NotFoundException，说明用户不存在，可以继续创建
-      if (!(error instanceof NotFoundException)) {
-        throw error
-      }
     }
 
     // 获取超级管理员角色
@@ -393,7 +389,7 @@ export class UserService {
 
     if (!superAdminRole) {
       this.logger.error('超级管理员角色不存在，请先初始化RBAC数据')
-      throw new Error('超级管理员角色不存在，请先初始化RBAC数据')
+      throw new BusinessRuleException('超级管理员角色不存在，请先初始化RBAC数据')
     }
 
     // 创建新用户
@@ -401,7 +397,7 @@ export class UserService {
       phone: input.phone,
       username: input.username,
       password: input.password,
-      isActive: true,
+      status: 2, // 激活状态
       userRoles: {
         create: [
           {
@@ -438,6 +434,9 @@ export class UserService {
 
       // 检查用户是否存在
       const user = await this.getUserWithRoles(userPhone)
+      if (!user) {
+        throw new DataNotFoundException('用户', userPhone)
+      }
 
       // 获取超级管理员角色
       const superAdminRole = await this.prisma.client.role.findFirst({
@@ -445,7 +444,7 @@ export class UserService {
       })
       if (!superAdminRole) {
         this.logger.error('超级管理员角色不存在，请先初始化RBAC数据')
-        throw new Error('超级管理员角色不存在，请先初始化RBAC数据')
+        throw new BusinessRuleException('超级管理员角色不存在，请先初始化RBAC数据')
       }
 
       // 检查用户是否已经是超级管理员
@@ -513,7 +512,7 @@ export class UserService {
   private validatePhone(phone: string): void {
     const phoneRegex = /^1[3-9]\d{9}$/
     if (!phoneRegex.test(phone)) {
-      throw new BadRequestException('手机号格式不正确')
+      throw new ValidationException('手机号格式不正确')
     }
   }
 
@@ -530,6 +529,40 @@ export class UserService {
   }
 
   /**
+   * 更新用户状态
+   */
+  async updateUserStatus(phone: string, status: number) {
+    this.logger.log(`更新用户状态: ${phone} -> ${status}`)
+
+    // 验证手机号格式
+    this.validatePhone(phone)
+
+    // 验证状态值
+    const validStatuses = [1, 2, 3, 4] // 待激活、激活、下线、锁定
+    if (!validStatuses.includes(status)) {
+      throw new ValidationException('无效的用户状态')
+    }
+
+    // 检查用户是否存在
+    const existingUser = await this.findOne(phone)
+    if (!existingUser) {
+      throw new DataNotFoundException('用户', phone)
+    }
+
+    // 更新状态
+    const updatedUser = await this.prisma.client.user.update({
+      where: { phone },
+      data: { status },
+      include: { userRoles: { include: { role: true } } }
+    })
+
+    const statusNames = { 1: '待激活', 2: '激活', 3: '下线', 4: '锁定' }
+    this.logger.log(`用户 ${phone} 状态已更新为: ${statusNames[status]}`)
+
+    return updatedUser
+  }
+
+  /**
    * 获取用户统计信息
    */
   async getStats() {
@@ -537,9 +570,11 @@ export class UserService {
 
     const totalUsers = await this.prisma.client.user.count()
     const activeUsers = await this.prisma.client.user.count({
-      where: { isActive: true }
+      where: { status: 2 } // 激活状态
     })
-    const inactiveUsers = totalUsers - activeUsers
+    const inactiveUsers = await this.prisma.client.user.count({
+      where: { status: { in: [1, 3, 4] } } // 待激活、下线、锁定
+    })
 
     // 获取今天新增用户数
     const today = new Date()
@@ -567,7 +602,7 @@ export class UserService {
     // 密码至少8位，包含大小写字母、数字和特殊字符
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
     if (!passwordRegex.test(password)) {
-      throw new BadRequestException('密码至少8位，包含大小写字母、数字和特殊字符')
+      throw new ValidationException('密码至少8位，包含大小写字母、数字和特殊字符')
     }
   }
 }

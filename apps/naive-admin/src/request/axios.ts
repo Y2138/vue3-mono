@@ -3,17 +3,7 @@ import axios from 'axios'
 import type { AxiosRequestConfig, AxiosRequestHeaders, RawAxiosRequestHeaders } from 'axios'
 import { PendingMap } from './cancelToken'
 import { useUserStore } from '@/store/modules/user'
-// Protobuf 数据类型判断和转换工具
-interface ProtobufTransformConfig {
-  /** 是否启用 Protobuf 处理 */
-  useProtobuf?: boolean
-  /** 请求消息类型名称（用于调试和日志） */
-  requestMessageType?: string
-  /** 响应消息类型名称（用于调试和日志） */
-  responseMessageType?: string
-  /** 是否强制使用二进制格式（gRPC-Web） */
-  forceBinary?: boolean
-}
+import router from '@/router'
 
 interface ICustomAxiosConfig<T> extends AxiosRequestConfig<T> {
   /* 是否不需要错误信息提示，默认有 */
@@ -30,134 +20,12 @@ interface ICustomAxiosConfig<T> extends AxiosRequestConfig<T> {
   __retryCount?: number
   /* 是否不需要拼接时间戳，默认拼接 */
   noTimestamp?: boolean
-  /* Protobuf 配置 */
-  protobuf?: ProtobufTransformConfig
-}
-
-// Protobuf 数据转换工具类
-class ProtobufTransformers {
-  /**
-   * 检查数据是否为 ts-proto 生成的 Protobuf 接口对象
-   * ts-proto 生成的对象是普通的 JS 对象，我们通过一些启发式方法来判断
-   */
-  static isProtobufInterface(data: any): boolean {
-    // 检查是否为普通对象且不是 FormData、Date 等特殊类型
-    return data && typeof data === 'object' && !(data instanceof FormData) && !(data instanceof Date) && !(data instanceof File) && !(data instanceof Blob) && !Array.isArray(data)
-  }
-
-  /**
-   * 将 Protobuf 接口对象序列化为 JSON
-   * 对于 ts-proto 生成的接口，直接使用 JSON 序列化
-   */
-  static serializeToJson(data: any): string {
-    return JSON.stringify(data)
-  }
-
-  /**
-   * 将 Protobuf 接口对象序列化为二进制格式（用于 gRPC-Web）
-   * 注意：这里需要实际的 protobuf 编码库支持
-   */
-  static serializeToBinary(data: any, messageType?: string): Uint8Array {
-    // 暂时降级为 JSON 字符串的二进制表示
-    // 实际应用中需要根据具体的 protobuf 库进行编码
-    console.warn(`二进制序列化暂未完全实现，消息类型: ${messageType}，降级为 JSON`)
-    const jsonString = ProtobufTransformers.serializeToJson(data)
-    return new TextEncoder().encode(jsonString)
-  }
-
-  /**
-   * 请求数据转换器
-   */
-  static requestTransformer(data: any, _headers: any): any {
-    // 基础的 JSON 转换
-    if (data && typeof data === 'object' && !(data instanceof FormData)) {
-      return JSON.stringify(data)
-    }
-    return data
-  }
-
-  /**
-   * 响应数据转换器
-   */
-  static responseTransformer(data: any): any {
-    // JSON 数据处理
-    try {
-      return typeof data === 'string' ? JSON.parse(data) : data
-    } catch {
-      return data
-    }
-  }
-
-  /**
-   * Protobuf 请求数据处理（在拦截器中使用）
-   */
-  static processProtobufRequest(data: any, config: ICustomAxiosConfig<any>): any {
-    const protobufConfig = config.protobuf
-
-    if (!protobufConfig?.useProtobuf || !ProtobufTransformers.isProtobufInterface(data)) {
-      return data
-    }
-
-    // 根据配置选择序列化方式
-    if (protobufConfig.forceBinary) {
-      return ProtobufTransformers.serializeToBinary(data, protobufConfig.requestMessageType)
-    } else {
-      // 默认使用 JSON 序列化（适用于 REST API）
-      return ProtobufTransformers.serializeToJson(data)
-    }
-  }
-
-  /**
-   * Protobuf 响应数据处理（在拦截器中使用）
-   */
-  static processProtobufResponse(data: any, headers: any, config: ICustomAxiosConfig<any>): any {
-    const protobufConfig = config.protobuf
-    const contentType = headers['content-type'] || ''
-
-    // 处理二进制 Protobuf 响应
-    if (contentType.includes('application/x-protobuf') && protobufConfig?.responseMessageType) {
-      try {
-        if (data instanceof Uint8Array || data instanceof ArrayBuffer) {
-          // 暂时降级为文本解码
-          const decoder = new TextDecoder()
-          const jsonString = decoder.decode(data instanceof ArrayBuffer ? new Uint8Array(data) : data)
-          return {
-            data: JSON.parse(jsonString),
-            messageType: protobufConfig.responseMessageType,
-            encoding: 'protobuf-binary'
-          }
-        }
-      } catch (error) {
-        console.warn('Protobuf 二进制反序列化失败，降级为 JSON 处理:', error)
-      }
-    }
-
-    // 处理 JSON 格式的 Protobuf 响应
-    if (contentType.includes('application/json') && protobufConfig?.responseMessageType) {
-      return {
-        data: data,
-        messageType: protobufConfig.responseMessageType,
-        encoding: 'json'
-      }
-    }
-
-    return data
-  }
-
-  /**
-   * 创建 Protobuf 配置的辅助方法
-   */
-  static createConfig(options: { requestType?: string; responseType?: string; useBinary?: boolean }): ProtobufTransformConfig {
-    return {
-      useProtobuf: true,
-      requestMessageType: options.requestType,
-      responseMessageType: options.responseType,
-      forceBinary: options.useBinary || false
-    }
-  }
 }
 
 const loginUrls = ['/auth/v3/login', '/auth/v3/sendSmsCode', '/auth/v3/logout', '/auth/v3/api/verify-token']
+
+// 401 退登防抖处理 - 防止多个并发请求同时触发退登
+let isLoggingOut = false
 
 // 解构CancelToken 对象 以及 是否是取消错误方法
 // const { CancelToken, isCancel } = axios
@@ -171,12 +39,9 @@ const instance = axios.create({
   // 请求时长
   // timeout: 1000 * 10,
   // 表示跨域请求时是否需要使用凭证
-  withCredentials: false,
+  withCredentials: false
   // 设置基础URL
   // baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
-  // 添加数据转换器
-  transformRequest: [ProtobufTransformers.requestTransformer, ...(Array.isArray(axios.defaults.transformRequest) ? axios.defaults.transformRequest : [])],
-  transformResponse: [...(Array.isArray(axios.defaults.transformResponse) ? axios.defaults.transformResponse : []), ProtobufTransformers.responseTransformer]
 })
 
 /**
@@ -196,19 +61,7 @@ instance.interceptors.request.use(
       headers['Authorization'] = `Bearer ${token}`
     }
 
-    // Protobuf 请求特殊处理
-    const protobufConfig = (config as ICustomAxiosConfig<any>).protobuf
-    if (protobufConfig?.useProtobuf && ProtobufTransformers.isProtobufInterface(config.data)) {
-      if (protobufConfig.forceBinary) {
-        headers['Content-Type'] = 'application/x-protobuf'
-        headers['Accept'] = 'application/x-protobuf'
-      } else {
-        headers['Content-Type'] = 'application/json;charset=UTF-8'
-        headers['Accept'] = 'application/json'
-      }
-      // 处理 Protobuf 数据
-      config.data = ProtobufTransformers.processProtobufRequest(config.data, config as ICustomAxiosConfig<any>)
-    } else if (config.data instanceof FormData && config.url) {
+    if (config.data instanceof FormData && config.url) {
       headers['Content-Type'] = 'multipart/form-data'
     }
 
@@ -245,18 +98,67 @@ instance.interceptors.response.use(
     const { config } = response
     pendingMap.removePending(config)
 
-    // Protobuf 响应处理
-    const protobufConfig = (config as ICustomAxiosConfig<any>).protobuf
-    if (protobufConfig?.useProtobuf) {
-      response.data = ProtobufTransformers.processProtobufResponse(response.data, response.headers, config as ICustomAxiosConfig<any>)
+    // 如果响应错误则抛出错误
+    if (response.data.code !== 200 || response.data.success !== true) {
+      return Promise.reject(response.data)
     }
-
     return response
   },
-  (error) => {
+  async (error) => {
     // 从请求队列中移除当前请求
     if (error.response?.config) {
       pendingMap.removePending(error.response.config)
+    }
+
+    // 处理 401 未授权错误 - 自动退登
+    if (error.response?.status === 401) {
+      const userStore = useUserStore()
+
+      // 防抖处理：避免多个 401 请求同时触发退登
+      if (isLoggingOut) {
+        console.log('退登操作正在进行中，跳过重复处理')
+        return Promise.reject(error)
+      }
+
+      // 检查当前是否已登录，避免重复处理
+      if (userStore.isLoggedIn) {
+        isLoggingOut = true
+        console.log('检测到 401 错误，执行自动退登')
+
+        try {
+          // 执行退登操作
+          await userStore.logout()
+
+          // 显示提示信息
+          window.$message?.warning('登录已过期，请重新登录')
+
+          // 跳转到登录页面，保存当前路径用于登录后跳转
+          const currentPath = router.currentRoute.value.fullPath
+          if (currentPath !== '/login') {
+            await router.push({
+              path: '/login',
+              query: { redirect: currentPath }
+            })
+          }
+        } catch (logoutError) {
+          console.error('自动退登失败:', logoutError)
+          // 即使退登失败，也要跳转到登录页
+          try {
+            await router.push('/login')
+          } catch (routerError) {
+            console.error('路由跳转失败:', routerError)
+            // 强制刷新页面作为最后的兜底方案
+            window.location.href = '/login'
+          }
+        } finally {
+          // 重置防抖标志，延迟一段时间防止快速重复
+          setTimeout(() => {
+            isLoggingOut = false
+          }, 1000)
+        }
+      }
+
+      return Promise.reject(error)
     }
 
     // 保留重试逻辑
@@ -395,6 +297,22 @@ export async function patch<Q = any, R = any>(url: string, options: ICustomAxios
 
 // 导出 Protobuf 工具类和错误处理器供外部使用
 export { ProtobufTransformers }
+
+/**
+ * 重置退登状态 - 用于测试或特殊情况下的手动重置
+ * @internal 仅供内部使用
+ */
+export const resetLogoutState = () => {
+  isLoggingOut = false
+}
+
+/**
+ * 获取当前退登状态 - 用于调试
+ * @internal 仅供内部使用
+ */
+export const getLogoutState = () => {
+  return isLoggingOut
+}
 
 // 只需要考虑单一职责，这块只封装axios
 export default instance
