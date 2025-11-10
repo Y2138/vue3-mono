@@ -85,7 +85,7 @@
 
 - **框架**: NestJS 11+ (模块化架构)
 - **API**: GraphQL + Apollo Server 3.13+
-- **数据库**: PostgreSQL + TypeORM 0.3+
+- **数据库**: PostgreSQL + Prisma 6.13+
 - **认证**: JWT + Passport
 - **授权**: RBAC (基于角色的访问控制)
 - **缓存**: Redis + cache-manager
@@ -96,10 +96,10 @@
 
 - **包管理**: pnpm workspace (monorepo)
 - **构建**: Turbo 2.2+ (构建加速)
-- **代码规范**: Biome 1.9+ (代码格式化和检查)
-- **类型检查**: TypeScript 5.7+/4.5.5
-- **测试**: Vitest 2.1+ + Jest 29.7+
-- **Node 版本**: 20.19.1 LTS (Volta 管理)
+- **代码规范**: Oxlint 1.8+ (代码格式化和检查)
+- **类型检查**: TypeScript 5.9.2
+- **测试**: Vitest 4.0.0-beta.2 + Jest 29.7+
+- **Node 版本**: 22.17.1 LTS (Volta 管理)
 
 ## 项目结构
 
@@ -118,6 +118,7 @@ vue3-mono/
 │       │   ├── layouts/           # 布局模板
 │       │   ├── request/           # API 请求封装
 │       │   ├── router/            # 路由配置
+│       │   ├── shared/            # 共享类型和工具
 │       │   ├── store/             # 状态管理
 │       │   ├── types/             # 全局类型定义
 │       │   ├── utils/             # 工具函数
@@ -132,17 +133,27 @@ vue3-mono/
 │       │   │   └── rbac/          # 权限管理模块
 │       │   ├── config/            # 配置管理
 │       │   ├── common/            # 公共组件
-│       │   ├── migrations/        # 数据库迁移
-│       │   └── utils/             # 工具函数
+│       │   ├── health/            # 健康检查
+│       │   ├── interceptors/      # 拦截器
+│       │   ├── prisma/            # Prisma 数据库服务
+│       │   ├── scripts/           # 脚本
+│       │   └── types/             # 类型定义
+│       ├── prisma/                # Prisma 配置和迁移
 │       └── package.json
 ├── packages/                      # 共享包目录
 │   ├── components/                # 公共组件库
 │   ├── share/                     # 共享工具和类型
+│   ├── shared-types/              # 共享类型定义
 │   └── sw/                        # Service Worker
 ├── configs/                       # 配置包
 │   ├── tsconfig/                  # TypeScript 配置
 │   ├── rsbuild/                   # Rsbuild 配置
 │   └── unbuild/                   # Unbuild 配置
+├── protos/                        # Protobuf 定义文件
+├── AI/                            # AI 相关文件
+├── deploy/                        # 部署配置
+├── docker/                        # Docker 配置
+├── k8s/                           # Kubernetes 配置
 ├── pnpm-workspace.yaml           # pnpm workspace 配置
 └── package.json                   # 根配置文件
 ```
@@ -181,6 +192,16 @@ vue3-mono/
   - JWT 认证集成
   - 重试机制
 
+#### 5. 共享类型和工具
+
+- **路径**: `apps/naive-admin/src/shared/`
+- **功能**: 前端共享的类型定义和工具函数，由 proto 文件生成
+- **内容**:
+  - common.ts: 通用类型和工具
+  - health.ts: 健康检查相关类型
+  - rbac.ts: 权限管理相关类型
+  - users.ts: 用户管理相关类型
+
 ### 后端核心模块
 
 #### 1. 用户认证模块 (Users)
@@ -189,6 +210,7 @@ vue3-mono/
 - **功能**: 用户注册、登录、JWT 认证
 - **实体**: User (用户实体)
 - **服务**: AuthService (认证服务)
+- **数据模型**: Prisma User 模型
 
 #### 2. RBAC 权限模块
 
@@ -196,6 +218,21 @@ vue3-mono/
 - **功能**: 基于角色的访问控制
 - **实体**: Role (角色)、Permission (权限)
 - **特性**: 权限装饰器、权限守卫
+- **数据模型**: Prisma Role、Permission、UserRole、RolePermission 模型
+
+#### 3. Prisma 数据库服务
+
+- **路径**: `server/nest-main/src/prisma/`
+- **功能**: 数据库连接、事务管理、查询服务
+- **服务**: PrismaService
+- **中间件**: PrismaMiddleware (查询日志、软删除等)
+
+#### 4. 健康检查模块
+
+- **路径**: `server/nest-main/src/health/`
+- **功能**: 系统健康状态监控、指标收集
+- **服务**: MonitoringService
+- **控制器**: HealthController、MetricsController
 
 ## 开发规范
 
@@ -282,7 +319,7 @@ vue3-mono/
 
 ### 开发环境
 
-- **Node.js**: 20.19.1 LTS (Volta 管理)
+- **Node.js**: 22.17.1 LTS (Volta 管理)
 - **包管理器**: pnpm workspace
 - **开发服务器**:
   - 前端: http://localhost:6767
@@ -320,7 +357,7 @@ vue3-mono/
 2. 使用装饰器进行元数据标注
 3. GraphQL 优先，REST 作为补充
 4. 统一错误处理和日志记录
-5. 数据库操作使用 TypeORM
+5. 数据库操作使用 Prisma
 
 ### 性能优化
 

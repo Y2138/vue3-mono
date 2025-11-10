@@ -13,6 +13,15 @@ const systemRoutes: CustomRouteRecord = {
       meta: {
         title: '人员管理'
       }
+    },
+    {
+      path: 'person/detail',
+      name: 'personDetail',
+      component: () => import('@/views/system/person/detail.vue'),
+      meta: {
+        title: '人员详情',
+        activeMenuPath: '/system-manage/person'
+      }
     }
   ]
 }

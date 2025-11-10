@@ -1,20 +1,21 @@
 import type { LoadingBarApi, MessageApi } from 'naive-ui'
 import type { Component } from 'vue'
-import type { RouteRecordRaw } from 'vue-router'
+import type { CustomRouteRecord } from 'vue-router'
 
 declare global {
   // 可选图标
   // route
-  type CustomRouteRecord = RouteRecordRaw & {
+  type CustomRouteRecord = CustomRouteRecord & {
     meta?: {
       title: string
       icon?: string
+      activeMenuPath?: string
     }
     children?: CustomRouteRecord[]
   }
   // tab
   interface ITabItem {
-    path: string
+    fullPath: string
     name: string
     // checked: boolean
   }
@@ -23,6 +24,7 @@ declare global {
     path: string
     name: string
     parent: IMenuItem | null
+    activeMenuPath?: string
     children?: IMenuItem[]
     icon: string
   }

@@ -21,11 +21,11 @@
     </WrapCol>
 
     <WrapCol label="状态">
-      <n-select v-model:value="formModel.status" :options="userEnums.userStatus as any" placeholder="请选择状态" clearable />
+      <n-select v-model:value="formModel.status" :options="userEnums.userStatus || []" placeholder="请选择状态" clearable />
     </WrapCol>
 
     <WrapCol label="角色">
-      <n-select v-model:value="formModel.roleId" :options="userEnums.userType as any" placeholder="请选择角色" clearable />
+      <n-select v-model:value="formModel.roleId" :options="userEnums.userType || []" placeholder="请选择角色" clearable />
     </WrapCol>
   </SearchPanel>
 
@@ -37,6 +37,7 @@
 
 <script setup lang="tsx">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { NButton, NTag, NIcon, NPopconfirm, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import useTablePage from '@/hooks/useTablePage'
@@ -44,7 +45,7 @@ import { getUserList, deleteUser, getUserEnums, updateUserStatusByAction, type U
 import { useEnums } from '@/hooks/useEnums'
 import type { DataTableColumns } from 'naive-ui'
 import { usePageLoading } from '@/hooks/usePageLoading'
-import { EnumItem } from '@/shared'
+import { EnumItem } from '@/shared/common'
 import CreateUserModal from './CreateUserModal.vue'
 
 // 页面加载状态
@@ -53,12 +54,13 @@ usePageLoading()
 // 消息提示
 const message = useMessage()
 
+// 路由
+const router = useRouter()
+
 // 新增人员弹窗状态
 const showCreateModal = ref(false)
 
 // 图标组件定义
-const EditIcon = () => <Icon icon="ion:create-outline" width={16} height={16} />
-const DeleteIcon = () => <Icon icon="ion:trash-outline" width={16} height={16} />
 const ActivateIcon = () => <Icon icon="ion:checkmark-circle-outline" width={16} height={16} />
 const DeactivateIcon = () => <Icon icon="ion:remove-circle-outline" width={16} height={16} />
 const LockIcon = () => <Icon icon="ion:lock-closed-outline" width={16} height={16} />
@@ -84,7 +86,10 @@ const { data: userEnums } = useEnums<Record<string, EnumItem[]>>({
   api: getUserEnums,
   key: 'user-enums',
   refresh: true,
-  defaultValue: {}
+  defaultValue: {
+    userStatus: [],
+    userType: []
+  }
 })
 
 // 请求参数类型
@@ -228,16 +233,14 @@ const customColumns: DataTableColumns<UserInfo> = [
 
       return (
         <div class="flex items-center flex-wrap gap-1">
+          {/* 查看详情按钮 */}
+          <NButton size="small" type="info" quaternary onClick={() => handleViewDetail(row)}>
+            {{ default: () => '详情' }}
+          </NButton>
+
           {/* 编辑按钮 */}
           <NButton size="small" type="primary" quaternary onClick={() => handleEdit(row)}>
-            {{
-              default: () => '编辑',
-              icon: () => (
-                <NIcon>
-                  <EditIcon />
-                </NIcon>
-              )
-            }}
+            {{ default: () => '编辑' }}
           </NButton>
 
           {/* 状态操作按钮 */}
@@ -246,14 +249,7 @@ const customColumns: DataTableColumns<UserInfo> = [
               {{
                 trigger: () => (
                   <NButton size="small" type={action.type} quaternary>
-                    {{
-                      default: () => action.label,
-                      icon: () => (
-                        <NIcon>
-                          <action.icon />
-                        </NIcon>
-                      )
-                    }}
+                    {{ default: () => action.label }}
                   </NButton>
                 ),
                 default: () => action.confirmText
@@ -266,14 +262,7 @@ const customColumns: DataTableColumns<UserInfo> = [
             {{
               trigger: () => (
                 <NButton size="small" type="error" quaternary>
-                  {{
-                    default: () => '删除',
-                    icon: () => (
-                      <NIcon>
-                        <DeleteIcon />
-                      </NIcon>
-                    )
-                  }}
+                  {{ default: () => '删除' }}
                 </NButton>
               ),
               default: () => '确定删除该用户吗？'
@@ -302,6 +291,15 @@ function handleCreate() {
 function handleCreateSuccess(user: UserInfo) {
   message.success(`人员 ${user.username} 新增成功`)
   refresh() // 刷新列表
+}
+
+// 处理查看详情
+const handleViewDetail = (row: UserInfo) => {
+  // 使用query参数传递手机号
+  router.push({
+    path: '/system-manage/person/detail',
+    query: { phone: row.phone }
+  })
 }
 
 function handleEdit(user: UserInfo) {
@@ -367,14 +365,19 @@ async function handleUnlock(phone: string) {
 
 // 根据用户状态获取可用的操作按钮
 function getStatusActions(user: UserInfo) {
-  const actions = []
+  const actions: Array<{
+    label: string
+    type: 'success' | 'warning' | 'error' | 'info'
+    icon?: any
+    action: () => void
+    confirmText: string
+  }> = []
 
   switch (user.status) {
     case 1: // 待激活
       actions.push({
         label: '激活',
-        type: 'success' as const,
-        icon: ActivateIcon,
+        type: 'success',
         action: () => handleActivate(user.phone),
         confirmText: '确定激活该用户吗？'
       })
@@ -383,15 +386,13 @@ function getStatusActions(user: UserInfo) {
       actions.push(
         {
           label: '下线',
-          type: 'warning' as const,
-          icon: DeactivateIcon,
+          type: 'warning',
           action: () => handleDeactivate(user.phone),
           confirmText: '确定下线该用户吗？'
         },
         {
           label: '锁定',
-          type: 'error' as const,
-          icon: LockIcon,
+          type: 'error',
           action: () => handleLock(user.phone),
           confirmText: '确定锁定该用户吗？'
         }
@@ -400,8 +401,7 @@ function getStatusActions(user: UserInfo) {
     case 3: // 下线
       actions.push({
         label: '激活',
-        type: 'success' as const,
-        icon: ActivateIcon,
+        type: 'success',
         action: () => handleActivate(user.phone),
         confirmText: '确定激活该用户吗？'
       })
@@ -409,8 +409,7 @@ function getStatusActions(user: UserInfo) {
     case 4: // 锁定
       actions.push({
         label: '解锁',
-        type: 'info' as const,
-        icon: UnlockIcon,
+        type: 'info',
         action: () => handleUnlock(user.phone),
         confirmText: '确定解锁该用户吗？'
       })

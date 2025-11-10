@@ -130,7 +130,7 @@ export const getUserList = async (params?: GetUsersRequest) => {
  * 根据手机号获取用户详情
  */
 export const getUserByPhone = async (phone: string) => {
-  return get<void, UserInfo>('/api/users/detail', { params: { phone } })
+  return get<void, UserInfo>(`/api/users/${phone}`)
 }
 
 /**

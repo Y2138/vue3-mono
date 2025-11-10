@@ -56,7 +56,6 @@ export const useUserStore = defineStore(
         id: userInfo.value.phone, // 使用phone作为用户ID
         username: userInfo.value.username,
         phone: userInfo.value.phone,
-        isActive: userInfo.value.isActive,
         createdAt: userInfo.value.createdAt,
         updatedAt: userInfo.value.updatedAt,
         roleIds: userInfo.value.roleIds
@@ -307,7 +306,7 @@ export const useUserStore = defineStore(
      * 检查用户状态是否正常
      */
     function isUserActive(): boolean {
-      return userInfo.value?.isActive === true
+      return userInfo.value?.status === 2
     }
 
     // ========================================
@@ -356,7 +355,7 @@ export const useUserStore = defineStore(
     persist: {
       key: 'user',
       storage: localStorage,
-      pick: ['userInfo', 'authToken']
+      pick: ['userInfo', 'authToken', 'isLoggedIn']
     }
   }
 )

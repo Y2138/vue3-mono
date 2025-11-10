@@ -1,23 +1,24 @@
 import { defineStore } from 'pinia'
 import { routes } from '@/router'
-import { transferRouteToMenu, flattenTreeWithPaths } from '@/utils'
+import { transferRouteToMenuTree, flattenAllRouteToMenu } from '@/utils'
 
-const menuTree = transferRouteToMenu(routes)
+const allMenuList = flattenAllRouteToMenu(routes)
+const menuTree = transferRouteToMenuTree(routes)
 
 export const useMenuStore = defineStore('menu', {
   state: () => ({
     activeMenuKey: '', // 当前路由路径
     menuTree,
-    flatMenuList: flattenTreeWithPaths(menuTree),
-    collapsed: false, // 菜单是否收起
+    flatAllMenuList: allMenuList,
+    collapsed: false // 菜单是否收起
   }),
-	getters: {
+  getters: {
     menuRoutes(): IMenuItem[] {
       const result: IMenuItem[] = []
-      let curMenu = this.flatMenuList.find(item => item.path === this.activeMenuKey)
+      let curMenu = this.flatAllMenuList.find((item) => item.path === this.activeMenuKey)
       if (curMenu) {
         result.push(curMenu)
-        while(curMenu.parent) {
+        while (curMenu.parent) {
           result.unshift(curMenu.parent)
           curMenu = curMenu.parent
         }
@@ -26,8 +27,20 @@ export const useMenuStore = defineStore('menu', {
     }
   },
   actions: {
-    setActiveMenuKey(activeMenuKey: string) {
-      this.activeMenuKey = activeMenuKey
+    // 优先设置 activeMenuPath，否则设置当前路径
+    setActiveMenuKey(path: string) {
+      const curMenu = this.flatAllMenuList.find((item) => item.path === path)
+      console.log(
+        'setActiveMenuKey',
+        path,
+        this.flatAllMenuList.map((item) => item.path),
+        curMenu
+      )
+      if (curMenu) {
+        this.activeMenuKey = curMenu.activeMenuPath || path
+      } else {
+        this.activeMenuKey = path
+      }
     },
     setMenuList(menuTree: any) {
       this.menuTree = menuTree

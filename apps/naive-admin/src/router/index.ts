@@ -19,7 +19,7 @@ export const routes: CustomRouteRecord[] = [
     meta: {
       title: '用户登录',
       noAuth: true, // 不需要认证
-      hideInMenu: true // 不在菜单中显示
+      activeMenu: '/home' // 不在菜单中显示
     }
   },
   {
@@ -40,7 +40,7 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) => {
-  console.log('Router navigation:', { to: to.path, from: from.path })
+  console.log('Router navigation:', { to: to.path, toFullPath: to.fullPath, from: from.path })
 
   const menuStore = useMenuStore()
   const userStore = useUserStore()
@@ -82,15 +82,15 @@ router.beforeEach(async (to: RouteLocationNormalized, from: RouteLocationNormali
       return
     }
 
+    // 如果是相同路由的导航，直接返回
+    if (from.fullPath === to.fullPath) {
+      return next(false)
+    }
+
     // 更新菜单和标签页状态
     menuStore.setActiveMenuKey(to.path)
     const tabStore = useTabStore()
-    tabStore.activeTab(to.path, String(to.meta?.name || to.name))
-
-    // 如果是相同路由的导航，直接返回
-    if (from.path === to.path) {
-      return next(false)
-    }
+    tabStore.activeTab(to.fullPath, String(to.meta?.title || to.name))
 
     next()
   } catch (error) {

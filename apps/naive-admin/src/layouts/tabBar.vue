@@ -1,7 +1,7 @@
 <template>
   <n-flex size="small">
-    <n-tag v-for="item in tabs" :key="item.path" class="cursor-pointer" :type="item.path === tabStore.activeTabKey ? 'info' : 'default'" :bordered="false" closable @click="handleTagClick(item)" @contextmenu.prevent="handleContextMenu(item, $event)" :on-close="() => handleTabClose(item)">
-      <span class="tabbar-span" :class="item.path === tabStore.activeTabKey ? 'active' : ''">
+    <n-tag v-for="item in tabs" :key="item.fullPath" class="cursor-pointer" :type="item.fullPath === tabStore.activeTabKey ? 'info' : 'default'" :bordered="false" closable @click="handleTagClick(item)" @contextmenu.prevent="handleContextMenu(item, $event)" :on-close="() => handleTabClose(item)">
+      <span class="tabbar-span" :class="item.fullPath === tabStore.activeTabKey ? 'active' : ''">
         {{ item.name }}
       </span>
     </n-tag>
@@ -13,11 +13,13 @@
 import { computed, h, type Component, ref, nextTick } from 'vue'
 import { useTabStore } from '@/store/modules/tab'
 import { useGlobalStore } from '@/store/modules/global'
+import { useMenuStore } from '@/store/modules/menu'
 import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 
 const tabStore = useTabStore()
 const globalStore = useGlobalStore()
+const menuStore = useMenuStore()
 const router = useRouter()
 
 const tabs = computed<ITabItem[]>(() => {
@@ -27,8 +29,10 @@ const handleTabClose = (item: ITabItem) => {
   tabStore.removeTab(item, router)
 }
 const handleTagClick = (item: ITabItem) => {
-  tabStore.activeTab(item.path, item.name)
-  router.push(item.path)
+  tabStore.activeTab(item.fullPath, item.name)
+  router.push(item.fullPath)
+  // 更新菜单激活状态
+  // menuStore.setActiveMenuKey(item.fullPath)
 }
 function renderIcon(icon: string) {
   return () => h(Icon, { icon: `ion:${icon}`, width: '16', height: '16' })
