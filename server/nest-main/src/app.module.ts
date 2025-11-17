@@ -6,12 +6,11 @@ import * as redisStore from 'cache-manager-redis-store'
 import { RedisClientOptions } from 'redis'
 import databaseConfig from './config/database.config'
 import { UsersModule } from './modules/users/users.module'
-import { RbacModule } from './modules/rbac/rbac.module'
+import { ResourceModule } from './modules/resource/resource.module'
 import { HealthModule } from './health/health.module'
 import { PrismaModule } from './prisma/prisma.module'
 import { MonitoringInterceptor } from './interceptors/monitoring.interceptor'
 import { AuthGuard } from './common/guards/auth.guard'
-import { PermissionGuard } from './modules/rbac/guards/permission.guard'
 import { HttpExceptionFilter } from './common/filters'
 import { SecurityMiddleware } from './common/middleware/security.middleware'
 import { ResponseInterceptor } from './common/response'
@@ -35,7 +34,7 @@ import { ResponseInterceptor } from './common/response'
       inject: [ConfigService]
     }),
     UsersModule,
-    RbacModule,
+    ResourceModule,
     HealthModule
   ],
   controllers: [],
@@ -54,11 +53,7 @@ import { ResponseInterceptor } from './common/response'
       provide: APP_GUARD,
       useClass: AuthGuard
     },
-    // 全局权限守卫
-    {
-      provide: APP_GUARD,
-      useClass: PermissionGuard
-    },
+
     // 全局异常过滤器
     {
       provide: APP_FILTER,

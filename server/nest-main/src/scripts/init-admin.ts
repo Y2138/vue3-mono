@@ -7,7 +7,6 @@ import { NestFactory } from '@nestjs/core'
 import { Logger } from '@nestjs/common'
 import { AppModule } from '../app.module'
 import { UserService } from '../modules/users/user.service'
-import { AuthService } from '../modules/users/auth.service'
 
 async function initAdmin() {
   const logger = new Logger('InitAdmin')
@@ -20,13 +19,13 @@ async function initAdmin() {
 
     // 获取服务实例
     const userService = app.get(UserService)
-    const authService = app.get(AuthService)
 
     // 管理员用户信息
     const adminData = {
       username: 'admin',
-      phone: '13800138000', // 使用标准的测试手机号
-      password: 'Admin123!' // 符合密码强度要求：8位，包含大小写字母、数字和特殊字符
+      phone: '15316120580', // 使用LOGIN_CREDENTIALS.md中指定的手机号
+      password: 'Admin123!', // 符合密码强度要求：8位，包含大小写字母、数字和特殊字符
+      status: 2 // 设置为活跃状态
     }
 
     logger.log(`📱 准备创建管理员用户: ${adminData.username} (${adminData.phone})`)
@@ -40,22 +39,20 @@ async function initAdmin() {
         await app.close()
         return
       }
-    } catch (error) {
+    } catch (_error) {
       // 用户不存在，继续创建
-      logger.log('✅ 用户不存在，可以创建新用户')
+      logger.log('✅ 用户不存在，可以创建新用户', _error)
     }
 
-    // 创建超级管理员
-    const result = await authService.createSuperAdmin(adminData)
+    // 创建普通管理员用户（直接使用userService创建）
+    await userService.create(adminData)
+    // 更新用户状态为激活
+    await userService.updateUserStatus(adminData.phone, 2)
 
     logger.log('🎉 管理员用户创建成功!')
     logger.log(`📋 用户信息:`)
-    logger.log(`   用户名: ${result.user.username}`)
-    logger.log(`   手机号: ${result.user.phone}`)
-    const statusNames = { 1: '待激活', 2: '激活', 3: '下线', 4: '锁定' }
-    logger.log(`   状态: ${statusNames[result.user.status] || '未知'}`)
-    logger.log(`   角色: ${result.user.userRoles?.map((ur) => ur.role?.name).join(', ') || '无'}`)
-    logger.log(`🔑 JWT Token: ${result.token}`)
+    logger.log(`   手机号: ${adminData.phone}`)
+    logger.log(`   密码: ${adminData.password}`)
 
     logger.log('✨ 现在您可以使用以下信息登录:')
     logger.log(`   手机号: ${adminData.phone}`)

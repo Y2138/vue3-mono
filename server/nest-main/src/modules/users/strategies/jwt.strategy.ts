@@ -31,17 +31,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         throw new UnauthorizedException(user ? statusMessages[user.status] || '用户状态异常' : '用户不存在')
       }
 
-      if (!user.userRoles || user.userRoles.length === 0) {
-        this.logger.error(`用户没有加载角色信息: ${payload.sub}`)
-      } else {
-        const roleNames = user.userRoles.map((ur) => ur.role.name).join(', ')
-        this.logger.log(`用户 ${payload.sub} 拥有角色: ${roleNames}`)
-
-        const hasPermissions = user.userRoles.every((ur) => ur.role.rolePermissions && ur.role.rolePermissions.length > 0)
-        if (!hasPermissions) {
-          this.logger.warn(`用户 ${payload.sub} 的角色没有加载权限信息`)
-        }
-      }
+      // RBAC模块已删除，不再检查角色信息
+      this.logger.log(`用户验证通过: ${payload.sub}`)
 
       return user
     } catch (error) {

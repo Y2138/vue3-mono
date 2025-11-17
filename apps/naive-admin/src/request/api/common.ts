@@ -4,7 +4,7 @@
  */
 
 import { get, post } from '../axios'
-import type { PaginationRequest, PaginationResponse, EnumItem } from '@/shared/common'
+import type { PaginationResponse, EnumItem } from '@/shared/common'
 
 // ========================================
 // 🔄 通用响应类型（基于 proto 定义）
@@ -20,7 +20,6 @@ export interface ApiResponse<T = any> {
 }
 
 // 使用 proto 生成的分页类型
-type PaginationParams = Omit<PaginationRequest, 'toJSON' | 'fromJSON' | 'create' | 'decode' | 'encode' | 'fromPartial'>
 export type PaginationData<T = any> = Omit<PaginationResponse, 'toJSON' | 'fromJSON' | 'create' | 'decode' | 'encode' | 'fromPartial' | 'items'> & {
   items: T[]
 }

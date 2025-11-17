@@ -90,7 +90,7 @@ export function useAuth() {
     } catch (err: any) {
       error.value = err.message || '登出失败'
       if (showMessage) {
-        message.error(error.value)
+        message.error(error.value || '')
       }
       throw err
     } finally {
@@ -178,8 +178,8 @@ export function useAuth() {
 
   return {
     // 状态
-    isLoading: readonly(isLoading),
-    error: readonly(error),
+    isLoading,
+    error,
     isLoggedIn,
     currentUser,
     userRoles,

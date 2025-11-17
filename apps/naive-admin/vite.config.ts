@@ -22,7 +22,7 @@ export default defineConfig(() => {
       protobufPlugin({
         protoDir: path.resolve(__dirname, '../../protos'),
         outputDir: path.resolve(__dirname, './src/shared'),
-        protoFiles: ['common.proto', 'health.proto', 'rbac.proto', 'users.proto'],
+        protoFiles: ['common.proto', 'health.proto', 'role.proto', 'users.proto', 'resource.proto'],
         watch: true, // 开发模式下监听文件变化
         debug: process.env.NODE_ENV === 'development', // 开发模式下显示调试信息
         protocOptions: [] // 可以添加额外的 protoc 选项

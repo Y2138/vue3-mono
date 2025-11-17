@@ -2,13 +2,14 @@
 // 只包含接口类型定义，不包含编码/解码逻辑  
 // 自动解决 protobufPackage 命名冲突
 // 请勿手动修改
-// PROTO SOURCE: /Users/staff/Documents/my-tools/vue3-mono/protosusers.proto
+// PROTO SOURCE: /Users/staff/Documents/my-tools/vue3-mono/protosresource.proto
 
 // Common types
 export type {
   PaginationRequest,
   PaginationResponse,
   ResponseStatus,
+  EmptyRequest,
   ErrorDetail,
   EnumItem,
   EnumItemList,
@@ -23,27 +24,57 @@ export type {
   Health
 } from './health';
 
-// Rbac types
+// Resource types
 export type {
-  Permission,
+  Resource,
+  Resource_MetadataEntry,
+  ResourceTree,
+  ResourceTree_MetadataEntry,
+  CreateResourceRequest,
+  CreateResourceRequest_MetadataEntry,
+  UpdateResourceRequest,
+  UpdateResourceRequest_MetadataEntry,
+  GetResourceRequest,
+  GetResourcesRequest,
+  GetResourceByPathRequest,
+  MoveResourceRequest,
+  DuplicateResourceRequest,
+  BatchDeleteResourcesRequest,
+  ResourceListResponse,
+  ResourceResponse,
+  ResourceTreeResponse,
+  ResourcePathResponse,
+  ResourceService
+} from './resource';
+
+// Role types
+export type {
   Role,
-  GetPermissionRequest,
-  GetPermissionsRequest,
-  GetPermissionsResponse,
-  CreatePermissionRequest,
-  UpdatePermissionRequest,
+  RolePermissionTreeNode,
+  CreateRoleRequest,
+  UpdateRoleRequest,
   GetRoleRequest,
   GetRolesRequest,
   GetRolesResponse,
-  CreateRoleRequest,
-  UpdateRoleRequest,
-  AssignRolePermissionsRequest,
+  DeleteRoleRequest,
+  AssignPermissionsToRoleRequest,
   RemoveRolePermissionsRequest,
-  CheckPermissionRequest,
-  CheckPermissionResponse,
-  PermissionService,
+  GetRolePermissionsRequest,
+  GetRolePermissionsResponse,
+  AssignUsersToRoleRequest,
+  RemoveRoleUsersRequest,
+  GetRoleUsersRequest,
+  GetRoleUsersResponse,
+  CheckUserRoleRequest,
+  CheckUserRoleResponse,
+  GetUserRolesRequest,
+  GetUserRolesResponse,
+  CheckRolePermissionRequest,
+  CheckRolePermissionResponse,
+  RoleStatistics,
+  RoleStatistics_RolesByStatusEntry,
   RoleService
-} from './rbac';
+} from './role';
 
 // Users types
 export type {

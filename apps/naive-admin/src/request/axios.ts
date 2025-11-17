@@ -222,8 +222,8 @@ function handleResponseResult<Q = any, R = any>(data: ResResult<R>, config: ICus
     const { disableErrorMsg } = config
     if (!disableErrorMsg) {
       // 此处默认展示提示信息
-      if (data.msg) {
-        window.$message.error(data.msg)
+      if (data.message) {
+        window.$message.error(data.message)
       }
     }
     return false
@@ -294,9 +294,6 @@ export async function patch<Q = any, R = any>(url: string, options: ICustomAxios
 // const api_example2 = (data: string) => post('/api/example2', { data: 'aaa' })
 // const api_example = (req: 'name') => post<'string'>('api/example', { data: 'name' })
 // const [res, err] = await api_example('name')
-
-// 导出 Protobuf 工具类和错误处理器供外部使用
-export { ProtobufTransformers }
 
 /**
  * 重置退登状态 - 用于测试或特殊情况下的手动重置

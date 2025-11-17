@@ -1,519 +1,657 @@
-# 开发文档模板 - 后端服务开发版（架构优先）
+# 开发文档模板 - 后端服务开发版（类型驱动开发）
 
-> **AI 协作提示**: 此模板用于生成后端服务开发文档。请根据实际需求替换所有 `[AI_FILL]` 标记的内容。此模板专为 AI 辅助开发设计，采用增量模块化开发模式。
-> 
-> **架构优先原则**: 专注于架构设计和实现指导，具体代码实现使用 TODO 标记，避免生成过多具体代码细节。
-> 
-> **按开发计划阶段顺序，每个阶段完成后等待用户确认再继续下一步**
-> 
+> **AI 协作提示**: 此模板用于生成后端服务开发文档。请根据实际需求替换所有 `[AI_FILL]` 标记的内容。此模板专为 AI 辅助开发设计，采用类型驱动的 6 步模块化开发模式。
+>
+> **类型驱动原则**: 基于 Protobuf 自动生成的类型定义，确保前后端接口一致性和类型安全。
+>
+> **按开发计划顺序，每个步骤完成后等待用户确认再继续下一步**
+>
 > **生成说明**: 输出最终文档时，仅保留 `[结果]` 部分内容，隐藏所有 `[指引]` 标记的内容。
-> 
-> **重要**: 本项目正在从 GraphQL 迁移到 gRPC + REST 双协议架构，使用基于 Protobuf 的混合 API 服务实现。
+>
+> **架构核心**: 基于 NestJS + TypeScript + Prisma + Vue 3 全栈 TypeScript monorepo 架构，使用 REST API + 类型安全开发模式。
 
 ## 📋 项目概述与配置
 
-### 需求&服务概述
+**项目概述**: TODO: [AI_FILL]
 
-**[AI_FILL: 服务功能描述]**
+**技术架构**:
 
-<!-- 示例: "用户服务"，负责用户管理、认证授权等核心功能。采用 NestJS 模块化架构，支持 gRPC 和 REST 双协议，使用 PostgreSQL 数据库存储用户数据。 -->
+- 后端：基于 NestJS + TypeScript 的现代化企业级框架
+- 数据库：PostgreSQL + Prisma ORM
+- API 协议：基于 Protobuf 的 REST API
+- 类型系统：前端共享的类型定义
 
-### 初始化配置
+**开发环境**:
 
-**服务目录**: `[MANUAL_FILL: 服务目录完整路径]`
-**模块文件**: `[MANUAL_FILL: 模块文件路径]`
-**Protobuf 文件**: `[MANUAL_FILL: Protobuf 定义文件路径]`
-
----
+- Node.js 22.17.1 LTS (Volta 管理)
+- 包管理器：pnpm workspace (monorepo)
+- 构建工具：Vite 6.1+ (前端) + NestJS Build (后端)
+- 数据库：PostgreSQL 16+
+- 缓存：Redis 7+
 
 ## 🎯 开发目标拆解
 
-**[AI_FILL: 服务功能描述]**
+> 本项目采用类型驱动的 6 步开发模式，每个步骤相互独立且可验证完成度。
 
-### 核心模块与接口
+### 步骤 1：需求设计和架构规划
 
-**[AI_FILL: 根据需求识别主要功能和接口]**
-**[Attention: 请先从项目的 Protobuf 定义中寻找功能对应的接口，若无法找到则定义新的接口]**
+**[指引]**: 请根据业务需求进行详细的需求分析和架构设计：
 
-| 功能模块          | 接口方法                          | 协议类型       | 优先级              |
-| ----------------- | --------------------------------- | -------------- | ------------------- |
-| [AI_FILL: 模块名] | `[AI_FILL: gRPC 方法名]`          | gRPC           | [AI_FILL: 高/中/低] |
-| [AI_FILL: 模块名] | `[AI_FILL: REST 接口路径]`        | REST           | [AI_FILL: 高/中/低] |
+- 业务功能需求梳理和分解
+- API 接口设计和规划
+- 数据模型关系设计
+- 安全性和性能需求分析
 
-**接口实现说明**：
-- gRPC 接口: 基于 Protobuf 定义，使用 NestJS gRPC 模块实现
-- REST 接口: 使用 NestJS Controller 实现，可与 gRPC 接口共享业务逻辑
-- 数据访问: 使用 TypeORM 或 Prisma 访问数据库
+**[结果]**: TODO: [AI_FILL] 需求设计和架构规划结果
 
-**数据模型说明: [AI_FILL: 对于核心数据模型列出主要字段和关系]**
+**架构决策**:
 
-**依赖服务**: 
-
--   数据库服务: PostgreSQL
--   缓存服务: Redis
--   认证服务: JWT/Passport
--   消息队列: RabbitMQ (如需)
-
----
-
-## 🔄 增量开发计划
-
-#### 🏗️ 阶段一：基础架构
-
--   **A0**: 服务结构与模块配置 → **A1**: 数据模型设计 → **A2**: Protobuf 接口定义
-
-#### ⚙️ 阶段二：核心功能
-
--   **B1**: 基础 CRUD 功能 → **B2**: 业务逻辑实现 → **B3**: 认证授权集成 → **Bn**: xxx 功能
-
-#### 🚀 阶段三：集成优化
-
--   **C1**: 服务集成联调 → **C2**: 性能优化完善 → **C3**: 测试与文档
-
-### 🔧 执行规则
-
-1. **按序执行**: 严格按模块顺序，不可跳跃
-2. **确认机制**: 每阶段完成后等待用户确认再继续下一模块
-3. **阶段二根据需求大小拆分多个步骤**
-4. **实施清单要求**: 使用精炼语言，避免过度拆分，每个清单项应为一个完整的功能单元
-
----
-
-## 📦 模块详细设计
-
-### 模块 A0: 服务结构与模块配置
-
-#### [指引] 目标与实施要点
-
-创建服务目录结构，配置 NestJS 模块，建立基本服务框架。
-
-**服务结构设计（符合项目规范）**:
-
-```
-server/[服务名称]/
-├── src/
-│   ├── modules/
-│   │   └── [模块名]/
-│   │       ├── [模块名].module.ts    # 模块定义
-│   │       ├── controllers/          # REST 控制器
-│   │       ├── services/             # 业务服务
-│   │       ├── repositories/         # 数据访问层
-│   │       ├── entities/             # 数据实体
-│   │       └── dtos/                 # 数据传输对象
-│   ├── config/                       # 配置文件
-│   ├── common/                       # 公共组件
-│   └── main.ts                       # 入口文件
-└── package.json
-```
-
-#### [结果] 架构决策与实施清单
-
-**架构决策**: [AI_FILL: 服务结构选择和理由]
+- 采用 BaseController + Service + Repository 三层架构
+- 基于 Protobuf 类型定义确保接口一致性
+- 统一的错误处理和响应格式
+- 支持 RBAC 权限控制
 
 **实施清单**:
 
-1. [ ] [AI_FILL: 精炼的实施步骤，不超过 5 个]
+- [ ] 1. 业务需求文档化
+- [ ] 2. API 接口设计
+- [ ] 3. 数据模型关系图
+- [ ] 4. 安全性和权限设计
 
 **技术框架**:
 
-```typescript
-// TODO: 模块配置框架
-// TODO: 服务基础结构
-```
+- **架构**: NestJS 模块化架构
+- **类型定义**: Protocol Buffers
+- **权限控制**: RBAC (基于角色的访问控制)
+- **API 文档**: Swagger + 自动化文档
 
 **验收标准**:
 
--   [ ] 服务启动正常，无模块错误
--   [ ] 目录结构符合项目规范
+- 需求文档完整且清晰
+- API 设计符合 RESTful 规范
+- 数据模型符合第三范式
+- 安全设计覆盖认证和授权
 
-**完成标识**: `[MODULE_A0_COMPLETED]`
+### 步骤 2：Prisma 数据模型设计
 
----
+**[指引]**: 请根据需求分析设计 Prisma 数据模型：
 
-### 模块 A1: 数据模型设计
+- 核心业务实体模型设计
+- 数据关系和约束定义
+- 索引和性能优化设计
+- 审计字段和软删除策略
 
-#### [指引] 目标与实施要点
+**[结果]**: TODO: [AI_FILL] Prisma 数据模型设计结果
 
-设计数据库实体和关系，基于 Prisma 创建数据模型。
+**架构决策**:
 
-#### [结果] 架构决策与实施清单
-
-**架构决策**: 采用 Prisma 作为数据访问层解决方案，替换原有的 TypeORM。Prisma 提供更简洁的 API、更强大的类型安全和更好的开发者体验，适合项目当前的技术升级方向。
+- 统一的基类模型（BaseModel）包含审计字段
+- 严格的外键约束保证数据一致性
+- 合理的索引设计优化查询性能
+- 支持软删除保持数据完整性
 
 **实施清单**:
 
-1. [ ] 定义 Prisma Schema 数据模型
-2. [ ] 生成 Prisma Client
-3. [ ] 集成 Prisma 到 NestJS 模块
-4. [ ] 创建初始数据库迁移
+- [ ] 1. 核心实体模型定义
+- [ ] 2. 数据关系映射
+- [ ] 3. 索引和约束设计
+- [ ] 4. 数据库迁移脚本
 
 **技术框架**:
 
-```prisma
-generator client {
-  provider = "prisma-client-js"
-}
+- **ORM**: Prisma 6.13+
+- **数据库**: PostgreSQL 16+
+- **迁移**: Prisma Migrate
+- **类型生成**: prisma generate
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
+**验收标准**:
 
-model User {
-  phone    String   @id
-  username String
-  password String
-  isActive Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  roles    Role[]   @relation(through: "UserRole")
-}
+- 数据模型设计规范且可扩展
+- 支持所有业务查询需求
+- 迁移脚本可重复执行
+- 索引设计合理优化查询性能
 
-model Role {
-  id          String       @id @default(uuid())
-  name        String       @unique
-  description String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  permissions Permission[] @relation(through: "RolePermission")
-  users       User[]       @relation(through: "UserRole")
-}
+### 步骤 3：Proto 类型定义
 
-model Permission {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  roles       Role[]   @relation(through: "RolePermission")
-}
+**[指引]**: 请根据数据模型和 API 设计定义 Protocol Buffers 类型：
 
-model UserRole {
-  user   User   @relation(fields: [userId], references: [phone])
-  role   Role   @relation(fields: [roleId], references: [id])
-  userId String
-  roleId String
+- 请求和响应消息类型定义
+- 枚举类型和自定义类型
+- 嵌套消息和重复字段设计
+- 类型向后兼容性考虑
 
-  @@id([userId, roleId])
-}
+**[结果]**: TODO: [AI_FILL] Proto 类型定义结果
 
-model RolePermission {
-  role       Role       @relation(fields: [roleId], references: [id])
-  permission Permission @relation(fields: [permissionId], references: [id])
-  roleId     String
-  permissionId String
+**架构决策**:
 
-  @@id([roleId, permissionId])
+- 前后端共享的 Protobuf 类型定义
+- 统一的编码规范和命名约定
+- 支持类型演进的向后兼容
+- 自动生成 TypeScript 类型文件
+
+**实施清单**:
+
+- [ ] 1. 核心消息类型定义
+- [ ] 2. 枚举和常量定义
+- [ ] 3. 类型验证规则
+- [ ] 4. 前端类型生成
+
+**技术框架**:
+
+- **类型定义**: Protocol Buffers 3
+- **代码生成**: protoc + TypeScript 插件
+- **类型共享**: 前端共享包
+- **文档**: 自动生成的 API 文档
+
+**验收标准**:
+
+- Proto 定义完整覆盖所有 API
+- 类型定义符合编码规范
+- 前后端类型一致性
+- 支持未来功能扩展
+
+### 步骤 4：Service 层实现
+
+**[指引]**: 请实现业务逻辑层，专注于核心业务处理：
+
+- 数据访问层封装（Repository 模式）
+- 业务逻辑实现和数据验证
+- 事务管理和并发控制
+- 缓存策略和性能优化
+
+**[结果]**: TODO: [AI_FILL] Service 层实现结果
+
+**架构决策**:
+
+- Service 层封装所有业务逻辑
+- 使用 Repository 模式隔离数据访问
+- 统一的事务管理和异常处理
+- 基于 Redis 的多层缓存策略
+
+**实施清单**:
+
+- [ ] 1. Repository 数据访问层
+- [ ] 2. Service 业务逻辑层
+- [ ] 3. 数据验证和约束
+- [ ] 4. 缓存和性能优化
+
+**技术框架**:
+
+- **数据访问**: Prisma Client
+- **业务逻辑**: NestJS Service
+- **缓存**: Redis + cache-manager
+- **验证**: class-validator + class-transformer
+
+**验收标准**:
+
+- 所有业务逻辑正确实现
+- 数据访问层可测试且可复用
+- 事务保证数据一致性
+- 缓存策略有效提升性能
+
+**代码示例**:
+
+```typescript
+// Service 层示例
+@Injectable()
+export class ExampleService {
+  constructor(private readonly prisma: PrismaService, private readonly cacheManager: Cache) {}
+
+  async createExample(data: CreateExampleDto): Promise<Example> {
+    // 数据验证
+    await this.validateCreateData(data)
+
+    // 缓存清理
+    await this.cacheManager.del('examples:list')
+
+    // 业务逻辑处理
+    return this.prisma.$transaction(async (tx) => {
+      // TODO: [AI_FILL] 具体业务逻辑实现
+    })
+  }
 }
 ```
 
-```typescript
-// Prisma 模块集成
-import { Module, Global } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+### 步骤 5：Controller 层实现
 
-@Global()
+**[指引]**: 请实现 Controller 层，确保正确继承 BaseController：
+
+- 正确继承 BaseController 并调用 super()
+- 使用 BaseController 提供的响应和断言方法
+- 参数验证和数据处理
+- 统一的错误处理和日志记录
+
+**[结果]**: TODO: [AI_FILL] Controller 层实现结果
+
+**架构决策**:
+
+- 所有 Controller 必须继承 BaseController
+- 使用统一的响应格式和错误处理
+- 参数验证通过装饰器和管道实现
+- 业务日志和安全审计
+
+**实施清单**:
+
+- [ ] 1. 继承 BaseController
+- [ ] 2. 实现 CRUD 操作方法
+- [ ] 3. 参数验证和转换
+- [ ] 4. 错误处理和日志
+
+**技术框架**:
+
+- **控制器**: NestJS Controller + BaseController
+- **验证**: class-validator + ValidationPipe
+- **日志**: 统一的业务日志记录
+- **异常处理**: BaseController 内置方法
+
+**验收标准**:
+
+- 正确继承 BaseController
+- 所有 API 端点功能正常
+- 参数验证覆盖所有场景
+- 错误处理返回标准化信息
+
+**代码示例**:
+
+```typescript
+@Controller('examples')
+export class ExampleController extends BaseController {
+  constructor(private readonly exampleService: ExampleService) {
+    super() // 必须调用 super()
+  }
+
+  @Post()
+  async createExample(@Body() data: CreateExampleDto): Promise<IExample> {
+    // 参数验证
+    this.assertNotEmpty(data.name, '名称不能为空')
+
+    try {
+      // 业务逻辑处理
+      const result = await this.exampleService.createExample(data)
+
+      // 成功响应
+      return this.created(result, '创建成功')
+    } catch (error) {
+      // 统一错误处理
+      throw this.handleError(error)
+    }
+  }
+
+  @Get(':id')
+  async getExample(@Param('id') id: string): Promise<IExample> {
+    // 参数验证
+    this.assertNotEmpty(id, 'ID 不能为空')
+
+    try {
+      // 数据获取
+      const result = await this.exampleService.findById(id)
+
+      // 数据存在性检查
+      this.assertDataExists(result, '示例不存在')
+
+      // 成功响应
+      return this.success(result)
+    } catch (error) {
+      throw this.handleError(error)
+    }
+  }
+}
+```
+
+### 步骤 6：模块配置
+
+**[指引]**: 请完成模块的最终配置和集成：
+
+- NestJS 模块声明和依赖注入配置
+- 数据库连接和迁移执行
+- 权限控制和安全配置
+- API 路由和中间件配置
+
+**[结果]**: TODO: [AI_FILL] 模块配置结果
+
+**架构决策**:
+
+- 模块化设计支持独立部署和测试
+- 统一的依赖注入和配置管理
+- 基于装饰器的权限控制
+- 自动化 API 文档生成
+
+**实施清单**:
+
+- [ ] 1. NestJS 模块配置
+- [ ] 2. 数据库迁移执行
+- [ ] 3. 权限和安全配置
+- [ ] 4. API 文档和测试
+
+**技术框架**:
+
+- **模块化**: NestJS Module
+- **依赖注入**: NestJS DI Container
+- **权限控制**: RBAC + 装饰器
+- **文档**: Swagger 自动生成
+
+**验收标准**:
+
+- 模块配置完整且正确
+- 所有依赖注入正常工作
+- 权限控制功能正常
+- API 文档自动生成
+
+**模块配置示例**:
+
+```typescript
 @Module({
-  providers: [
-    {
-      provide: PrismaClient,
-      useFactory: () => new PrismaClient(),
-    },
+  imports: [
+    PrismaModule,
+    CacheModule.register({
+      isGlobal: true,
+      ttl: 300 // 5分钟缓存
+    })
   ],
-  exports: [PrismaClient],
+  controllers: [ExampleController],
+  providers: [ExampleService],
+  exports: [ExampleService]
 })
-export class PrismaModule {}
+export class ExampleModule {}
 ```
-
-**验收标准**:
-
--   [ ] 数据模型符合业务需求
--   [ ] 实体关系设计合理
--   [ ] 迁移脚本生成正确
-
-**完成标识**: `[MODULE_A1_COMPLETED]`
 
 ---
 
-### 模块 A2: Protobuf 接口定义
+## 🔧 技术栈规范
 
-#### [指引] 目标与实施要点
+### 核心技术栈
 
-定义 gRPC 接口和消息类型，生成 TypeScript 类型。
+- **后端框架**: NestJS 11+ (TypeScript, 模块化架构)
+- **数据库**: PostgreSQL 16+ + Prisma 6.13+ (ORM)
+- **API 协议**: REST + Protocol Buffers (类型安全)
+- **认证授权**: JWT + Passport + RBAC
+- **缓存**: Redis 7+ + cache-manager
+- **构建工具**: Turbo 2.2+ (monorepo 构建加速)
+- **代码规范**: Oxlint 1.8+ + TypeScript 5.9.2 (严格模式)
 
-#### [结果] 架构决策与实施清单
+### 包管理规范
 
-**架构决策**: [AI_FILL: Protobuf 接口设计方案]
+```bash
+# 安装依赖（使用 pnpm）
+pnpm install
 
-**实施清单**:
+# 开发模式运行
+pnpm dev
 
-1. [ ] [AI_FILL: 精炼的实施步骤，不超过 4 个]
+# 构建所有项目
+pnpm build
 
-**技术框架**:
+# 数据库操作
+pnpm prisma:generate    # 生成 Prisma 客户端
+pnpm prisma:migrate    # 执行数据库迁移
+pnpm prisma:studio     # 数据库 GUI 工具
+```
+
+### 类型驱动开发
+
+#### Protobuf 类型定义
 
 ```protobuf
-// TODO: Protobuf 消息定义
-// TODO: Protobuf 服务定义
+// 示例 Proto 定义
+message CreateExampleRequest {
+  string name = 1;
+  string description = 2;
+  repeated string tags = 3;
+}
+
+message ExampleResponse {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  repeated string tags = 4;
+  string createdAt = 5;
+  string updatedAt = 6;
+}
 ```
 
-**验收标准**:
+#### 类型生成命令
 
--   [ ] 接口定义符合业务需求
--   [ ] 消息结构设计合理
--   [ ] TypeScript 类型生成正确
+```bash
+# 生成前后端共享类型
+pnpm generate:types
 
-**完成标识**: `[MODULE_A2_COMPLETED]`
+# 前端类型导入
+import { CreateExampleRequest, ExampleResponse } from '@/shared/types/example';
+```
 
----
+### 架构核心组件
 
-### 模块 B1: 基础 CRUD 功能
+#### BaseController 规范
 
-#### [指引] 目标与实施要点
+- 所有 Controller 必须继承 BaseController
+- 使用统一的响应方法：`success()`, `created()`, `paginated()`
+- 使用断言方法：`assertNotEmpty()`, `assertDataExists()`
+- 异常处理：`throwValidationError()`, `throwDataNotFound()`
 
-实现基础的创建、读取、更新、删除功能，包括 gRPC 和 REST 接口。
-
-#### [结果] 架构决策与实施清单
-
-**架构决策**: [AI_FILL: CRUD 实现方案]
-
-**实施清单**:
-
-1. [ ] [AI_FILL: 精炼的实施步骤，不超过 5 个]
-
-**技术框架**:
+#### Prisma 数据访问
 
 ```typescript
-// TODO: gRPC 服务实现
-// TODO: REST 控制器实现
-// TODO: 数据访问层实现
-// TODO: 基础验证逻辑
+// 基类服务示例
+@Injectable()
+export class BaseService<T extends BaseModel> {
+  constructor(protected readonly prisma: PrismaService) {}
+
+  async findMany(params: FindManyParams<T>): Promise<T[]> {
+    // TODO: [AI_FILL] 通用查询逻辑
+  }
+
+  async findUnique(id: string): Promise<T | null> {
+    // TODO: [AI_FILL] 唯一查询逻辑
+  }
+}
 ```
 
-**验收标准**:
+### API 设计规范
 
--   [ ] CRUD 功能正常工作
--   [ ] gRPC 和 REST 接口响应一致
--   [ ] 数据验证正确
+#### RESTful 端点设计
 
-**完成标识**: `[MODULE_B1_COMPLETED]`
+```
+GET    /api/examples          # 获取示例列表（分页）
+GET    /api/examples/:id      # 获取单个示例
+POST   /api/examples          # 创建示例
+PUT    /api/examples/:id      # 更新示例
+DELETE /api/examples/:id      # 删除示例
+```
 
----
-
-### 模块 B2: 业务逻辑实现
-
-#### [指引] 目标与实施要点
-
-实现核心业务逻辑，包括复杂计算、事务处理等。
-
-#### [结果] 架构决策与实施清单
-
-**架构决策**: [AI_FILL: 业务逻辑实现方案]
-
-**实施清单**:
-
-1. [ ] [AI_FILL: 精炼的实施步骤，不超过 5 个]
-
-**技术框架**:
+#### 统一响应格式
 
 ```typescript
-// TODO: 业务服务实现
-// TODO: 事务处理逻辑
-// TODO: 复杂计算逻辑
-// TODO: 错误处理机制
+// 成功响应
+{
+  "success": true,
+  "data": ExampleResponse,
+  "message": "操作成功",
+  "timestamp": "2023-12-01T00:00:00Z"
+}
+
+// 分页响应
+{
+  "success": true,
+  "data": ExampleResponse[],
+  "pagination": {
+    "page": 1,
+    "pageSize": 20,
+    "total": 100,
+    "totalPages": 5
+  },
+  "message": "获取成功",
+  "timestamp": "2023-12-01T00:00:00Z"
+}
+
+// 错误响应
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "参数验证失败",
+    "details": [
+      {
+        "field": "name",
+        "message": "名称不能为空"
+      }
+    ]
+  },
+  "timestamp": "2023-12-01T00:00:00Z"
+}
 ```
 
-**验收标准**:
+### 数据库设计规范
 
--   [ ] 业务逻辑符合需求
--   [ ] 事务处理正确
--   [ ] 边界条件处理完善
+#### Prisma Schema 设计
 
-**完成标识**: `[MODULE_B2_COMPLETED]`
+```prisma
+// 基类模型
+model BaseModel {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
 
----
+  @@index([createdAt])
+  @@index([updatedAt])
+}
 
-### 模块 B3: 认证授权集成
+// 示例实体
+model Example extends BaseModel {
+  name        String   @unique
+  description String?
+  tags        String[]
 
-#### [指引] 目标与实施要点
-
-集成认证授权机制，实现基于角色的访问控制。
-
-#### [结果] 架构决策与实施清单
-
-**架构决策**: [AI_FILL: 认证授权方案]
-
-**实施清单**:
-
-1. [ ] [AI_FILL: 精炼的实施步骤，不超过 4 个]
-
-**技术框架**:
-
-```typescript
-// TODO: JWT 认证实现
-// TODO: RBAC 权限控制
-// TODO: 守卫和装饰器实现
-// TODO: 权限验证逻辑
+  @@map("examples")
+}
 ```
 
-**验收标准**:
+#### 数据迁移管理
 
--   [ ] 认证流程正常
--   [ ] 权限控制有效
--   [ ] 安全机制完善
+```bash
+# 创建迁移
+pnpm prisma migrate dev --name init
 
-**完成标识**: `[MODULE_B3_COMPLETED]`
+# 重置数据库
+pnpm prisma migrate reset
 
----
+# 查看迁移状态
+pnpm prisma migrate status
 
-### 模块 C1: 服务集成与联调
-
-#### [指引] 目标与实施要点
-
-整合各功能模块，与其他服务联调，完善服务间交互。
-
-#### [结果] 架构决策与实施清单
-
-**架构决策**: [AI_FILL: 服务集成策略]
-
-**实施清单**:
-
-1. [ ] [AI_FILL: 精炼的实施步骤，不超过 5 个]
-
-**技术框架**:
-
-```typescript
-// TODO: 服务间调用实现
-// TODO: 事件订阅发布机制
-// TODO: 分布式事务处理
-// TODO: 服务健康检查
+# 生成 Prisma 客户端
+pnpm prisma generate
 ```
 
-**验收标准**:
+### 开发规范要求
 
--   [ ] 服务间通信正常
--   [ ] 集成测试通过
--   [ ] 错误处理机制完善
+#### 类型安全要求
 
-**完成标识**: `[MODULE_C1_COMPLETED]`
+- 严格禁止使用 `any` 类型
+- 所有 API 请求/响应必须有类型定义
+- 优先使用 `interface` 而非 `type`
+- 泛型变量语义化：T(Type), K(Key), V(Value), E(Element)
 
----
+#### 错误处理规范
 
-### 模块 C2: 性能优化与完善
+- 使用 BaseController 内置的断言方法
+- 统一异常处理通过 `handleError()` 方法
+- 业务错误使用自定义异常类
+- 日志记录包含错误堆栈和上下文
 
-#### [指引] 目标与实施要点
+#### 性能优化要求
 
-性能优化处理，代码质量提升，安全加固。
+- 数据库查询使用适当的索引
+- 热点数据使用 Redis 缓存
+- 大数据量查询实现分页
+- 批量操作使用事务处理
 
-#### [结果] 架构决策与实施清单
+#### 安全要求
 
-**架构决策**: [AI_FILL: 优化策略]
+- 所有 Controller 继承 BaseController
+- 使用装饰器进行权限控制
+- 输入验证通过 class-validator
+- SQL 注入防护通过 Prisma 参数化查询
 
-**实施清单**:
+#### 代码质量要求
 
-1. [ ] [AI_FILL: 精炼的实施步骤，不超过 4 个]
+- Oxlint 代码格式化和检查
+- TypeScript 严格模式开启
+- 单元测试覆盖率 ≥ 80%
+- 提交前自动检查和格式化
 
-**技术框架**:
+### 数据库操作命令
 
-**1. 性能优化**
+```bash
+# 数据库相关命令
+pnpm prisma:generate    # 生成客户端
+pnpm prisma:migrate     # 执行迁移
+pnpm prisma:reset       # 重置数据库
+pnpm prisma:studio      # 数据库 GUI
+pnpm prisma:seed        # 种子数据
 
-```typescript
-// TODO: 数据库查询优化
-// TODO: 缓存策略实现
-// TODO: gRPC 性能优化
-// TODO: 并发处理优化
+# 开发命令
+pnpm dev                # 开发模式
+pnpm build              # 构建项目
+pnpm test               # 运行测试
+pnpm lint               # 代码检查
 ```
 
-**2. 安全优化**
+### 手动测试 HTTP API
 
-```typescript
-// TODO: 输入验证强化
-// TODO: 敏感数据加密
-// TODO: 防注入攻击
-// TODO: 速率限制实现
+#### API 测试示例
+
+```bash
+# 创建示例
+curl -X POST http://localhost:3030/api/examples \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "示例名称",
+    "description": "示例描述",
+    "tags": ["标签1", "标签2"]
+  }'
+
+# 获取示例列表
+curl -X GET http://localhost:3030/api/examples
+
+# 获取单个示例
+curl -X GET http://localhost:3030/api/examples/{id}
+
+# 更新示例
+curl -X PUT http://localhost:3030/api/examples/{id} \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "更新后的名称",
+    "description": "更新后的描述"
+  }'
+
+# 删除示例
+curl -X DELETE http://localhost:3030/api/examples/{id}
 ```
 
-**3. 代码优化**
+### 常用开发命令
 
-```typescript
-// TODO: 代码重构
-// TODO: 工具函数提取
-// TODO: 代码规范检查
-// TODO: 注释完善
+```bash
+# 启动开发服务
+pnpm dev
+
+# 构建项目
+pnpm build
+
+# 运行测试
+pnpm test
+
+# 代码检查
+pnpm lint
+
+# 类型检查
+pnpm type-check
+
+# 数据库操作
+pnpm prisma:generate
+pnpm prisma:migrate
+pnpm prisma:studio
+
+# 清理和重建
+pnpm clean
+pnpm rebuild
 ```
-
-**验收标准**:
-
--   [ ] 性能指标满足要求（响应时间、吞吐量等）
--   [ ] 安全机制完善
--   [ ] 代码质量符合规范
--   [ ] 资源占用合理
-
-**完成标识**: `[MODULE_C2_COMPLETED]`
-
----
-
-### 模块 C3: 测试与文档
-
-#### [指引] 目标与实施要点
-
-编写单元测试、集成测试，生成 API 文档。
-
-#### [结果] 架构决策与实施清单
-
-**架构决策**: [AI_FILL: 测试与文档策略]
-
-**实施清单**:
-
-1. [ ] [AI_FILL: 精炼的实施步骤，不超过 4 个]
-
-**技术框架**:
-
-```typescript
-// TODO: 单元测试实现
-// TODO: 集成测试实现
-// TODO: E2E 测试实现
-// TODO: API 文档生成
-```
-
-**验收标准**:
-
--   [ ] 测试覆盖率达到要求 (>80%)
--   [ ] 所有测试通过
--   [ ] API 文档完整准确
--   [ ] 文档与代码同步
-
-**完成标识**: `[MODULE_C3_COMPLETED]`
-
----
-
-## 🚀 执行控制流程
-
-### AI 执行协议
-
-**模块开始**: `[AI_START_MODULE: XX]` → **模块完成**: `[MODULE_XX_COMPLETED]` → **等待用户确认继续下一模块**
-
-**执行过程**: AI 按清单逐项完成，每完成一项标记 ✅，遇到问题详细说明
-
-### 技术要求与验收标准
-
--   **框架**: NestJS 11+ + TypeScript
--   **数据库**: PostgreSQL + TypeORM/Prisma
--   **API 协议**: gRPC + REST 双协议
--   **类型安全**: 基于 Protobuf 自动生成的类型
--   **认证授权**: JWT + RBAC
--   **缓存**: Redis
--   **质量标准**: 无语法错误，TypeScript 类型检查通过，符合 ESLint 规范
--   **性能标准**: 响应时间 < 500ms，吞吐量满足业务需求
--   **安全标准**: 符合 OWASP 安全规范，无常见漏洞
-
----
-
-> **使用说明**:
-> 
-> -   **AI 开发者**: 按模块顺序执行，完成后输出标识等待用户确认
-> -   **项目开发者**: 填写 `[MANUAL_FILL]` 标记内容
-> -   **生成时**: 仅保留 `[结果]` 部分，隐藏 `[指引]` 部分
-> -   **实施清单**: 使用精炼语言，避免过度拆分
-> -   **接口实现**: 优先实现 gRPC 接口，再实现 REST 接口
-
----

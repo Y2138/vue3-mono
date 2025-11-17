@@ -14,45 +14,35 @@ export class UserService {
   /**
    * 获取所有用户
    */
-  async findAll(options?: { search?: string; phone?: string; username?: string; roleIds?: string[]; statusList?: number[]; page?: number; pageSize?: number }) {
-    this.logger.log('获取所有用户')
+  async findAll(options?: { search?: string; phone?: string; username?: string; statusList?: number[]; page?: number; pageSize?: number }) {
+    this.logger.log(`查询用户列表: ${JSON.stringify(options)}`)
 
     const page = options?.page || 1
     const pageSize = options?.pageSize || 10
     const skip = (page - 1) * pageSize
 
     // 构建查询条件
-    const where: Prisma.UserWhereInput = {}
+    const where: any = {}
 
-    // 通用搜索（保持向后兼容）
+    // 基础搜索
     if (options?.search) {
-      where.OR = [{ username: { contains: options.search } }, { phone: { contains: options.search } }]
+      where.OR = [{ phone: { contains: options.search, mode: 'insensitive' } }, { username: { contains: options.search, mode: 'insensitive' } }]
     }
 
-    // 精确手机号查询
+    // 精确匹配
     if (options?.phone) {
-      where.phone = { contains: options.phone }
+      where.phone = options.phone
     }
 
-    // 精确用户名查询
     if (options?.username) {
-      where.username = { contains: options.username }
+      where.username = { contains: options.username, mode: 'insensitive' }
     }
 
-    // 角色ID查询
-    if (options?.roleIds && options.roleIds.length > 0) {
-      where.userRoles = {
-        some: {
-          roleId: {
-            in: options.roleIds
-          }
-        }
-      }
-    }
-
-    // 状态列表查询
+    // 状态筛选
     if (options?.statusList && options.statusList.length > 0) {
-      where.status = { in: options.statusList }
+      where.status = {
+        in: options.statusList
+      }
     }
 
     // 查询总数
@@ -63,7 +53,6 @@ export class UserService {
       where,
       skip,
       take: pageSize,
-      include: { userRoles: { include: { role: true } } },
       orderBy: { createdAt: 'desc' }
     })
 
@@ -94,9 +83,9 @@ export class UserService {
     // 验证手机号格式
     this.validatePhone(phone)
 
+    // RBAC模块已删除，不再关联角色信息
     const user = await this.prisma.client.user.findUnique({
-      where: { phone },
-      include: { userRoles: { include: { role: true } } }
+      where: { phone }
     })
 
     return user
@@ -134,9 +123,9 @@ export class UserService {
       throw new ConflictException(`手机号 ${data.phone} 已被注册`)
     }
 
-    return this.prisma.client.user.create({
-      data,
-      include: { userRoles: { include: { role: true } } }
+    // RBAC模块已删除，不关联角色信息
+    return this.prisma.user.create({
+      data
     })
   }
 
@@ -180,10 +169,10 @@ export class UserService {
       data.password = await bcrypt.hash(data.password as string, 10)
     }
 
+    // RBAC模块已删除，不关联角色信息
     return this.prisma.client.user.update({
       where: { phone },
-      data,
-      include: { userRoles: { include: { role: true } } }
+      data
     })
   }
 
@@ -202,9 +191,9 @@ export class UserService {
       throw new DataNotFoundException('用户', phone)
     }
 
+    // RBAC模块已删除，不关联角色信息
     return this.prisma.client.user.delete({
-      where: { phone },
-      include: { userRoles: { include: { role: true } } }
+      where: { phone }
     })
   }
 
@@ -266,30 +255,12 @@ export class UserService {
       throw new ConflictException(`手机号 ${registerInput.phone} 已被注册`)
     }
 
-    // 获取普通用户角色
-    const normalRole = await this.prisma.client.role.findFirst({
-      where: { name: '普通用户' }
-    })
-
-    if (!normalRole) {
-      throw new BusinessRuleException('普通用户角色不存在')
-    }
-
-    // 创建新用户
+    // RBAC模块已删除，不再分配角色，直接创建用户
     const savedUser = await this.create({
       phone: registerInput.phone,
       username: registerInput.username,
       password: registerInput.password,
-      status: 2, // 激活状态
-      userRoles: {
-        create: [
-          {
-            role: {
-              connect: { id: normalRole.id }
-            }
-          }
-        ]
-      }
+      status: 2 // 激活状态
     })
 
     // 生成 token
@@ -310,175 +281,26 @@ export class UserService {
    */
   async getUserWithRoles(phone: string) {
     this.logger.log(`获取用户及角色信息: ${phone}`)
-
-    // 验证手机号格式
-    this.validatePhone(phone)
-
-    const user = await this.prisma.client.user.findUnique({
-      where: { phone },
-      include: {
-        userRoles: {
-          include: {
-            role: {
-              include: {
-                rolePermissions: {
-                  include: {
-                    permission: true
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    })
-
-    if (!user) {
-      this.logger.error(`用户 ${phone} 不存在`)
-      return null
-    }
-
-    // 检查用户状态：只有激活状态(2)的用户才能正常使用
-    if (user.status !== 2) {
-      const statusMessages = {
-        1: '用户账户待激活',
-        3: '用户账户已下线',
-        4: '用户账户已被锁定'
-      }
-      // 使用业务规则异常，提供更多上下文
-      throw new BusinessRuleException(statusMessages[user.status] || '用户状态异常', {
-        currentStatus: user.status,
-        requiredStatus: 2,
-        statusMapping: statusMessages,
-        userPhone: user.phone,
-        phone: user.phone
-      })
-    }
-
-    return user
+    // RBAC模块已删除，不再获取角色信息
+    return await this.findOne(phone)
   }
 
   /**
    * 创建超级管理员
+   * 注意: RBAC模块已删除，此功能暂时不可用
    */
   async createSuperAdmin(input: { username: string; phone: string; password: string; adminKey?: string }) {
     this.logger.log(`创建超级管理员: ${input.username}, ${input.phone}`)
-
-    // 验证手机号格式
-    this.validatePhone(input.phone)
-
-    // 验证管理员密钥（如果提供）
-    if (input.adminKey) {
-      const expectedAdminKey = process.env.ADMIN_KEY || 'super-admin-key'
-      if (input.adminKey !== expectedAdminKey) {
-        throw new UnauthorizedException('管理员密钥错误')
-      }
-    }
-
-    // 检查手机号是否已存在
-    const existingUser = await this.findOne(input.phone)
-
-    if (existingUser) {
-      throw new ConflictException(`手机号 ${input.phone} 已被注册`)
-    }
-
-    // 获取超级管理员角色
-    const superAdminRole = await this.prisma.client.role.findFirst({
-      where: { name: '超级管理员' }
-    })
-
-    if (!superAdminRole) {
-      this.logger.error('超级管理员角色不存在，请先初始化RBAC数据')
-      throw new BusinessRuleException('超级管理员角色不存在，请先初始化RBAC数据')
-    }
-
-    // 创建新用户
-    const savedUser = await this.create({
-      phone: input.phone,
-      username: input.username,
-      password: input.password,
-      status: 2, // 激活状态
-      userRoles: {
-        create: [
-          {
-            role: {
-              connect: { id: superAdminRole.id }
-            }
-          }
-        ]
-      }
-    })
-
-    // 生成 token
-    const token = this.jwtService.sign({
-      sub: savedUser.phone,
-      phone: savedUser.phone
-    })
-
-    return {
-      user: savedUser,
-      token,
-      expiresIn: parseInt(process.env.JWT_EXPIRES_IN || '86400', 10)
-    }
+    throw new BusinessRuleException('RBAC模块已删除，角色管理功能暂时不可用')
   }
 
   /**
    * 将现有用户提升为超级管理员
+   * 注意: RBAC模块已删除，此功能暂时不可用
    */
   async promoteToSuperAdmin(userPhone: string) {
     this.logger.log(`提升用户为超级管理员: ${userPhone}`)
-
-    try {
-      // 验证手机号格式
-      this.validatePhone(userPhone)
-
-      // 检查用户是否存在
-      const user = await this.getUserWithRoles(userPhone)
-      if (!user) {
-        throw new DataNotFoundException('用户', userPhone)
-      }
-
-      // 获取超级管理员角色
-      const superAdminRole = await this.prisma.client.role.findFirst({
-        where: { name: '超级管理员' }
-      })
-      if (!superAdminRole) {
-        this.logger.error('超级管理员角色不存在，请先初始化RBAC数据')
-        throw new BusinessRuleException('超级管理员角色不存在，请先初始化RBAC数据')
-      }
-
-      // 检查用户是否已经是超级管理员
-      const userRoles = user.userRoles || []
-      const isSuperAdmin = userRoles.some((ur) => ur.role?.name === '超级管理员')
-      if (isSuperAdmin) {
-        this.logger.log(`用户已经是超级管理员: ${userPhone}`)
-        return user // 用户已经是超级管理员，无需更改
-      }
-
-      // 添加超级管理员角色
-      const updatedUser = await this.prisma.client.user.update({
-        where: { phone: userPhone },
-        data: {
-          userRoles: {
-            create: [
-              {
-                role: {
-                  connect: { id: superAdminRole.id }
-                }
-              }
-            ]
-          }
-        },
-        include: { userRoles: { include: { role: true } } }
-      })
-
-      this.logger.log(`用户已成功提升为超级管理员: ${userPhone}`)
-
-      return updatedUser
-    } catch (error) {
-      this.logger.error(`提升用户为超级管理员失败: ${userPhone}, ${error.message}`)
-      throw error
-    }
+    throw new BusinessRuleException('RBAC模块已删除，角色管理功能暂时不可用')
   }
 
   /**
@@ -523,8 +345,7 @@ export class UserService {
     this.logger.log(`根据用户名查找用户: ${username}`)
 
     return await this.prisma.client.user.findFirst({
-      where: { username },
-      include: { userRoles: { include: { role: true } } }
+      where: { username }
     })
   }
 
@@ -552,8 +373,7 @@ export class UserService {
     // 更新状态
     const updatedUser = await this.prisma.client.user.update({
       where: { phone },
-      data: { status },
-      include: { userRoles: { include: { role: true } } }
+      data: { status }
     })
 
     const statusNames = { 1: '待激活', 2: '激活', 3: '下线', 4: '锁定' }

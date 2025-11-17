@@ -1,0 +1,270 @@
+syntax = "proto3";
+package role;
+
+import "common.proto";
+
+import "resource.proto";
+
+option go_package = "./role";
+
+// 角色信息
+message Role {
+  // 角色ID
+  string id = 1;
+  // 角色名称
+  string name = 2;
+  // 角色描述
+  optional string description = 3;
+  // 是否激活
+  bool is_active = 4;
+  // 是否为超级管理员
+  bool is_super_admin = 5;
+  // 创建时间
+  string created_at = 6;
+  // 更新时间
+  string updated_at = 7;
+}
+
+// 角色权限树节点
+message RolePermissionTreeNode {
+  // 资源信息
+  resource.Resource resource = 1;
+  // 是否已分配
+  bool is_assigned = 2;
+  // 是否部分分配
+  bool is_indeterminate = 3;
+  // 子节点
+  repeated RolePermissionTreeNode children = 4;
+}
+
+// 创建角色请求
+message CreateRoleRequest {
+  // 角色名称
+  string name = 1;
+  // 角色描述（可选）
+  optional string description = 2;
+  // 是否激活（可选，默认true）
+  optional bool is_active = 3;
+  // 是否为超级管理员（可选，默认false）
+  optional bool is_super_admin = 4;
+}
+
+// 更新角色请求
+message UpdateRoleRequest {
+  // 角色ID
+  string id = 1;
+  // 角色名称（可选）
+  optional string name = 2;
+  // 角色描述（可选）
+  optional string description = 3;
+  // 是否激活（可选）
+  optional bool is_active = 4;
+  // 是否为超级管理员（可选）
+  optional bool is_super_admin = 5;
+}
+
+// 获取角色请求
+message GetRoleRequest {
+  // 角色ID
+  string id = 1;
+}
+
+// 获取角色列表请求
+message GetRolesRequest {
+  // 搜索关键词（可选，按名称搜索）
+  optional string search = 1;
+  // 是否激活过滤（可选）
+  optional bool is_active = 2;
+  // 是否超级管理员过滤（可选）
+  optional bool is_super_admin = 3;
+  // 分页信息
+  optional common.PaginationRequest pagination = 4;
+}
+
+// 角色列表响应
+message GetRolesResponse {
+  // 角色列表
+  repeated Role roles = 1;
+  // 分页信息
+  optional common.PaginationResponse pagination = 2;
+}
+
+// 删除角色请求
+message DeleteRoleRequest {
+  // 角色ID
+  string id = 1;
+}
+
+// 分配权限给角色请求
+message AssignPermissionsToRoleRequest {
+  // 角色ID
+  string role_id = 1;
+  // 资源ID列表
+  repeated string resource_ids = 2;
+}
+
+// 移除角色权限请求
+message RemoveRolePermissionsRequest {
+  // 角色ID
+  string role_id = 1;
+  // 资源ID列表
+  repeated string resource_ids = 2;
+}
+
+// 获取角色权限请求
+message GetRolePermissionsRequest {
+  // 角色ID
+  string role_id = 1;
+  // 是否包含子权限（可选，默认false）
+  optional bool include_children = 2;
+}
+
+// 角色权限响应
+message GetRolePermissionsResponse {
+  // 角色信息
+  Role role = 1;
+  // 权限树
+  repeated RolePermissionTreeNode permission_tree = 2;
+  // 权限资源列表
+  repeated resource.Resource permissions = 3;
+}
+
+// 分配用户给角色请求
+message AssignUsersToRoleRequest {
+  // 角色ID
+  string role_id = 1;
+  // 用户ID列表（手机号）
+  repeated string user_ids = 2;
+}
+
+// 移除角色用户请求
+message RemoveRoleUsersRequest {
+  // 角色ID
+  string role_id = 1;
+  // 用户ID列表（手机号）
+  repeated string user_ids = 2;
+}
+
+// 获取角色用户请求
+message GetRoleUsersRequest {
+  // 角色ID
+  string role_id = 1;
+  // 分页信息
+  optional common.PaginationRequest pagination = 2;
+}
+
+// 角色用户响应
+message GetRoleUsersResponse {
+  // 角色信息
+  Role role = 1;
+  // 用户列表
+  repeated string user_ids = 2;
+  // 分页信息
+  optional common.PaginationResponse pagination = 3;
+}
+
+// 检查用户角色请求
+message CheckUserRoleRequest {
+  // 用户ID（手机号）
+  string user_id = 1;
+  // 角色ID（可选，如果不指定则检查所有角色）
+  optional string role_id = 2;
+}
+
+// 检查用户角色响应
+message CheckUserRoleResponse {
+  // 是否拥有指定角色
+  bool has_role = 1;
+  // 用户拥有的角色列表
+  repeated Role user_roles = 2;
+}
+
+// 获取用户角色请求
+message GetUserRolesRequest {
+  // 用户ID（手机号）
+  string user_id = 1;
+}
+
+// 获取用户角色响应
+message GetUserRolesResponse {
+  // 用户ID
+  string user_id = 1;
+  // 角色列表
+  repeated Role roles = 2;
+}
+
+// 检查角色权限请求
+message CheckRolePermissionRequest {
+  // 角色ID
+  string role_id = 1;
+  // 权限码
+  string permission_code = 2;
+}
+
+// 检查角色权限响应
+message CheckRolePermissionResponse {
+  // 是否拥有权限
+  bool has_permission = 1;
+  // 匹配的资源信息
+  repeated resource.Resource matched_resources = 2;
+}
+
+// 角色统计信息
+message RoleStatistics {
+  // 总角色数
+  int32 total_roles = 1;
+  // 按状态统计
+  map<string, int32> roles_by_status = 2;
+  // 平均权限数
+  double average_permissions_per_role = 3;
+  // 总用户角色关联数
+  int32 total_user_role_assignments = 4;
+}
+
+// 角色服务定义
+service RoleService {
+  // 获取角色信息
+  rpc GetRole(GetRoleRequest) returns (Role);
+
+  // 获取角色列表
+  rpc GetRoles(GetRolesRequest) returns (GetRolesResponse);
+
+  // 创建角色
+  rpc CreateRole(CreateRoleRequest) returns (Role);
+
+  // 更新角色
+  rpc UpdateRole(UpdateRoleRequest) returns (Role);
+
+  // 删除角色
+  rpc DeleteRole(DeleteRoleRequest) returns (common.ResponseStatus);
+
+  // 分配权限给角色
+  rpc AssignPermissionsToRole(AssignPermissionsToRoleRequest) returns (common.ResponseStatus);
+
+  // 移除角色权限
+  rpc RemoveRolePermissions(RemoveRolePermissionsRequest) returns (common.ResponseStatus);
+
+  // 获取角色权限
+  rpc GetRolePermissions(GetRolePermissionsRequest) returns (GetRolePermissionsResponse);
+
+  // 分配用户给角色
+  rpc AssignUsersToRole(AssignUsersToRoleRequest) returns (common.ResponseStatus);
+
+  // 移除角色用户
+  rpc RemoveRoleUsers(RemoveRoleUsersRequest) returns (common.ResponseStatus);
+
+  // 获取角色用户
+  rpc GetRoleUsers(GetRoleUsersRequest) returns (GetRoleUsersResponse);
+
+  // 检查用户角色
+  rpc CheckUserRole(CheckUserRoleRequest) returns (CheckUserRoleResponse);
+
+  // 获取用户角色
+  rpc GetUserRoles(GetUserRolesRequest) returns (GetUserRolesResponse);
+
+  // 检查角色权限
+  rpc CheckRolePermission(CheckRolePermissionRequest) returns (CheckRolePermissionResponse);
+
+  // 获取角色统计信息
+  rpc GetRoleStatistics(common.EmptyRequest) returns (RoleStatistics);
+}

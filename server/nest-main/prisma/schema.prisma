@@ -8,50 +8,110 @@ datasource db {
 }
 
 model User {
-  phone    String   @id
-  username String
-  password String
-  status   Int      @default(1) // 1: 待激活, 2: 激活, 3: 下线, 4: 锁定
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  userRoles UserRole[]
+  phone      String     @id
+  username   String
+  password   String
+  status     Int        @default(1)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  statusDesc String     @default("待激活")
+  user_roles UserRole[]
+}
+
+model Resource {
+  id            String         @id @default(uuid())
+  name          String
+  type          ResourceType
+  icon          String?
+  parentId      String?
+  sortOrder     Int            @default(0)
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  description   String?
+  level         Int            @default(0)
+  metadata      Json?
+  path          String         @unique
+  parent        Resource?      @relation("ResourceHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children      Resource[]     @relation("ResourceHierarchy")
+  permissions   Permission[]
+  roleResources RoleResource[]
+
+  @@index([parentId])
+  @@index([type])
+  @@index([isActive])
+  @@index([sortOrder])
+  @@index([level])
 }
 
 model Role {
-  id          String       @id @default(uuid())
-  name        String       @unique
-  description String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  rolePermissions RolePermission[]
-  userRoles UserRole[]
-}
+  id               String           @id @default(cuid())
+  name             String           @unique
+  description      String?
+  isActive         Boolean          @default(true)
+  isSuperAdmin     Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  role_permissions RolePermission[]
+  role_resources   RoleResource[]
+  user_roles       UserRole[]
 
-model Permission {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  description String?
-  resource    String
-  action      String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  rolePermissions RolePermission[]
+  @@map("roles")
 }
 
 model UserRole {
-  user   User   @relation(fields: [userId], references: [phone])
-  role   Role   @relation(fields: [roleId], references: [id])
-  userId String
-  roleId String
+  id         String   @id @default(cuid())
+  userId     String
+  roleId     String
+  assignedAt DateTime @default(now())
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [phone], onDelete: Cascade)
 
-  @@id([userId, roleId])
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
+model RoleResource {
+  id         String   @id @default(cuid())
+  roleId     String
+  resourceId String
+  createdAt  DateTime @default(now())
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, resourceId])
+  @@map("role_resources")
+}
+
+model Permission {
+  id              String           @id @default(cuid())
+  name            String
+  code            String           @unique
+  description     String?
+  resourceId      String?
+  action          String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  resource        Resource?        @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
 }
 
 model RolePermission {
-  role       Role       @relation(fields: [roleId], references: [id])
-  permission Permission @relation(fields: [permissionId], references: [id])
-  roleId     String
+  id           String     @id @default(cuid())
+  roleId       String
   permissionId String
+  createdAt    DateTime   @default(now())
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
-  @@id([roleId, permissionId])
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+enum ResourceType {
+  PAGE
+  API
+  BUTTON
 }

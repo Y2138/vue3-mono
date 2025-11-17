@@ -40,9 +40,17 @@
 | [AI_FILL: 模块名] | `[MANUAL_FILL: gRPC或REST接口路径]` | [AI_FILL: 高/中/低] |
 
 **接口调用方式说明**：
-- 优先使用 gRPC 调用：`await apiClient.methodName(request)`
-- 降级使用 REST 调用：自动处理，无需手动切换
-- 类型安全：所有接口请求和响应都基于 Protobuf 自动生成的类型
+- 使用 axios 封装的请求方法：`post`, `get`, `patch` 等
+- 类型安全：基于 Protobuf 自动生成的类型
+- API 模块：统一在 `@/request/api/[模块名].ts` 中定义
+- 响应处理：统一使用 `[result, error]` 格式
+
+**API 模块示例**：
+```typescript
+export const getUserList = async (params: GetUsersRequest) => {
+  return get<void, GetUsersResponse>('/api/users/list', { params })
+}
+```
 
 **枚举接口字段说明: [AI_FILL: 对于识别出的枚举接口列出枚举接口下的字段说明]**
 
@@ -87,6 +95,22 @@
 创建页面文件结构，配置路由信息，建立基本页面框架。
 
 **组件结构设计（符合项目规范）**:
+
+```
+src/views/system/
+└── [功能模块名]/           # 功能模块目录
+    ├── [列表页面].vue        # 主列表页面
+    ├── [弹窗组件].vue        # 创建/编辑弹窗组件
+    └── [详情页面].vue        # 详情页面
+```
+
+**示例**：
+```
+src/views/system/person/
+├── list.vue                 # 人员列表页面
+├── CreateUserModal.vue      # 创建用户弹窗
+└── detail.vue               # 人员详情页面
+```
 
 ```
 src/views/[页面路径]/
@@ -226,9 +250,10 @@ src/views/[页面路径]/
 
 **实现指引**:
 
--   **使用项目现有组件**: 参考 `searchPanel` + `Naive UI DataTable` 方案
--   **gRPC API 调用**: 使用 `apiClient` 进行类型安全的接口调用
--   **状态管理**: 使用 Pinia store 管理页面状态和缓存
+-   **使用项目现有组件**: 参考 `SearchPanel` + `Naive UI DataTable` 方案
+-   **API 调用**: 使用 axios 封装的请求方法
+-   **表格分页**: 使用 `useTablePage` Hook 统一处理分页逻辑
+-   **枚举值**: 使用 `useEnums` Hook 获取枚举数据
 
 #### [结果] 架构决策与实施清单
 
@@ -236,34 +261,108 @@ src/views/[页面路径]/
 
 **实施清单**:
 
-1. [ ] [AI_FILL: 精炼的实施步骤，不超过 5 个]
+1. [ ] 配置 SearchPanel 组件实现筛选功能
+2. [ ] 使用 NDataTable 实现列表展示
+3. [ ] 集成 useTablePage Hook 处理分页
+4. [ ] 实现 CRUD 操作方法
+5. [ ] 添加错误处理和用户反馈
 
 **技术框架**:
 
 ```vue
 <template>
-    <div class="page-container">
-        <!-- TODO: 引入SearchPanel组件 -->
-        <!-- TODO: 配置NDataTable组件 -->
-        <!-- TODO: 添加操作按钮和批量操作 -->
-    </div>
+    <SearchPanel :cols="4" labelWidth="60" :formModel="formModel" searchOnUpdate @search="refresh" @reset="handleReset">
+        <!-- TODO: 配置搜索表单字段 -->
+    </SearchPanel>
+
+    <n-data-table class="mt-4" :columns="tableColumns" :data="tableData" :pagination="pagination" :loading="loading" />
+
+    <!-- TODO: 配置弹窗组件 -->
 </template>
 
-<script setup lang="ts">
-// TODO: 导入必要的组件和类型
-// TODO: 导入API客户端和Protobuf类型
-// TODO: 获取对应的Pinia store
-// TODO: 配置表格列和搜索配置
-// TODO: 实现数据加载（gRPC调用）
-// TODO: 实现CRUD操作方法
-// TODO: 添加错误处理和用户反馈
+<script setup lang="tsx">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { NButton, NTag, NPopconfirm, useMessage } from 'naive-ui'
+import { Icon } from '@iconify/vue'
+import useTablePage from '@/hooks/useTablePage'
+import { getUserList, deleteUser, type UserInfo } from '@/request/api/users'
+import { useEnums } from '@/hooks/useEnums'
+import type { DataTableColumns } from 'naive-ui'
+import { usePageLoading } from '@/hooks/usePageLoading'
+import CreateUserModal from './CreateUserModal.vue'
+
+// 页面加载状态
+usePageLoading()
+
+// 消息提示
+const message = useMessage()
+
+// 路由
+const router = useRouter()
+
+// 新增人员弹窗状态
+const showCreateModal = ref(false)
+
+// 搜索表单模型
+interface IFormModel {
+    // TODO: 定义表单字段类型
+}
+
+const formModel = ref<IFormModel>({
+    // TODO: 初始化表单字段
+})
+
+// 使用 useEnums hook 获取枚举数据
+const { data: userEnums } = useEnums<Record<string, EnumItem[]>>({...})
+
+// 请求参数类型
+interface IListRequest extends IPaginationRequest {
+    // TODO: 定义请求参数类型
+}
+
+// 请求函数适配器
+const requestFn = async (params: IListRequest): Promise<[ResResult<IPaginationResData<UserInfo[]>>, null] | [null, any]> => {
+    // TODO: 实现请求参数转换和API调用
+}
+
+// 处理请求参数
+const dealParams = (): IListRequest => {
+    // TODO: 实现请求参数处理
+}
+
+// 自定义表格列
+const customColumns: DataTableColumns<UserInfo> = [
+    // TODO: 配置表格列
+]
+
+// 使用表格分页 hook
+const { pagination, tableColumns, tableData, loading, refresh } = useTablePage<IListRequest, UserInfo>(requestFn, dealParams, {
+    returnHeader: false,
+    immediate: true
+})
+
+// 设置自定义表格列
+tableColumns.value = customColumns
+
+// 操作函数
+function handleCreate() {
+    showCreateModal.value = true
+}
+
+function handleCreateSuccess(user: UserInfo) {
+    message.success(`[AI_FILL: 成功提示]`)
+    refresh() // 刷新列表
+}
+
+// TODO: 实现其他CRUD操作方法
 </script>
 ```
 
 **验收标准**:
 
 -   [ ] 筛选、列表、操作功能正常
--   [ ] gRPC 接口调用正常
+-   [ ] API 接口调用正常
 -   [ ] 数据加载和分页正常
 
 **完成标识**: `[MODULE_B1_COMPLETED]`
@@ -274,7 +373,7 @@ src/views/[页面路径]/
 
 #### [指引] 目标与实施要点
 
-实现表单弹窗，支持新增和编辑模式，基于项目的 dForm 组件或 Naive UI 表单。
+实现表单弹窗，支持新增和编辑模式，基于项目的 dForm 组件。
 
 #### [结果] 架构决策与实施清单
 
@@ -282,26 +381,122 @@ src/views/[页面路径]/
 
 **实施清单**:
 
-1. [ ] [AI_FILL: 精炼的实施步骤，不超过 4 个]
+1. [ ] 配置 NModal 组件实现弹窗结构
+2. [ ] 使用 dForm 组件实现表单
+3. [ ] 实现表单验证逻辑
+4. [ ] 实现 API 提交逻辑
 
 **技术框架**:
 
 ```vue
-<!-- components/FormModal.vue -->
+<!-- CreateUserModal.vue -->
 <template>
-    <!-- TODO: 实现NModal/NDrawer结构 -->
-    <!-- TODO: 使用dForm组件或NForm组件 -->
-    <!-- TODO: 添加操作按钮 -->
+    <n-modal v-model:show="visible" preset="dialog" title="[AI_FILL: 弹窗标题]" class="w-120">
+        <d-form-root ref="formRef" class="pt-4" v-model:formModel="formModel" :formConfigs="formConfigs" :selectOptions="{}" label-placement="left" label-width="80" :disabled="loading" />
+
+        <template #action>
+            <div class="flex justify-end space-x-2">
+                <n-button @click="handleCancel" :disabled="loading"> 取消 </n-button>
+                <n-button type="primary" @click="handleSubmit" :loading="loading"> 确定 </n-button>
+            </div>
+        </template>
+    </n-modal>
 </template>
 
 <script setup lang="ts">
-// TODO: 导入必要的组件和hooks
-// TODO: 导入Protobuf类型定义
-// TODO: 定义Props和Emits
-// TODO: 实现弹窗状态管理
-// TODO: 实现表单数据处理和验证（基于Protobuf）
-// TODO: 实现gRPC提交逻辑
-// TODO: 暴露组件方法（如open、close等）
+import { ref, computed, watch, useTemplateRef } from 'vue'
+import { NModal, NButton, NAlert, useMessage } from 'naive-ui'
+import DFormRoot from '@/components/dForm/root.vue'
+import type { IFormConfig, DFormRootInst } from '@/components/dForm/types'
+import { createUserForm, type UserInfo } from '@/request/api/users'
+
+// Props
+interface Props {
+    visible: boolean
+}
+
+// Emits
+interface Emits {
+    (e: 'update:visible', value: boolean): void
+    (e: 'success', user: UserInfo): void
+}
+
+const props = defineProps<Props>()
+const emit = defineEmits<Emits>()
+
+// 响应式数据
+const visible = computed({
+    get: () => props.visible,
+    set: (value) => emit('update:visible', value)
+})
+
+const message = useMessage()
+const formRef = useTemplateRef<DFormRootInst>('formRef')
+const loading = ref(false)
+
+// 表单数据
+const formModel = ref<Record<string, unknown>>({}) 
+
+// dForm 表单配置
+const formConfigs: IFormConfig[] = [
+    // TODO: 配置表单字段
+]
+
+// 重置表单
+const resetForm = () => {
+    formModel.value = {}
+    formRef.value?.restoreValidation()
+}
+
+// 监听弹窗显示状态，重置表单
+watch(visible, (newVisible) => {
+    if (newVisible) {
+        resetForm()
+    }
+})
+
+// 处理取消
+const handleCancel = () => {
+    visible.value = false
+}
+
+// 处理提交
+const handleSubmit = async () => {
+    try {
+        // 表单验证
+        const validateResult = await formRef.value?.validate()
+        if (validateResult?.warnings) {
+            return
+        }
+
+        loading.value = true
+
+        // 转换表单数据
+        const formData = {
+            // TODO: 转换表单数据
+        }
+
+        // 调用创建用户接口
+        const [result, error] = await createUserForm(formData)
+        if (error) {
+            message.error(error.message || '操作失败')
+            return
+        }
+
+        if (result?.data) {
+            message.success('[AI_FILL: 成功提示]')
+            emit('success', result.data)
+            visible.value = false
+        } else {
+            message.error('操作失败：返回数据异常')
+        }
+    } catch (error) {
+        console.error('[AI_FILL: 错误提示]', error)
+        message.error('[AI_FILL: 错误提示]')
+    } finally {
+        loading.value = false
+    }
+}
 </script>
 ```
 
@@ -309,7 +504,7 @@ src/views/[页面路径]/
 
 -   [ ] 弹窗正常开关，表单验证正常
 -   [ ] 新增编辑模式功能正常
--   [ ] gRPC 提交接口正常
+-   [ ] API 提交接口正常
 
 **完成标识**: `[MODULE_B2_COMPLETED]`
 

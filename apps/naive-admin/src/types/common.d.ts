@@ -34,12 +34,14 @@ declare global {
   }
 
   // 请求返回类型
+  /**
+   * 接口返回结果泛型
+   */
   interface ResResult<T = IObj> {
-    code?: number
-    data?: T
-    msg?: string
-
-    // totalCount?: number
+    code: number
+    data: T
+    message?: string // 修改这里：将msg改为message
+    success: boolean
   }
   // 分页表格接口data类型
   interface IPaginationResData<T extends Array> {

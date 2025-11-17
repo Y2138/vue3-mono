@@ -3,6 +3,7 @@ import { useTabStore } from '@/store/modules/tab'
 import { useUserStore } from '@/store/modules/user'
 import { NavigationGuardNext, RouteLocationNormalized, createRouter, createWebHistory } from 'vue-router'
 import systemRoutes from './modules/system'
+import resourceRoutes from './modules/resource'
 import testRouters from './test-router'
 
 // const modules = import.meta.glob(`./*-router.ts`, { eager: true, import: 'default' });
@@ -31,6 +32,7 @@ export const routes: CustomRouteRecord[] = [
     }
   },
   systemRoutes,
+  resourceRoutes,
   ...testRouters
 ]
 

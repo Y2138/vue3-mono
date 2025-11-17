@@ -34,6 +34,11 @@ message ResponseStatus {
   bool success = 3;
 }
 
+// 通用空请求
+message EmptyRequest {
+  // 空消息，用于不需要参数的RPC调用
+}
+
 // 通用错误信息
 message ErrorDetail {
   // 错误码

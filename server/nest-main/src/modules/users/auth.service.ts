@@ -12,8 +12,10 @@ export class AuthService {
   constructor(private readonly userService: UserService, private readonly prisma: PrismaService, private readonly jwtService: JwtService) {}
 
   async register(registerInput: { phone: string; username: string; password: string }) {
-    // 检查手机号是否已存在
+    this.logger.log(`注册用户: ${registerInput.username}, ${registerInput.phone}`)
+
     try {
+      // 检查手机号是否已存在
       await this.userService.findOne(registerInput.phone)
       throw new ConflictException('该手机号已被注册')
     } catch (error) {
@@ -23,30 +25,12 @@ export class AuthService {
       }
     }
 
-    // 获取普通用户角色
-    const normalRole = await this.prisma.client.role.findFirst({
-      where: { name: '普通用户' }
-    })
-
-    if (!normalRole) {
-      throw new BusinessRuleException('普通用户角色不存在')
-    }
-
-    // 创建新用户
+    // 创建新用户（不再分配角色，RBAC已删除）
     const savedUser = await this.userService.create({
       phone: registerInput.phone,
       username: registerInput.username,
       password: registerInput.password,
-      status: 2, // 激活状态
-      userRoles: {
-        create: [
-          {
-            role: {
-              connect: { id: normalRole.id }
-            }
-          }
-        ]
-      }
+      status: 2 // 激活状态
     })
 
     // 生成 token
@@ -95,24 +79,9 @@ export class AuthService {
     this.logger.log(`验证用户: ${userPhone}`)
 
     try {
-      const user = await this.prisma.client.user.findUnique({
-        where: { phone: userPhone },
-        include: {
-          userRoles: {
-            include: {
-              role: {
-                include: {
-                  rolePermissions: {
-                    include: {
-                      permission: true
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      })
+      const user = await this.prisma.user.findUnique({
+      where: { phone: userPhone }
+    })
 
       if (!user) {
         this.logger.error(`用户不存在: ${userPhone}`)
@@ -130,13 +99,7 @@ export class AuthService {
         throw new UnauthorizedException(statusMessages[user.status] || '用户状态异常')
       }
 
-      // 通过中间件转换后，user应该有roles属性
-      const roles = (user as any).roles || []
-      this.logger.log(`用户验证成功: ${userPhone}, 角色数: ${roles.length || 0}`)
-
-      roles.forEach((role: any) => {
-        this.logger.log(`角色 ${role.name} 拥有 ${role.permissions?.length || 0} 个权限`)
-      })
+      this.logger.log(`用户验证成功: ${userPhone}`)
 
       return user
     } catch (error) {
@@ -150,60 +113,11 @@ export class AuthService {
 
   /**
    * 创建超级管理员用户
+   * 注意: RBAC模块已删除，此功能暂时不可用
    */
   async createSuperAdmin(input: { username: string; phone: string; password: string }) {
     this.logger.log(`创建超级管理员: ${input.username}, ${input.phone}`)
-
-    // 检查手机号是否已存在
-    try {
-      await this.userService.findOne(input.phone)
-      throw new ConflictException('该手机号已被注册')
-    } catch (error) {
-      // 如果是 DataNotFoundException，说明用户不存在，可以继续注册
-      if (!(error instanceof DataNotFoundException)) {
-        throw error
-      }
-    }
-
-    // 获取超级管理员角色
-    const superAdminRole = await this.prisma.client.role.findFirst({
-      where: { name: '超级管理员' }
-    })
-
-    if (!superAdminRole) {
-      this.logger.error('超级管理员角色不存在，请先初始化RBAC数据')
-      throw new BusinessRuleException('超级管理员角色不存在，请先初始化RBAC数据')
-    }
-
-    // 创建新用户
-    const savedUser = await this.userService.create({
-      phone: input.phone,
-      username: input.username,
-      password: input.password,
-      status: 2, // 激活状态
-      userRoles: {
-        create: [
-          {
-            role: {
-              connect: { id: superAdminRole.id }
-            }
-          }
-        ]
-      }
-    })
-
-    this.logger.log(`超级管理员创建成功: ${savedUser.phone}`)
-
-    // 生成 token
-    const token = this.jwtService.sign({
-      sub: savedUser.phone,
-      phone: savedUser.phone
-    })
-
-    return {
-      user: savedUser,
-      token
-    }
+    throw new BusinessRuleException('RBAC模块已删除，角色管理功能暂时不可用')
   }
 
   /**
@@ -211,53 +125,6 @@ export class AuthService {
    */
   async promoteToSuperAdmin(userPhone: string) {
     this.logger.log(`提升用户为超级管理员: ${userPhone}`)
-
-    try {
-      // 检查用户是否存在
-      const user = await this.userService.findOne(userPhone)
-
-      // 获取超级管理员角色
-      const superAdminRole = await this.prisma.client.role.findFirst({
-        where: { name: '超级管理员' }
-      })
-      if (!superAdminRole) {
-        this.logger.error('超级管理员角色不存在，请先初始化RBAC数据')
-        throw new BusinessRuleException('超级管理员角色不存在，请先初始化RBAC数据')
-      }
-
-      // 检查用户是否已经是超级管理员
-      const roles = (user as any).roles || []
-      const isSuperAdmin = roles.some((role: any) => role.name === '超级管理员') || false
-      if (isSuperAdmin) {
-        this.logger.log(`用户已经是超级管理员: ${userPhone}`)
-        return user // 用户已经是超级管理员，无需更改
-      }
-
-      // 添加超级管理员角色
-      const updatedUser = await this.prisma.client.user.update({
-        where: { phone: userPhone },
-        data: {
-          userRoles: {
-            create: [
-              {
-                role: {
-                  connect: { id: superAdminRole.id }
-                }
-              }
-            ]
-          }
-        },
-        include: { userRoles: { include: { role: true } } }
-      })
-
-      // 中间件会自动处理数据转换
-
-      this.logger.log(`用户已成功提升为超级管理员: ${userPhone}`)
-
-      return updatedUser
-    } catch (error) {
-      this.logger.error(`提升用户为超级管理员失败: ${userPhone}, ${error.message}`)
-      throw error
-    }
+    throw new BusinessRuleException('RBAC模块已删除，角色管理功能暂时不可用')
   }
 }

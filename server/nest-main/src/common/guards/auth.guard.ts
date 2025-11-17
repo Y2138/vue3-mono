@@ -91,7 +91,7 @@ export class AuthGuard implements CanActivate {
         throw new UnauthorizedException('无效的令牌格式')
       }
 
-      // 获取用户信息（包含角色和权限）
+      // 获取用户信息（包含角色和权限
       const user = await this.authService.validateUser(payload.sub)
 
       if (!user || user.status !== 2) {
@@ -103,7 +103,7 @@ export class AuthGuard implements CanActivate {
         throw new UnauthorizedException(user ? statusMessages[user.status] || '用户状态异常' : '用户不存在')
       }
 
-      this.logger.debug(`User validated: ${user.phone}, roles: ${user.userRoles?.map((r) => r.role.name).join(', ')}`)
+      // this.logger.debug(`User validated: ${user.phone}, roles: ${user.userRoles?.map((r) => r.role.name).join(', ')}`)
 
       return user
     } catch (error) {

@@ -3,7 +3,6 @@ import { ExecutionContext } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { vi } from 'vitest'
 import { AuthGuard } from '../src/common/guards/auth.guard'
-import { PermissionGuard } from '../src/modules/rbac/guards/permission.guard'
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter'
 import { AuthService } from '../src/modules/users/auth.service'
 
@@ -13,7 +12,6 @@ import { AuthService } from '../src/modules/users/auth.service'
  */
 describe('Security Mechanisms Test', () => {
   let authGuard: AuthGuard
-  let permissionGuard: PermissionGuard
   let httpFilter: HttpExceptionFilter
   let mockAuthService: Partial<AuthService>
   let mockReflector: Partial<Reflector>
@@ -32,7 +30,6 @@ describe('Security Mechanisms Test', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthGuard,
-        PermissionGuard,
         HttpExceptionFilter,
         {
           provide: AuthService,
@@ -46,7 +43,6 @@ describe('Security Mechanisms Test', () => {
     }).compile()
 
     authGuard = module.get<AuthGuard>(AuthGuard)
-    permissionGuard = module.get<PermissionGuard>(PermissionGuard)
     httpFilter = module.get<HttpExceptionFilter>(HttpExceptionFilter)
   })
 
@@ -71,27 +67,10 @@ describe('Security Mechanisms Test', () => {
     })
   })
 
-  describe('PermissionGuard', () => {
-    it('should be defined', () => {
-      expect(permissionGuard).toBeDefined()
-    })
-
-    it('should allow public endpoints', () => {
-      ;(mockReflector.get as any).mockReturnValue(true)
-
-      const mockContext = createMockExecutionContext('http')
-      const result = permissionGuard.canActivate(mockContext)
-
-      expect(result).toBe(true)
-    })
-
-    it('should allow access when no permissions required', () => {
-      ;(mockReflector.get as any).mockReturnValue(null)
-
-      const mockContext = createMockExecutionContext('http')
-      const result = permissionGuard.canActivate(mockContext)
-
-      expect(result).toBe(true)
+  describe('ResourceManagement', () => {
+    it('should be prepared for resource management implementation', () => {
+      console.log('📋 准备实现资源管理模块')
+      expect(true).toBe(true)
     })
   })
 
@@ -149,19 +128,19 @@ describe('Security Integration Test', () => {
     expect(true).toBe(true)
   })
 
-  it('should log security configuration summary', () => {
-    const securitySummary = {
-      authGuard: 'HTTP认证守卫 - 支持HTTP协议JWT认证',
-      permissionGuard: '权限守卫 - 基于角色的权限验证，支持缓存优化',
-      httpExceptionFilter: 'HTTP异常过滤器 - 标准化HTTP错误响应',
-      securityMiddleware: '安全中间件 - 设置安全头，监控可疑活动'
+  it('should log resource management preparation summary', () => {
+    const resourceSummary = {
+      protoFile: '已重构为资源管理proto定义',
+      prismaModel: '已定义Resource数据模型',
+      rbacCleanup: '已清理RBAC模块引用',
+      nextStep: '准备创建资源管理模块'
     }
 
-    console.log('\n📋 第四阶段安全机制总结:')
-    Object.entries(securitySummary).forEach(([key, value]) => {
+    console.log('\n📋 资源管理模块准备状态:')
+    Object.entries(resourceSummary).forEach(([key, value]) => {
       console.log(`  ${key}: ${value}`)
     })
 
-    expect(Object.keys(securitySummary)).toHaveLength(5)
+    expect(Object.keys(resourceSummary)).toHaveLength(4)
   })
 })

@@ -6,7 +6,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed, watchEffect, readonly } from 'vue'
-import { getPermissions, getRoles, checkPermission as checkUserPermission, batchCheckPermissions, type PermissionInfo as Permission, type RoleInfo as Role, type CheckPermissionParams } from '@/request/api/rbac'
+import { getPermissions, getRoles, checkPermission as checkUserPermission, batchCheckPermissions, type PermissionInfo as Permission, type RoleInfo as Role, type CheckPermissionParams } from '@/request/api/resource'
 import { assignUserRoles as assignRoles } from '@/request/api/users'
 import { useUserStore } from './user'
 
@@ -106,8 +106,20 @@ export const usePermissionStore = defineStore('permission', () => {
         return false
       }
 
-      if (permissionList && permissionList.data && permissionList.data.permissions) {
-        permissions.value = permissionList.data.permissions
+      if (permissionList && permissionList.data) {
+        // 从资源数据中提取权限信息
+        const resources = Array.isArray(permissionList.data) ? permissionList.data : (permissionList.data as any).tableData || []
+        permissions.value = resources.map((resource: any) => ({
+          id: resource.id,
+          name: resource.name,
+          description: resource.description,
+          code: resource.code,
+          resource: resource.path,
+          action: 'read',
+          parentId: resource.parentId,
+          createdAt: resource.createdAt,
+          updatedAt: resource.updatedAt
+        }))
         lastUpdateTime.value = Date.now()
         return true
       }
@@ -138,7 +150,7 @@ export const usePermissionStore = defineStore('permission', () => {
 
       const [roleList, error] = await getRoles({
         page: 1,
-        pageSize: 1000, // 获取所有角色
+        pageSize: 1000,
         includePermissions: true
       })
 
@@ -147,8 +159,10 @@ export const usePermissionStore = defineStore('permission', () => {
         return false
       }
 
-      if (roleList && roleList.data && roleList.data.roles) {
-        roles.value = roleList.data.roles
+      if (roleList && roleList.data) {
+        // 从响应数据中提取角色列表
+        const rolesData = (roleList.data as any).list || (roleList.data as any).roles || []
+        roles.value = rolesData
         lastUpdateTime.value = Date.now()
         return true
       }
@@ -262,18 +276,13 @@ export const usePermissionStore = defineStore('permission', () => {
       // 如果本地没有，调用远程检查
       isCheckingPermission.value = true
 
-      const [result, error] = await checkUserPermission({
+      const result = await checkUserPermission({
         userPhone: userId, // 假设 userId 是用户手机号
         action: permission.split(':')[1] || 'read',
         resource: permission.split(':')[0] || permission
       })
 
-      if (error) {
-        console.warn('[Permission Store] Remote permission check failed:', error)
-        return false
-      }
-
-      return result && result.data && typeof result.data === 'object' && 'hasPermission' in result.data ? result.data.hasPermission : false
+      return result && result.hasPermission || false
     } catch (error) {
       console.error('[Permission Store] Check permission failed:', error)
       return false

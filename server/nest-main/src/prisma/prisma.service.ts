@@ -69,6 +69,35 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.extendedPrisma;
   }
 
+  // 为了兼容直接使用prisma.resource而不是prisma.client.resource
+  get resource(): Prisma.ResourceDelegate {
+    return this.extendedPrisma.resource;
+  }
+
+  get user(): Prisma.UserDelegate {
+    return this.extendedPrisma.user;
+  }
+
+  get role(): Prisma.RoleDelegate {
+    return this.extendedPrisma.role;
+  }
+
+  get permission(): Prisma.PermissionDelegate {
+    return this.extendedPrisma.permission;
+  }
+
+  get rolePermission(): Prisma.RolePermissionDelegate {
+    return this.extendedPrisma.rolePermission;
+  }
+
+  get roleResource(): Prisma.RoleResourceDelegate {
+    return this.extendedPrisma.roleResource;
+  }
+
+  get userRole(): Prisma.UserRoleDelegate {
+    return this.extendedPrisma.userRole;
+  }
+
   /**
    * 健康检查方法
    * 用于验证Prisma连接是否正常
@@ -82,5 +111,10 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
       this.logger.error(`Prisma健康检查失败: ${error.message}`, error.stack);
       return false;
     }
+  }
+
+  // 事务支持
+  get $transaction(): typeof this.extendedPrisma.$transaction {
+    return this.extendedPrisma.$transaction.bind(this.extendedPrisma);
   }
 }

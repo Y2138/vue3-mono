@@ -1,0 +1,146 @@
+syntax = "proto3";
+package resource;
+
+import "common.proto";
+
+// 基础资源类型（不包含children，用于列表和详情）
+message Resource {
+  string id = 1;
+  string name = 2;
+  int32 type = 3;  // 使用基础类型代替枚举
+  optional string icon = 4;  // 可选字段使用optional
+  optional string parentId = 5;  // 可选字段
+  int32 sortOrder = 6;
+  bool isActive = 7;
+  string createdAt = 8;
+  string updatedAt = 9;
+  optional string description = 10;  // 可选字段
+  int32 level = 11;
+  map<string, string> metadata = 12;
+  string path = 13;
+}
+
+// 树形资源类型（包含children，用于树形结构）
+message ResourceTree {
+  string id = 1;
+  string name = 2;
+  int32 type = 3;  // 使用基础类型
+  optional string icon = 4;  // 可选字段
+  optional string parentId = 5;  // 可选字段
+  int32 sortOrder = 6;
+  bool isActive = 7;
+  string createdAt = 8;
+  string updatedAt = 9;
+  optional string description = 10;  // 可选字段
+  int32 level = 11;
+  map<string, string> metadata = 12;
+  string path = 13;
+  repeated ResourceTree children = 15;  // 树形结构包含children
+}
+
+message CreateResourceRequest {
+  string name = 1;
+  int32 type = 2;  // 使用基础类型
+  optional string parentId = 3;  // 可选字段
+  string path = 4;
+  optional string description = 5;  // 可选字段
+  map<string, string> metadata = 6;
+}
+
+message UpdateResourceRequest {
+  string id = 1;
+  string name = 2;
+  int32 type = 3;  // 使用基础类型
+  optional string parentId = 4;  // 可选字段
+  string path = 5;
+  optional string description = 6;  // 可选字段
+  map<string, string> metadata = 7;
+  bool isActive = 8;
+}
+
+message GetResourceRequest {
+  string id = 1;
+}
+
+message GetResourcesRequest {
+  optional int32 type = 1;  // 使用基础类型
+}
+
+message GetResourceByPathRequest {
+  string path = 1;
+}
+
+message MoveResourceRequest {
+  string id = 1;
+  optional string parentId = 2;
+}
+
+message DuplicateResourceRequest {
+  string id = 1;
+  optional string parentId = 2;
+  optional string newName = 3;
+}
+
+message BatchDeleteResourcesRequest {
+  repeated string ids = 1;
+}
+
+message ResourceListResponse {
+  repeated Resource data = 1;
+}
+
+message ResourceResponse {
+  Resource data = 1;
+}
+
+message ResourceTreeResponse {
+  repeated ResourceTree data = 1;  // 树形响应使用ResourceTree类型
+}
+
+message ResourcePathResponse {
+  repeated Resource data = 1;  // 路径响应使用基础Resource类型
+}
+
+service ResourceService {
+  // 获取资源枚举
+  rpc GetResourceEnums(common.EmptyRequest) returns (common.EnumResponse);
+
+  // 创建资源
+  rpc CreateResource(CreateResourceRequest) returns (ResourceResponse);
+
+  // 获取资源列表
+  rpc GetResources(GetResourcesRequest) returns (ResourceListResponse);
+
+  // 获取资源树
+  rpc GetResourceTree(GetResourcesRequest) returns (ResourceTreeResponse);
+
+  // 根据ID获取资源
+  rpc GetResource(GetResourceRequest) returns (ResourceResponse);
+
+  // 获取资源路径
+  rpc GetResourcePath(GetResourceRequest) returns (ResourcePathResponse);
+
+  // 获取资源子级树
+  rpc GetSubtree(GetResourceRequest) returns (ResourceTreeResponse);
+
+  // 更新资源
+  rpc UpdateResource(UpdateResourceRequest) returns (ResourceResponse);
+
+  // 移动资源
+  rpc MoveResource(MoveResourceRequest) returns (ResourceResponse);
+
+  // 复制资源
+  rpc DuplicateResource(DuplicateResourceRequest) returns (ResourceResponse);
+
+  // 删除资源
+  rpc DeleteResource(GetResourceRequest) returns (common.ResponseStatus);
+
+  // 批量删除资源
+  rpc BatchDeleteResources(BatchDeleteResourcesRequest) returns (common.ResponseStatus);
+
+  // 根据路径获取资源
+  rpc GetResourceByPath(GetResourceByPathRequest) returns (ResourceResponse);
+
+  // 验证树形结构
+  rpc ValidateTree(common.EmptyRequest) returns (common.ResponseStatus);
+}
