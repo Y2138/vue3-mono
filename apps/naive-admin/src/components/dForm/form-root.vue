@@ -1,13 +1,15 @@
 <template>
   <n-form ref="dRootFormRef" v-bind="unref(nFormProps)" :model="formModel">
-    <template v-for="item in formConfigs" :key="item.valueKey">
-      <d-form-item v-model:form-model="formModel" :selectOptions="selectOptions" v-bind="item" :path="item.valueKey" :rule="item.rules"> </d-form-item>
-    </template>
+    <n-flex justify="space-between">
+      <template v-for="item in formConfigs" :key="item.valueKey">
+        <d-form-item v-model:form-model="formModel" style="width: 48%" :selectOptions="selectOptions" v-bind="item" :path="item.valueKey" :rule="item.rules"> </d-form-item>
+      </template>
+    </n-flex>
   </n-form>
 </template>
 
 <script setup lang="ts">
-import DFormItem from './item.vue'
+import DFormItem from './form-item.vue'
 import type { DFormRootProp } from './types'
 import { unref, withDefaults, useTemplateRef } from 'vue'
 import type { FormInst } from 'naive-ui'

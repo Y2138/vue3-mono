@@ -21,13 +21,13 @@
     "test:debug": "vitest --inspect-brk",
     "test:e2e": "vitest run --config ./test/vitest-e2e.config.ts",
     "test:ui": "vitest --ui",
-    "proto:gen": "protoc --plugin=protoc-gen-ts_proto=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./src/shared --ts_proto_opt=nestJs=false --ts_proto_opt=addGrpcMetadata=false --ts_proto_opt=addNestjsRestParameter=false --proto_path=../../protos ../../protos/*.proto",
+    "proto:gen": "protoc --plugin=protoc-gen-ts_proto=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./src/shared --ts_proto_opt=nestJs=false --ts_proto_opt=addGrpcMetadata=false --ts_proto_opt=addNestjsRestParameter=false --ts_proto_opt=esModuleInterop=true --ts_proto_opt=useOptionals=messages --ts_proto_opt=stringEnums=true --ts_proto_opt=forceLong=string --ts_proto_opt=useMapType=true --ts_proto_opt=outputEncodeMethods=false --ts_proto_opt=outputJsonMethods=false --ts_proto_opt=outputPartialMethods=false --ts_proto_opt=outputClientImpl=false --ts_proto_opt=useExactTypes=false --proto_path=../../protos ../../protos/*.proto",
     "proto:watch": "nodemon --watch ../../protos --ext proto --exec \"npm run proto:gen\"",
     "dev:with-proto": "concurrently \"npm run proto:watch\" \"npm run start:dev\"",
     "test:performance": "ts-node src/scripts/performance-test.ts",
     "optimize:errors": "ts-node src/scripts/error-handling-optimizer.ts",
     "validate:stage5": "ts-node src/scripts/validate-stage5.ts",
-    "init:admin": "ts-node -r tsconfig-paths/register src/scripts/init-admin.ts"
+    "init:admin": "ts-node -r tsconfig-paths/register scripts/init-admin.ts"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.6.2",

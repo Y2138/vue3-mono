@@ -3,8 +3,8 @@ import { ApiTags, ApiOperation, ApiResponse as SwaggerApiResponse } from '@nestj
 import { BaseController } from '../../common/controllers/base.controller'
 import { Public } from '../../common/decorators/public.decorator'
 import { ApiResponse } from '../../common/response/types'
-import { UserService } from './user.service'
-import { User, AuthResponse, GetUsersResponse, LoginRequest, RegisterRequest, CreateUserRequest, CreateUserFormRequest, UpdateUserRequest } from '../../shared/users'
+import { UserService as UserServiceImpl } from './user.service'
+import { User, AuthResponse, GetUsersRequest, GetUsersResponse, LoginRequest, RegisterRequest, CreateUserRequest, CreateUserFormRequest, UpdateUserRequest } from '../../shared/users'
 import { Validator } from '../../common/validators'
 import { USER_ENUMS, getUserStatusDesc } from './enums/user.enums'
 
@@ -23,7 +23,7 @@ interface UserStatusActionRequest {
 @ApiTags('Users')
 @Controller('api')
 export class UserHttpController extends BaseController {
-  constructor(private readonly userService: UserService) {
+  constructor(private readonly userService: UserServiceImpl) {
     super('UserHttpController')
   }
 
@@ -232,54 +232,28 @@ export class UserHttpController extends BaseController {
     status: 200,
     description: '成功获取用户列表'
   })
-  async getUsers(@Query('page') page: number = 1, @Query('pageSize') pageSize: number = 20, @Query('phone') phone?: string, @Query('username') username?: string, @Query('roleIds') roleIds?: string | string[], @Query('isActive') isActive?: boolean): Promise<ApiResponse<GetUsersResponse>> {
+  async getUsers(@Query() getUsersRequest: GetUsersRequest): Promise<ApiResponse<GetUsersResponse>> {
     // 验证分页参数
+    const { page = 1, pageSize = 20 } = getUsersRequest.pagination || {}
     Validator.numberRange(page, 1, 1000, '页码')
     Validator.numberRange(pageSize, 1, 100, '每页数量')
 
-    // 可选参数验证
-    if (phone !== undefined && phone !== '') {
-      Validator.phone(phone)
-    }
-
-    if (username !== undefined && username !== '') {
-      Validator.stringLength(username, 1, 50, '用户名')
-    }
-
-    // 处理角色ID数组参数
-    let roleIdArray: string[] = []
-    if (roleIds) {
-      if (Array.isArray(roleIds)) {
-        roleIdArray = roleIds.filter((id) => id && id.trim() !== '')
-      } else if (typeof roleIds === 'string' && roleIds.trim() !== '') {
-        // 支持逗号分隔的字符串
-        roleIdArray = roleIds
-          .split(',')
-          .map((id) => id.trim())
-          .filter((id) => id !== '')
-      }
-
-      // 验证角色ID格式
-      if (roleIdArray.length > 0) {
-        roleIdArray.forEach((roleId) => {
-          Validator.stringLength(roleId, 1, 50, '角色ID')
-        })
-      }
-    }
-
     // 构建查询参数
-    const queryParams = {
-      page,
-      pageSize,
-      phone: phone && phone.trim() !== '' ? phone : undefined,
-      username: username && username.trim() !== '' ? username : undefined,
-      roleIds: roleIdArray.length > 0 ? roleIdArray : undefined,
-      isActive
+    const queryParams: any = {
+      pagination: getUsersRequest.pagination,
     }
+    
+    if (getUsersRequest.phone) queryParams.phone = getUsersRequest.phone
+    if (getUsersRequest.username) queryParams.username = getUsersRequest.username
+    if (getUsersRequest.roleIds) queryParams.roleIds = getUsersRequest.roleIds
+    if (getUsersRequest.statusList) queryParams.statusList = getUsersRequest.statusList
 
     const result = await this.userService.findAll(queryParams)
 
     // 直接组装响应数据
+    // 计算总页数
+    const totalPages = Math.ceil(result.total / pageSize)
+
     const usersResponse: GetUsersResponse = {
       list: result.data.map((user) => ({
         phone: user.phone,
@@ -291,10 +265,10 @@ export class UserHttpController extends BaseController {
         roleIds: [] // RBAC模块已删除，提供空数组以符合类型要求
       })),
       pagination: {
-        page: result.pagination.page,
-        pageSize: result.pagination.pageSize,
-        total: result.pagination.total,
-        totalPages: result.pagination.totalPages
+        page,
+        pageSize,
+        total: result.total.toString(),
+        totalPages
       }
     }
 

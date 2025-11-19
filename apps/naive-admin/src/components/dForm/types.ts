@@ -7,7 +7,7 @@ export interface IOption {
 }
 
 type withOption<T> = T & {
-  options: IOption[]
+  options?: IOption[]
 }
 // 组件及其内部属性
 type FormType =
@@ -32,6 +32,10 @@ type WithConfig<T> = T & {
   /* 内部组件插槽，${valueKey}_${innerSlots[i]}来使用插槽 */
   innerSlots?: string[]
   visibleLinks?: Record<string, any[]>[] | ((formModel: Record<string, unknown>) => boolean)
+  /* 网格布局相关 */
+  span?: number
+  offset?: number
+  suffix?: boolean
 }
 export type IFormConfig = WithConfig<FormType>
 

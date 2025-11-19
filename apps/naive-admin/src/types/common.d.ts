@@ -42,13 +42,10 @@ declare global {
     data: T
     message?: string // 修改这里：将msg改为message
     success: boolean
-  }
-  // 分页表格接口data类型
-  interface IPaginationResData<T extends Array> {
-    tableData: T
+    /** 分页列表接口的字段 **/
     header?: Record<string, string>
-    pageData: {
-      count: number
+    pagination?: {
+      total: number
       page: number
       pageSize: number
     }
@@ -56,9 +53,11 @@ declare global {
     totalData?: Record<string, string>
   }
   interface IPaginationRequest {
-    page: number
-    // pageSize: number
-    pageSize: number
+    pagination: {
+      page: number
+      // pageSize: number
+      pageSize: number
+    }
   }
   // 通用请求方法类型
   interface IRequest<Q, R> {

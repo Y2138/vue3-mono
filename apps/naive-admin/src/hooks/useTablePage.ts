@@ -9,7 +9,7 @@ interface IOptions<R> {
   returnHeader?: boolean
   /* 自定义表头 */
   customHeaders?: Record<string, DataTableColumn<R>>
-  customResHandleFn?: (data?: IPaginationResData<R[]>) => void
+  customResHandleFn?: (data?: ResResult<R[]>) => void
   pageConfig?: {
     pageSize: number
     pageSizes: number[]
@@ -44,7 +44,7 @@ const DEFAULT_PAGE_OPTIONS: Partial<IOptions<any>> = {
  * @param options 可选项，配置column、自定义响应处理方法、自定义分页等
  * @returns
  */
-const useTablePage = <Q extends IPaginationRequest, R>(request: IRequest<Q, IPaginationResData<R[]>>, paramsHandleFn: (pagination: IPaginationRequest) => Q, options?: IOptions<R>) => {
+const useTablePage = <Q extends IPaginationRequest, R>(request: IRequest<Q, R[]>, paramsHandleFn: (pagination: IPaginationRequest) => Q, options?: IOptions<R>) => {
   const tableData = ref<R[]>([])
   const tableColumns = ref<DataTableColumns<R>>([])
   const loading = ref(false)
@@ -60,25 +60,28 @@ const useTablePage = <Q extends IPaginationRequest, R>(request: IRequest<Q, IPag
   })
   async function doTableRequest() {
     const params = paramsHandleFn({
-      page: pagination.page,
-      pageSize: pagination.pageSize
+      pagination: {
+        page: pagination.page,
+        pageSize: pagination.pageSize
+      }
     })
+
     loading.value = true
-    const [data, error] = await request(params)
+    const [res, error] = await request(params)
     loading.value = false
-    if (error || !data) {
+    if (error || !res) {
       return
     }
     // table_data取值
-    const { data: pageData } = data || {}
-    tableData.value = pageData?.tableData || []
-    pagination.itemCount = pageData?.pageData?.count || 0
-    if (options?.returnHeader && pageData?.header) {
-      tableColumns.value = dealWithTableColumns(pageData.header || {}, options?.customHeaders)
+    const { data, pagination: pageRes } = res || {}
+    tableData.value = data || []
+    pagination.itemCount = pageRes?.total || 0
+    if (options?.returnHeader && res?.header) {
+      tableColumns.value = dealWithTableColumns(res.header || {}, options?.customHeaders)
     }
     // 自定义处理方法
     if (options?.customResHandleFn) {
-      options.customResHandleFn(pageData)
+      options.customResHandleFn(res)
     }
   }
   function handlePageChange(page: number) {

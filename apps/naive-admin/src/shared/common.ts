@@ -54,10 +54,9 @@ export interface ErrorDetail {
 
 /** 枚举项 */
 export interface EnumItem {
-  /** 枚举值（支持字符串和数字） */
-  valueType?:
-    | { $case: "valueStr"; valueStr: string }
-    | { $case: "value"; value: number }
+  valueStr?: string | undefined;
+  value?:
+    | number
     | undefined;
   /** 显示标签 */
   label: string;

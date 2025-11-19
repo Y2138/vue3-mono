@@ -39,11 +39,11 @@ import { NButton, NTag, NIcon, NPopconfirm, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import useTablePage from '@/hooks/useTablePage'
 import { getResources, deleteResource, getResourceEnums } from '@/request/api/resource'
-import type { DataTableColumns } from 'naive-ui'
+import type { GetResourcesRequest } from '@/shared/resource'
+import type { DataTableColumns, SelectOption } from 'naive-ui'
 import { Resource } from '@/shared/resource'
 import { usePageLoading } from '@/hooks/usePageLoading'
 import { useEnums } from '@/hooks/useEnums'
-import { EnumItem } from '@/shared/common'
 
 // 页面加载状态
 usePageLoading()
@@ -59,7 +59,7 @@ interface IFormModel {
   name: string
   type: number | null
   path: string
-  isActive: boolean | null
+  isActive: number | null
 }
 
 const formModel = ref<IFormModel>({
@@ -70,7 +70,7 @@ const formModel = ref<IFormModel>({
 })
 
 // 获取资源枚举数据
-const { data: enumsData } = useEnums<Record<string, EnumItem[]>>({
+const { data: enumsData } = useEnums<Record<string, SelectOption[]>>({
   api: async () => {
     const [res] = await getResourceEnums()
     if (res) {
@@ -81,7 +81,7 @@ const { data: enumsData } = useEnums<Record<string, EnumItem[]>>({
     }
   },
   key: 'resource-enums',
-  refresh: true
+  autoRefresh: true
 })
 
 // 资源类型枚举选项
@@ -103,53 +103,13 @@ function handleReset() {
   refresh(true)
 }
 
-// 请求参数类型
-interface IResourceListRequest {
-  page: number
-  pageSize: number
-  name?: string
-  type?: number
-  path?: string
-  isActive?: boolean
-}
-
-// 请求函数适配器
-const requestFn = async (params: IResourceListRequest): Promise<[ResResult<IPaginationResData<Resource[]>>, null] | [null, any]> => {
-  const requestParams = {
-    page: params.page,
-    pageSize: params.pageSize,
-    name: params.name || undefined,
-    type: params.type || undefined,
-    path: params.path || undefined,
-    isActive: params.isActive || undefined
-  }
-
-  const [res, error] = await getResources(requestParams)
-
-  if (error) {
-    return [null, error]
-  }
-
-  // 适配返回数据格式
-  const adaptedData: ResResult<IPaginationResData<Resource[]>> = {
-    data: {
-      tableData: res?.data || [],
-      pageData: {
-        count: res?.data?.length || 0, // 临时数据，需要后端提供总数
-        page: params.page,
-        pageSize: params.pageSize
-      }
-    }
-  }
-
-  return [adaptedData, null]
-}
-
 // 处理请求参数
-const dealParams = (): IResourceListRequest => {
+const dealParams = (): GetResourcesRequest => {
   return {
-    page: pagination.page,
-    pageSize: pagination.pageSize,
+    pagination: {
+      page: pagination.page,
+      pageSize: pagination.pageSize
+    },
     name: formModel.value.name || undefined,
     type: formModel.value.type || undefined,
     path: formModel.value.path || undefined,
@@ -245,7 +205,7 @@ const customColumns: DataTableColumns<Resource> = [
 ]
 
 // 使用表格分页 hook，不返回 header，使用自定义列
-const { pagination, tableColumns, tableData, loading, refresh } = useTablePage<IResourceListRequest, Resource>(requestFn, dealParams, {
+const { pagination, tableColumns, tableData, loading, refresh } = useTablePage<GetResourcesRequest & IPaginationRequest, Resource>(getResources, dealParams, {
   returnHeader: false,
   immediate: true
 })

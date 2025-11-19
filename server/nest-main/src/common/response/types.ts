@@ -52,11 +52,11 @@ export interface PaginationInfo {
   /** 总记录数 */
   total: number
   /** 总页数 */
-  totalPages: number
+  totalPages?: number
   /** 是否有下一页 */
-  hasNext: boolean
+  hasNext?: boolean
   /** 是否有上一页 */
-  hasPrev: boolean
+  hasPrev?: boolean
 }
 
 /**

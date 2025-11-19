@@ -5,7 +5,7 @@
 // source: resource.proto
 
 /* eslint-disable */
-import type { EmptyRequest, EnumResponse, ResponseStatus } from "./common";
+import type { EmptyRequest, EnumResponse, PaginationRequest, ResponseStatus } from "./common";
 
 export const protobufPackage = "resource";
 
@@ -15,6 +15,8 @@ export interface Resource {
   name: string;
   /** 使用基础类型代替枚举 */
   type: number;
+  /** 资源码 - 基于RBAC权限系统的统一资源标识 */
+  resCode: string;
   /** 可选字段使用optional */
   icon?:
     | string
@@ -28,13 +30,8 @@ export interface Resource {
   /** 可选字段 */
   description?: string | undefined;
   level: number;
-  metadata: Map<string, string>;
+  /** 移除metadata字段，code不再在metadata中维护，改为独立字段resCode */
   path: string;
-}
-
-export interface Resource_MetadataEntry {
-  key: string;
-  value: string;
 }
 
 /** 树形资源类型（包含children，用于树形结构） */
@@ -43,6 +40,8 @@ export interface ResourceTree {
   name: string;
   /** 使用基础类型 */
   type: number;
+  /** 资源码 - 基于RBAC权限系统的统一资源标识 */
+  resCode: string;
   /** 可选字段 */
   icon?:
     | string
@@ -56,51 +55,37 @@ export interface ResourceTree {
   /** 可选字段 */
   description?: string | undefined;
   level: number;
-  metadata: Map<string, string>;
+  /** 移除metadata字段，code不再在metadata中维护，改为独立字段resCode */
   path: string;
   /** 树形结构包含children */
   children: ResourceTree[];
 }
 
-export interface ResourceTree_MetadataEntry {
-  key: string;
-  value: string;
-}
-
 export interface CreateResourceRequest {
   name: string;
-  /** 使用基础类型 */
+  /** 使用基础类型（1=page, 2=api, 3=module） */
   type: number;
   /** 可选字段 */
   parentId?: string | undefined;
   path: string;
   /** 可选字段 */
   description?: string | undefined;
-  metadata: Map<string, string>;
-}
-
-export interface CreateResourceRequest_MetadataEntry {
-  key: string;
-  value: string;
 }
 
 export interface UpdateResourceRequest {
   id: string;
   name: string;
-  /** 使用基础类型 */
+  /** 使用基础类型（1=page, 2=api, 3=module） */
   type: number;
   /** 可选字段 */
   parentId?: string | undefined;
   path: string;
   /** 可选字段 */
-  description?: string | undefined;
-  metadata: Map<string, string>;
+  description?:
+    | string
+    | undefined;
+  /** 移除metadata字段，resCode将在服务端自动生成或更新 */
   isActive: boolean;
-}
-
-export interface UpdateResourceRequest_MetadataEntry {
-  key: string;
-  value: string;
 }
 
 export interface GetResourceRequest {
@@ -108,8 +93,24 @@ export interface GetResourceRequest {
 }
 
 export interface GetResourcesRequest {
-  /** 使用基础类型 */
-  type?: number | undefined;
+  /** 资源类型 */
+  type?:
+    | number
+    | undefined;
+  /** 资源名称 */
+  name?:
+    | string
+    | undefined;
+  /** 资源路径 */
+  path?:
+    | string
+    | undefined;
+  /** 资源状态 */
+  isActive?:
+    | number
+    | undefined;
+  /** 分页信息 */
+  pagination?: PaginationRequest | undefined;
 }
 
 export interface GetResourceByPathRequest {

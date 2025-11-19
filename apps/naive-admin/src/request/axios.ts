@@ -100,7 +100,7 @@ instance.interceptors.response.use(
 
     // 如果响应错误则抛出错误
     if (response.data.code !== 200 || response.data.success !== true) {
-      return Promise.reject(response.data)
+      return Promise.reject(response)
     }
     return response
   },
@@ -234,12 +234,19 @@ function handleResponseResult<Q = any, R = any>(data: ResResult<R>, config: ICus
 export async function get<Q = any, R = any>(url: string, options?: ICustomAxiosConfig<Q>): Promise<[ResResult<R>, null] | [null, any]> {
   try {
     const response = await request<Q, R>(url, { method: 'GET', ...options })
-    // console.log('2501 response===>', response)
+    console.log('2501 response===>', response)
     const { data, config } = response
     handleResponseResult<Q, R>(data, config)
 
     return [data, null]
-  } catch (error) {
+  } catch (error: any) {
+    console.error('2501 error===>', error)
+    if (error) {
+      const { data, config } = error
+      if (data && config) {
+        handleResponseResult<Q, R>(data, config)
+      }
+    }
     return [null, error]
   }
 }
@@ -251,7 +258,11 @@ export async function post<Q = any, R = any>(url: string, options: ICustomAxiosC
     handleResponseResult<Q, R>(data, config)
 
     return [data, null]
-  } catch (error) {
+  } catch (error: any) {
+    if (error.response) {
+      const { data, config } = error.response
+      handleResponseResult<Q, R>(data, config)
+    }
     return [null, error]
   }
 }
@@ -263,7 +274,11 @@ export async function put<Q = any, R = any>(url: string, options: ICustomAxiosCo
     handleResponseResult<Q, R>(data, config)
 
     return [data, null]
-  } catch (error) {
+  } catch (error: any) {
+    if (error.response) {
+      const { data, config } = error.response
+      handleResponseResult<Q, R>(data, config)
+    }
     return [null, error]
   }
 }
@@ -275,7 +290,11 @@ export async function del<Q = any, R = any>(url: string, options?: ICustomAxiosC
     handleResponseResult<Q, R>(data, config)
 
     return [data, null]
-  } catch (error) {
+  } catch (error: any) {
+    if (error.response) {
+      const { data, config } = error.response
+      handleResponseResult<Q, R>(data, config)
+    }
     return [null, error]
   }
 }
@@ -287,7 +306,11 @@ export async function patch<Q = any, R = any>(url: string, options: ICustomAxios
     handleResponseResult<Q, R>(data, config)
 
     return [data, null]
-  } catch (error) {
+  } catch (error: any) {
+    if (error.response) {
+      const { data, config } = error.response
+      handleResponseResult<Q, R>(data, config)
+    }
     return [null, error]
   }
 }

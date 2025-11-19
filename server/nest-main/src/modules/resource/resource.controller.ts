@@ -1,11 +1,11 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, HttpCode, HttpStatus, ParseUUIDPipe } from '@nestjs/common'
+import { Body, Controller, Get, Param, Post, Query, HttpCode, HttpStatus } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiConsumes, ApiProduces, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger'
 import { Public } from '@/common/decorators/public.decorator'
 import { RESOURCE_ENUMS } from '@/modules/resource/enums/resource.enums'
 import { ResourceService } from '@/modules/resource/services/resource.service'
 import { ResourceTreeService } from '@/modules/resource/services/resource-tree.service'
 import { BaseController } from '@/common/controllers/base.controller'
-import { CreateResourceRequest, UpdateResourceRequest, MoveResourceRequest, DuplicateResourceRequest, BatchDeleteResourcesRequest } from '@/shared/resource'
+import { CreateResourceRequest, UpdateResourceRequest, MoveResourceRequest, DuplicateResourceRequest, BatchDeleteResourcesRequest, GetResourcesRequest } from '@/shared/resource'
 
 @Controller('api/resources')
 @ApiTags('资源管理')
@@ -39,43 +39,22 @@ export class ResourceController extends BaseController {
    * 获取资源列表
    */
   @Get('list')
-  @ApiOperation({ summary: '获取资源列表', description: '获取资源列表，支持类型筛选和单个ID查询' })
+  @ApiOperation({ summary: '获取资源列表', description: '获取资源列表，支持类型、名称、路径、状态筛选和分页' })
   @ApiQuery({ name: 'type', required: false, description: '资源类型筛选' })
-  @ApiQuery({ name: 'id', required: false, description: '单个资源ID查询' })
+  @ApiQuery({ name: 'name', required: false, description: '资源名称筛选' })
+  @ApiQuery({ name: 'path', required: false, description: '资源路径筛选' })
+  @ApiQuery({ name: 'isActive', required: false, description: '资源状态筛选' })
+  @ApiQuery({ name: 'pagination', required: false, description: '分页信息' })
   @ApiProduces('application/json')
   @ApiResponse({ status: 200, description: '获取成功', type: Object })
-  async list(@Query('type') type?: string, @Query('id') id?: string) {
-    // 如果提供了id，则查询单个资源
-    if (id) {
-      const result = await this.resourceService.findOne(id)
-      this.assertDataExists(result, '资源', id)
-      return this.success(result)
-    }
-
-    // 否则查询列表，支持类型筛选
-    const result = type ? await this.resourceService.findByType(parseInt(type)) : await this.resourceService.findAll()
-    return this.success(result)
-  }
-
-  /**
-   * 获取资源树
-   */
-  @Get('tree')
-  @ApiOperation({ summary: '获取资源树', description: '获取资源树结构，支持类型筛选和单个ID查询' })
-  @ApiQuery({ name: 'type', required: false, description: '资源类型筛选' })
-  @ApiQuery({ name: 'id', required: false, description: '单个资源ID查询' })
-  @ApiProduces('application/json')
-  @ApiResponse({ status: 200, description: '获取成功', type: Object })
-  async tree(@Query('type') type?: string, @Query('id') id?: string) {
-    // 如果提供了id，则查询该资源的子树
-    if (id) {
-      const result = await this.resourceTreeService.getSubtree(id)
-      return this.success(result)
-    }
-
-    // 否则查询完整树，支持类型筛选
-    const result = type ? await this.resourceTreeService.getResourceTreeByType(parseInt(type)) : await this.resourceTreeService.getResourceTree()
-    return this.success(result)
+  async list(@Query() getResourcesRequest: GetResourcesRequest) {
+    const { type, name, path, isActive, pagination } = getResourcesRequest
+    const result = await this.resourceService.findAll(type, name, path, isActive, pagination)
+    return this.paginated(result.data, {
+      total: result.total,
+      page: pagination?.page || 1,
+      pageSize: pagination?.pageSize || 20
+    })
   }
 
   /**
@@ -103,10 +82,28 @@ export class ResourceController extends BaseController {
       resourceStatus
     }
 
-    return this.success({
-      data: enums,
-      enums: enums
-    })
+    return this.success(enums)
+  }
+
+  /**
+   * 获取资源树
+   */
+  @Get('tree')
+  @ApiOperation({ summary: '获取资源树', description: '获取资源树结构，支持类型筛选和单个ID查询' })
+  @ApiQuery({ name: 'type', required: false, description: '资源类型筛选' })
+  @ApiQuery({ name: 'id', required: false, description: '单个资源ID查询' })
+  @ApiProduces('application/json')
+  @ApiResponse({ status: 200, description: '获取成功', type: Object })
+  async tree(@Query('type') type?: string, @Query('id') id?: string) {
+    // 如果提供了id，则查询该资源的子树
+    if (id) {
+      const result = await this.resourceTreeService.getSubtree(id)
+      return this.success(result)
+    }
+
+    // 否则查询完整树，支持类型筛选
+    const result = type ? await this.resourceTreeService.getResourceTreeByType(parseInt(type)) : await this.resourceTreeService.getResourceTree()
+    return this.success(result)
   }
 
   /**
@@ -141,6 +138,21 @@ export class ResourceController extends BaseController {
     return this.success({
       data: result
     })
+  }
+
+  /**
+   * 获取单个资源
+   */
+  @Get('detail')
+  @ApiOperation({ summary: '获取单个资源', description: '根据ID获取单个资源' })
+  @ApiParam({ name: 'id', description: '资源ID', required: true })
+  @ApiProduces('application/json')
+  @ApiResponse({ status: 200, description: '获取成功', type: Object })
+  @ApiResponse({ status: 404, description: '资源不存在' })
+  async getResource(@Query('id') id: string) {
+    const result = await this.resourceService.findOne(id)
+    this.assertDataExists(result, '资源', id)
+    return this.success(result)
   }
 
   /**

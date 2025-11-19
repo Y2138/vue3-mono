@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
 import { PrismaService } from '@/prisma/prisma.service'
-import { ResourceType as PrismaResourceType } from '@prisma/client'
 import { isValidResourceType } from '@/modules/resource/enums/resource.enums'
+import { ResourceGenerator } from '../utils/resource-generator'
 
 @Injectable()
 export class ResourceTreeService {
@@ -29,16 +29,8 @@ export class ResourceTreeService {
       throw new BadRequestException('无效的资源类型')
     }
 
-    // 将业务枚举值转换为Prisma枚举值
-    const typeMap = {
-      0: PrismaResourceType.PAGE,
-      1: PrismaResourceType.API,
-      2: PrismaResourceType.BUTTON
-    }
-    const prismaType = typeMap[type as keyof typeof typeMap]
-
     const resources = await this.prisma.resource.findMany({
-      where: { type: prismaType },
+      where: { type },
       orderBy: [{ level: 'asc' }, { name: 'asc' }]
     })
 
@@ -192,6 +184,7 @@ export class ResourceTreeService {
         parentId: newParentId || originalResource.parentId,
         description: originalResource.description,
         level: newLevel,
+        resCode: ResourceGenerator.generateResCode(originalResource.type, newName || `${originalResource.name}_copy`),
         path: newPath
       }
     })
@@ -364,6 +357,7 @@ export class ResourceTreeService {
         description: sourceResource.description,
         parentId: newParentId,
         level: newParent.level + 1,
+        resCode: ResourceGenerator.generateResCode(sourceResource.type, sourceResource.name),
         path: newParent.path + '/' + sourceResource.name
       }
     })
@@ -427,6 +421,4 @@ export class ResourceTreeService {
 
     return this.detectCircularReference(resource.parentId, visited)
   }
-
-
 }

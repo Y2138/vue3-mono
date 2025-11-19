@@ -13,7 +13,7 @@ import type { IFormConfig, IOption } from './types'
 import DDatePicker from './components/dDatePicker.vue'
 import DRadio from './components/dRadio.vue'
 import DCheckbox from './components/dCheckbox.vue'
-import { NInput, NInputNumber, NSelect } from 'naive-ui'
+import { NAutoComplete, NInput, NInputNumber, NSelect, NCascader, NMention, NTreeSelect } from 'naive-ui'
 import type { FormInst, FormItemRule } from 'naive-ui'
 
 defineOptions({
@@ -26,7 +26,11 @@ const componentsName = shallowReactive<Record<string, any>>({
   'n-select': NSelect,
   'd-date-picker': DDatePicker,
   'd-radio': DRadio,
-  'd-checkbox': DCheckbox
+  'd-checkbox': DCheckbox,
+  'n-auto-complete': NAutoComplete,
+  'n-cascader': NCascader,
+  'n-mention': NMention,
+  'n-tree-select': NTreeSelect
 })
 
 const props = defineProps<

@@ -223,6 +223,8 @@ export const useGlobalStore = defineStore('global', () => {
     apiConfig: readonly(apiConfig),
     isLoading: readonly(isLoading),
     isInitializing: readonly(isInitializing),
+    enumsMap: readonly(enumsMap),
+    enumsRequestMap: readonly(enumsRequestMap),
 
     // 主题方法
     toggleTheme,

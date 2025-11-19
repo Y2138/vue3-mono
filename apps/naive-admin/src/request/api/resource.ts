@@ -3,7 +3,7 @@
  * 基于 protobuf 定义的接口
  */
 
-import { get, post, patch, del } from '../axios'
+import { get, post } from '../axios'
 
 // 从共享类型文件导入资源管理相关类型
 import type { CreateResourceRequest, UpdateResourceRequest, MoveResourceRequest, DuplicateResourceRequest, BatchDeleteResourcesRequest, ResourceListResponse, ResourceTreeResponse, ResourceResponse, ResourcePathResponse, GetResourcesRequest, Resource } from '@/shared/resource'
@@ -12,7 +12,7 @@ import type { CreateResourceRequest, UpdateResourceRequest, MoveResourceRequest,
  * 获取资源列表
  */
 export const getResources = async (params?: GetResourcesRequest) => {
-  return get<GetResourcesRequest, ResourceListResponse>('/api/resources', { params })
+  return get<GetResourcesRequest, Resource[]>('/api/resources/list', { params })
 }
 
 /**
@@ -26,7 +26,7 @@ export const getResourceTree = async (params?: GetResourcesRequest) => {
  * 根据ID获取资源
  */
 export const getResourceById = async (id: string) => {
-  return get<void, ResourceResponse>('/api/resources/list', { params: { id } })
+  return get<void, Resource>('/api/resources/detail', { params: { id } })
 }
 
 /**
@@ -41,9 +41,9 @@ export const createResource = async (params: CreateResourceRequest) => {
  */
 export const updateResource = async (params: UpdateResourceRequest) => {
   const { id, ...updateData } = params
-  return post<Omit<UpdateResourceRequest, 'id'>, ResourceResponse>('/api/resources/update', { 
+  return post<Omit<UpdateResourceRequest, 'id'>, ResourceResponse>('/api/resources/update', {
     params: { id },
-    data: updateData 
+    data: updateData
   })
 }
 
@@ -51,9 +51,9 @@ export const updateResource = async (params: UpdateResourceRequest) => {
  * 移动资源
  */
 export const moveResource = async (id: string, params: MoveResourceRequest) => {
-  return post<MoveResourceRequest, ResourceResponse>('/api/resources/move', { 
+  return post<MoveResourceRequest, ResourceResponse>('/api/resources/move', {
     params: { id },
-    data: params 
+    data: params
   })
 }
 
@@ -61,9 +61,9 @@ export const moveResource = async (id: string, params: MoveResourceRequest) => {
  * 复制资源
  */
 export const duplicateResource = async (id: string, params: DuplicateResourceRequest) => {
-  return post<DuplicateResourceRequest, ResourceResponse>('/api/resources/duplicate', { 
+  return post<DuplicateResourceRequest, ResourceResponse>('/api/resources/duplicate', {
     params: { id },
-    data: params 
+    data: params
   })
 }
 
@@ -121,7 +121,7 @@ export interface PermissionInfo {
   id: string
   name: string
   description?: string
-  code: string
+  resCode?: string
   resource?: string
   action?: string
   parentId?: string

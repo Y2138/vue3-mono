@@ -5,8 +5,8 @@
 
 import { NestFactory } from '@nestjs/core'
 import { Logger } from '@nestjs/common'
-import { AppModule } from '../app.module'
-import { UserService } from '../modules/users/user.service'
+import { AppModule } from '../src/app.module'
+import { UserService } from '../src/modules/users/user.service'
 
 async function initAdmin() {
   const logger = new Logger('InitAdmin')

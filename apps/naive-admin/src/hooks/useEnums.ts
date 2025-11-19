@@ -21,7 +21,7 @@ export interface useEnumsOptions<T> {
    * 是否在初始化时自动刷新数据
    * @default true
    */
-  refresh?: boolean
+  autoRefresh?: boolean
 
   /**
    * 默认值，在数据加载前使用
@@ -115,7 +115,7 @@ export interface useEnumsReturn<T> {
 export function useEnums<T>(options: useEnumsOptions<T>): useEnumsReturn<T> {
   const { getEnums, setEnums, clearEnums, setEnumsRequest, getEnumsRequest, clearEnumsRequest } = useGlobalStore()
 
-  const { api, key, refresh: autoRefresh = false, defaultValue, clearOnUnmounted = false } = options
+  const { api, key, autoRefresh = false, defaultValue, clearOnUnmounted = false } = options
   const data = ref<T>((defaultValue || {}) as T) as Ref<T>
   const loading = ref<boolean>(false)
   const error = ref<Error | null>(null)
@@ -199,7 +199,7 @@ export function useEnums<T>(options: useEnumsOptions<T>): useEnumsReturn<T> {
     // console.log('0926 key ===> ', key);
     // console.log('0926 autoRefresh ===> ', autoRefresh);
     // console.log('0926 cacheData ===> ', cacheData);
-    if (autoRefresh || !cacheData) {
+    if (autoRefresh) {
       refresh()
     }
   })

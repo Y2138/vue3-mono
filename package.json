@@ -6,6 +6,7 @@
   "scripts": {
     "dev:admin": "pnpm run -C apps/naive-admin dev",
     "dev:server": "pnpm run -C server/nest-main dev",
+    "proto:gen": "pnpm run -C server/nest-main proto:gen",
     "lint": "oxlint",
     "lint:admin": "pnpm run -C apps/naive-admin lint",
     "lint:server": "pnpm run -C server/nest-main lint",

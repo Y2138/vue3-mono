@@ -110,7 +110,7 @@ function handleReset() {
 }
 
 // 请求函数适配器
-const requestFn = async (params: IUserListRequest): Promise<[ResResult<IPaginationResData<UserInfo[]>>, null] | [null, any]> => {
+const requestFn = async (params: IUserListRequest): Promise<[ResResult<UserInfo[]>, null] | [null, any]> => {
   const requestParams = {
     page: params.page,
     pageSize: params.pageSize,
@@ -128,14 +128,14 @@ const requestFn = async (params: IUserListRequest): Promise<[ResResult<IPaginati
   const { list, pagination } = res?.data || {}
 
   // 适配返回数据格式
-  const adaptedData: ResResult<IPaginationResData<UserInfo[]>> = {
-    data: {
-      tableData: list || [],
-      pageData: {
-        count: Number(pagination?.total) || 0,
-        page: Number(pagination?.page) || 1,
-        pageSize: Number(pagination?.pageSize) || 30
-      }
+  const adaptedData: ResResult<UserInfo[]> = {
+    code: res.code,
+    success: res.success,
+    data: list || [],
+    pagination: {
+      total: Number(pagination?.total) || 0,
+      page: Number(pagination?.page) || 1,
+      pageSize: Number(pagination?.pageSize) || 30
     }
   }
 

@@ -94,7 +94,7 @@ function handleRadioChange(type: string) {
   refresh(true)
 }
 
-const requestFn = (data: IReq) => post<IReq, IPaginationResData<IRes[]>>('/statistics/zhzww-vip/list', { params: data })
+const requestFn = (data: IReq) => post<IReq, IRes[]>('/statistics/zhzww-vip/list', { params: data })
 const dealParams = (): IReq => {
   const { daterange, ...rest } = formModel.value
   const params: IReq = {

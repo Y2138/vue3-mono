@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client'
 import { JwtService } from '@nestjs/jwt'
 import * as bcrypt from 'bcryptjs'
 import { DataNotFoundException, ValidationException, ConflictException, BusinessRuleException } from '../../common/exceptions'
+import { PaginationRequest } from '../../shared/common'
 
 @Injectable()
 export class UserService {
@@ -14,12 +15,17 @@ export class UserService {
   /**
    * 获取所有用户
    */
-  async findAll(options?: { search?: string; phone?: string; username?: string; statusList?: number[]; page?: number; pageSize?: number }) {
+  async findAll(options?: { search?: string; phone?: string; username?: string; statusList?: number[]; roleIds?: string[]; pagination?: PaginationRequest }) {
     this.logger.log(`查询用户列表: ${JSON.stringify(options)}`)
 
-    const page = options?.page || 1
-    const pageSize = options?.pageSize || 10
-    const skip = (page - 1) * pageSize
+    let skip: number | undefined;
+    let take: number | undefined;
+
+    if (options?.pagination) {
+      const { page, pageSize } = options.pagination;
+      skip = (page - 1) * pageSize;
+      take = pageSize;
+    }
 
     // 构建查询条件
     const where: any = {}
@@ -45,30 +51,32 @@ export class UserService {
       }
     }
 
-    // 查询总数
-    const total = await this.prisma.client.user.count({ where })
+    let data: any[]
+    let total: number
 
-    // 查询数据
-    const users = await this.prisma.client.user.findMany({
-      where,
-      skip,
-      take: pageSize,
-      orderBy: { createdAt: 'desc' }
-    })
-
-    // 计算总页数
-    const totalPages = Math.ceil(total / pageSize)
+    if (options?.pagination) {
+      // 使用事务同时获取总数和数据，提高性能
+      ;[total, data] = await this.prisma.$transaction([
+        this.prisma.client.user.count({ where }),
+        this.prisma.client.user.findMany({
+          where,
+          skip,
+          take,
+          orderBy: { createdAt: 'desc' }
+        })
+      ])
+    } else {
+      // 没有分页参数时查询所有数据
+      data = await this.prisma.client.user.findMany({
+        where,
+        orderBy: { createdAt: 'desc' }
+      })
+      total = data.length
+    }
 
     return {
-      data: users,
-      pagination: {
-        page,
-        pageSize,
-        total,
-        totalPages,
-        hasNext: page < totalPages,
-        hasPrev: page > 1
-      }
+      data,
+      total
     }
   }
 

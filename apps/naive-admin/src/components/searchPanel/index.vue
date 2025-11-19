@@ -31,6 +31,7 @@
 
 <script setup lang="ts">
 import { computed, useAttrs, watch } from 'vue'
+import { useDebounceFn } from '@vueuse/core'
 interface SearchPanelProps {
   formModel?: any
   inline?: boolean
@@ -60,13 +61,16 @@ const props = withDefaults(defineProps<SearchPanelProps>(), {
 const computedCols = computed(() => {
   return props.inline ? 0 : props.cols
 })
+const debounceSearch = useDebounceFn(() => {
+  emits('search')
+}, 350)
 
 watch(
   () => props.formModel,
   () => {
-    console.log('2501 formUpdate: ', props)
+    // console.log('2501 formUpdate: ', props)
     if (props.searchOnUpdate) {
-      emits('search')
+      debounceSearch()
     }
   },
   {
@@ -75,12 +79,12 @@ watch(
 )
 
 const handleSearch = () => {
-  console.log('handleSearch')
+  // console.log('handleSearch')
   emits('search')
 }
 const handleReset = () => {
-  console.log('handleReset')
-  emits('search')
+  // console.log('handleReset')
+  emits('reset')
 }
 </script>
 

@@ -10,25 +10,31 @@ export const RESOURCE_ENUMS = {
    */
   RESOURCE_TYPE: {
     PAGE: {
-      value: 0,
+      value: 1,
       label: '页面',
       disabled: false,
       extra: JSON.stringify({ color: 'primary', description: '页面资源，用于前端路由和菜单' })
     },
     API: {
-      value: 1,
-      label: 'API',
+      value: 2,
+      label: '接口',
       disabled: false,
       extra: JSON.stringify({ color: 'info', description: 'API接口资源，用于后端接口访问控制' })
     },
-    BUTTON: {
-      value: 2,
-      label: '按钮',
+    MODULE: {
+      value: 3,
+      label: '模块',
       disabled: false,
-      extra: JSON.stringify({ color: 'success', description: '按钮资源，用于前端页面内的操作权限' })
+      extra: JSON.stringify({ color: 'success', description: '模块资源，用于前端页面内的操作权限' })
     }
   } as Record<string, EnumItem>
 } as const
+
+export enum ResourceType {
+  PAGE = 1,
+  API = 2,
+  MODULE = 3
+}
 
 /**
  * 获取资源类型描述
@@ -64,5 +70,5 @@ export function getResourceTypeExtra(type: number): { color?: string; descriptio
  * @returns 是否有效
  */
 export function isValidResourceType(type: number): boolean {
-  return Object.values(RESOURCE_ENUMS.RESOURCE_TYPE).some(item => item.value === type)
+  return Object.values(RESOURCE_ENUMS.RESOURCE_TYPE).some((item) => item.value === type)
 }

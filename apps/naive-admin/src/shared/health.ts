@@ -22,12 +22,12 @@ export interface HealthCheckResponse {
 }
 
 export enum HealthCheckResponse_ServingStatus {
-  UNKNOWN = "UNKNOWN",
-  SERVING = "SERVING",
-  NOT_SERVING = "NOT_SERVING",
+  UNKNOWN = 0,
+  SERVING = 1,
+  NOT_SERVING = 2,
   /** SERVICE_UNKNOWN - 用于未知的服务 */
-  SERVICE_UNKNOWN = "SERVICE_UNKNOWN",
-  UNRECOGNIZED = "UNRECOGNIZED",
+  SERVICE_UNKNOWN = 3,
+  UNRECOGNIZED = -1,
 }
 
 /** 健康检查服务 */

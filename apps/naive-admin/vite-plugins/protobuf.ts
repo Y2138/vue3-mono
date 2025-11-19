@@ -28,21 +28,14 @@ interface ProtoFileConfig {
 
 /**
  * Vite Protobuf 插件
- * 
+ *
  * 功能：
  * - Vite 启动时自动生成 protobuf 类型
  * - 开发模式下监听 proto 文件变化
  * - 自动处理 proto 文件并生成 TypeScript 类型
  */
 export function protobufPlugin(options: ProtobufPluginOptions): Plugin {
-  const {
-    protoDir,
-    outputDir,
-    protoFiles,
-    watch = true,
-    protocOptions = [],
-    debug = false
-  } = options
+  const { protoDir, outputDir, protoFiles, watch = true, protocOptions = [], debug = false } = options
 
   let watcher: chokidar.FSWatcher | null = null
   let isGenerating = false
@@ -58,16 +51,16 @@ export function protobufPlugin(options: ProtobufPluginOptions): Plugin {
   // 递归获取目录下的文件
   async function getFilesRecursively(dir: string, extension: string): Promise<string[]> {
     const result: string[] = []
-    
+
     if (!fs.existsSync(dir)) {
       return result
     }
-    
+
     const entries = await fs.promises.readdir(dir, { withFileTypes: true })
-    
+
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name)
-      
+
       if (entry.isDirectory()) {
         const subFiles = await getFilesRecursively(fullPath, extension)
         result.push(...subFiles)
@@ -75,7 +68,7 @@ export function protobufPlugin(options: ProtobufPluginOptions): Plugin {
         result.push(fullPath)
       }
     }
-    
+
     return result
   }
 
@@ -84,24 +77,24 @@ export function protobufPlugin(options: ProtobufPluginOptions): Plugin {
     try {
       const content = fs.readFileSync(filePath, 'utf8')
       const exports: string[] = []
-      
+
       // 匹配 export interface 和 export type
       const interfaceMatches = content.match(/export interface (\w+)/g)
       if (interfaceMatches) {
-        interfaceMatches.forEach(match => {
+        interfaceMatches.forEach((match) => {
           const name = match.replace('export interface ', '')
           exports.push(name)
         })
       }
-      
+
       const typeMatches = content.match(/export type (\w+)/g)
       if (typeMatches) {
-        typeMatches.forEach(match => {
+        typeMatches.forEach((match) => {
           const name = match.replace('export type ', '')
           exports.push(name)
         })
       }
-      
+
       return exports
     } catch (error) {
       log.debug(`Error extracting exports from ${filePath}: ${error}`)
@@ -112,13 +105,13 @@ export function protobufPlugin(options: ProtobufPluginOptions): Plugin {
   // 生成智能导出文件
   async function generateIndexFile(sourceDir: string, outputDir: string, protoFileName: string) {
     const _moduleName = protoFileName.replace('.proto', '')
-    
+
     try {
       // 使用 fs 递归读取目录，避免 glob 版本冲突
       const files = await getFilesRecursively(outputDir, '.ts')
-      
+
       let exportStatements = `// 自动生成的类型导出文件（精简模式）
-// 只包含接口类型定义，不包含编码/解码逻辑  
+// 只包含接口类型定义，不包含编码/解码逻辑
 // 自动解决 protobufPackage 命名冲突
 // 请勿手动修改
 // PROTO SOURCE: ${sourceDir}${protoFileName}
@@ -126,17 +119,17 @@ export function protobufPlugin(options: ProtobufPluginOptions): Plugin {
 `
 
       const moduleExports: string[] = []
-      
+
       files
-        .filter(file => !file.endsWith('index.ts'))
-        .forEach(file => {
+        .filter((file) => !file.endsWith('index.ts'))
+        .forEach((file) => {
           const exports = extractExportsFromFile(file)
-          
+
           if (exports.length > 0) {
             const relativePath = path.relative(outputDir, file).replace('.ts', '').replace(/\\/g, '/')
             const baseName = path.basename(relativePath)
             const _alias = baseName.charAt(0).toUpperCase() + baseName.slice(1).replace(/[^a-z0-9]/gi, '') + 'Module'
-            
+
             const exportList = exports.join(',\n  ')
             moduleExports.push(`// ${baseName.charAt(0).toUpperCase() + baseName.slice(1)} types
 export type {
@@ -146,10 +139,10 @@ export type {
         })
 
       exportStatements += moduleExports.join('\n\n')
-      
+
       const indexFilePath = path.join(outputDir, 'index.ts')
       await fs.promises.writeFile(indexFilePath, exportStatements)
-      
+
       log.success(`Generated index.ts with ${moduleExports.length} modules`)
     } catch (error) {
       log.error(`Failed to generate index.ts: ${error}`)
@@ -164,12 +157,12 @@ export type {
     }
 
     isGenerating = true
-    
+
     try {
       const { src, dest, file } = config
-      
+
       log.info(`Generating types for ${file}...`)
-      
+
       // 确保输出目录存在
       if (!fs.existsSync(dest)) {
         fs.mkdirSync(dest, { recursive: true })
@@ -190,7 +183,7 @@ export type {
         // 前端精简配置选项
         '--ts_proto_opt=esModuleInterop=true',
         '--ts_proto_opt=useOptionals=messages',
-        '--ts_proto_opt=stringEnums=true',
+        // '--ts_proto_opt=stringEnums=true',
         '--ts_proto_opt=forceLong=string',
         '--ts_proto_opt=useMapType=true',
         // 关键：只生成类型，不生成编码/解码函数
@@ -199,7 +192,6 @@ export type {
         '--ts_proto_opt=outputPartialMethods=false',
         '--ts_proto_opt=outputClientImpl=false',
         '--ts_proto_opt=useExactTypes=false',
-        '--ts_proto_opt=oneof=unions',
         `--proto_path=${src}`,
         ...protocOptions,
         protoFilePath
@@ -208,14 +200,14 @@ export type {
       const command = baseCommand.join(' ')
       log.debug(`Running: ${command}`)
 
-      execSync(command, { 
+      execSync(command, {
         stdio: debug ? 'inherit' : 'pipe',
         cwd: process.cwd()
       })
 
       // 生成智能导出文件
       await generateIndexFile(src, dest, file)
-      
+
       log.success(`✅ Generated types for ${file}`)
     } catch (error) {
       log.error(`Failed to generate ${config.file}: ${error}`)
@@ -228,7 +220,7 @@ export type {
   // 生成所有 proto 文件
   async function generateAllProtos() {
     log.info('🔨 Generating all protobuf types...')
-    
+
     for (const protoFile of protoFiles) {
       await generateProtoSource({
         src: protoDir,
@@ -236,7 +228,7 @@ export type {
         file: protoFile
       })
     }
-    
+
     log.success('🎉 All protobuf types generated!')
   }
 
@@ -272,14 +264,14 @@ export type {
 
   return {
     name: 'vite-plugin-protobuf',
-    
+
     async buildStart() {
       log.info('🚀 Protobuf plugin initialized')
-      
+
       try {
         // 初始化时生成所有 proto 文件
         await generateAllProtos()
-        
+
         // 启动监听（仅在开发模式）
         if (this.meta.watchMode) {
           startWatching()
@@ -311,4 +303,4 @@ export type {
       }
     }
   }
-} 
+}

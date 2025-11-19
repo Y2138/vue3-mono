@@ -8,15 +8,16 @@ message Resource {
   string id = 1;
   string name = 2;
   int32 type = 3;  // 使用基础类型代替枚举
-  optional string icon = 4;  // 可选字段使用optional
-  optional string parentId = 5;  // 可选字段
-  int32 sortOrder = 6;
-  bool isActive = 7;
-  string createdAt = 8;
-  string updatedAt = 9;
-  optional string description = 10;  // 可选字段
-  int32 level = 11;
-  map<string, string> metadata = 12;
+  string resCode = 4;  // 资源码 - 基于RBAC权限系统的统一资源标识
+  optional string icon = 5;  // 可选字段使用optional
+  optional string parentId = 6;  // 可选字段
+  int32 sortOrder = 7;
+  bool isActive = 8;
+  string createdAt = 9;
+  string updatedAt = 10;
+  optional string description = 11;  // 可选字段
+  int32 level = 12;
+  // 移除metadata字段，code不再在metadata中维护，改为独立字段resCode
   string path = 13;
 }
 
@@ -25,37 +26,38 @@ message ResourceTree {
   string id = 1;
   string name = 2;
   int32 type = 3;  // 使用基础类型
-  optional string icon = 4;  // 可选字段
-  optional string parentId = 5;  // 可选字段
-  int32 sortOrder = 6;
-  bool isActive = 7;
-  string createdAt = 8;
-  string updatedAt = 9;
-  optional string description = 10;  // 可选字段
-  int32 level = 11;
-  map<string, string> metadata = 12;
+  string resCode = 4;  // 资源码 - 基于RBAC权限系统的统一资源标识
+  optional string icon = 5;  // 可选字段
+  optional string parentId = 6;  // 可选字段
+  int32 sortOrder = 7;
+  bool isActive = 8;
+  string createdAt = 9;
+  string updatedAt = 10;
+  optional string description = 11;  // 可选字段
+  int32 level = 12;
+  // 移除metadata字段，code不再在metadata中维护，改为独立字段resCode
   string path = 13;
-  repeated ResourceTree children = 15;  // 树形结构包含children
+  repeated ResourceTree children = 14;  // 树形结构包含children
 }
 
 message CreateResourceRequest {
   string name = 1;
-  int32 type = 2;  // 使用基础类型
+  int32 type = 2;  // 使用基础类型（1=page, 2=api, 3=module）
   optional string parentId = 3;  // 可选字段
   string path = 4;
   optional string description = 5;  // 可选字段
-  map<string, string> metadata = 6;
+  // 移除metadata字段，resCode将在服务端自动生成
 }
 
 message UpdateResourceRequest {
   string id = 1;
   string name = 2;
-  int32 type = 3;  // 使用基础类型
+  int32 type = 3;  // 使用基础类型（1=page, 2=api, 3=module）
   optional string parentId = 4;  // 可选字段
   string path = 5;
   optional string description = 6;  // 可选字段
-  map<string, string> metadata = 7;
-  bool isActive = 8;
+  bool isActive = 7;
+  // 移除metadata字段，resCode将在服务端自动生成或更新
 }
 
 message GetResourceRequest {
@@ -63,7 +65,12 @@ message GetResourceRequest {
 }
 
 message GetResourcesRequest {
-  optional int32 type = 1;  // 使用基础类型
+  optional int32 type = 1;  // 资源类型
+  optional string name = 2; // 资源名称
+  optional string path = 3; // 资源路径
+  optional int32 isActive = 4; // 资源状态
+
+  common.PaginationRequest pagination = 5; // 分页信息
 }
 
 message GetResourceByPathRequest {

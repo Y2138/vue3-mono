@@ -1,5 +1,5 @@
 // 自动生成的类型导出文件（精简模式）
-// 只包含接口类型定义，不包含编码/解码逻辑  
+// 只包含接口类型定义，不包含编码/解码逻辑
 // 自动解决 protobufPackage 命名冲突
 // 请勿手动修改
 // PROTO SOURCE: /Users/staff/Documents/my-tools/vue3-mono/protosresource.proto
@@ -27,13 +27,9 @@ export type {
 // Resource types
 export type {
   Resource,
-  Resource_MetadataEntry,
   ResourceTree,
-  ResourceTree_MetadataEntry,
   CreateResourceRequest,
-  CreateResourceRequest_MetadataEntry,
   UpdateResourceRequest,
-  UpdateResourceRequest_MetadataEntry,
   GetResourceRequest,
   GetResourcesRequest,
   GetResourceByPathRequest,
