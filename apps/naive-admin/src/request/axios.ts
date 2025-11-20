@@ -4,6 +4,7 @@ import type { AxiosRequestConfig, AxiosRequestHeaders, RawAxiosRequestHeaders } 
 import { PendingMap } from './cancelToken'
 import { useUserStore } from '@/store/modules/user'
 import router from '@/router'
+import qs from 'qs'
 
 interface ICustomAxiosConfig<T> extends AxiosRequestConfig<T> {
   /* 是否不需要错误信息提示，默认有 */
@@ -39,7 +40,8 @@ const instance = axios.create({
   // 请求时长
   // timeout: 1000 * 10,
   // 表示跨域请求时是否需要使用凭证
-  withCredentials: false
+  withCredentials: false,
+  paramsSerializer: (params) => qs.stringify(params, { allowDots: true })
   // 设置基础URL
   // baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
 })
@@ -99,8 +101,8 @@ instance.interceptors.response.use(
     pendingMap.removePending(config)
 
     // 如果响应错误则抛出错误
-    if (response.data.code !== 200 || response.data.success !== true) {
-      return Promise.reject(response)
+    if (response.data.code % 200 > 100 || response.data.success !== true) {
+      return Promise.reject({ response })
     }
     return response
   },
@@ -233,10 +235,7 @@ function handleResponseResult<Q = any, R = any>(data: ResResult<R>, config: ICus
 
 export async function get<Q = any, R = any>(url: string, options?: ICustomAxiosConfig<Q>): Promise<[ResResult<R>, null] | [null, any]> {
   try {
-    const response = await request<Q, R>(url, { method: 'GET', ...options })
-    console.log('2501 response===>', response)
-    const { data, config } = response
-    handleResponseResult<Q, R>(data, config)
+    const { data } = await request<Q, R>(url, { method: 'GET', ...options })
 
     return [data, null]
   } catch (error: any) {
@@ -253,12 +252,11 @@ export async function get<Q = any, R = any>(url: string, options?: ICustomAxiosC
 
 export async function post<Q = any, R = any>(url: string, options: ICustomAxiosConfig<Q>): Promise<[ResResult<R>, null] | [null, any]> {
   try {
-    const response = await request<Q, R>(url, { method: 'POST', ...options })
-    const { data, config } = response
-    handleResponseResult<Q, R>(data, config)
+    const { data } = await request<Q, R>(url, { method: 'POST', ...options })
 
     return [data, null]
   } catch (error: any) {
+    // console.error('2501 error===>', error)
     if (error.response) {
       const { data, config } = error.response
       handleResponseResult<Q, R>(data, config)
@@ -269,9 +267,7 @@ export async function post<Q = any, R = any>(url: string, options: ICustomAxiosC
 
 export async function put<Q = any, R = any>(url: string, options: ICustomAxiosConfig<Q>): Promise<[ResResult<R>, null] | [null, any]> {
   try {
-    const response = await request<Q, R>(url, { method: 'PUT', ...options })
-    const { data, config } = response
-    handleResponseResult<Q, R>(data, config)
+    const { data } = await request<Q, R>(url, { method: 'PUT', ...options })
 
     return [data, null]
   } catch (error: any) {
@@ -285,9 +281,7 @@ export async function put<Q = any, R = any>(url: string, options: ICustomAxiosCo
 
 export async function del<Q = any, R = any>(url: string, options?: ICustomAxiosConfig<Q>): Promise<[ResResult<R>, null] | [null, any]> {
   try {
-    const response = await request<Q, R>(url, { method: 'DELETE', ...options })
-    const { data, config } = response
-    handleResponseResult<Q, R>(data, config)
+    const { data } = await request<Q, R>(url, { method: 'DELETE', ...options })
 
     return [data, null]
   } catch (error: any) {
@@ -301,9 +295,7 @@ export async function del<Q = any, R = any>(url: string, options?: ICustomAxiosC
 
 export async function patch<Q = any, R = any>(url: string, options: ICustomAxiosConfig<Q>): Promise<[ResResult<R>, null] | [null, any]> {
   try {
-    const response = await request<Q, R>(url, { method: 'PATCH', ...options })
-    const { data, config } = response
-    handleResponseResult<Q, R>(data, config)
+    const { data } = await request<Q, R>(url, { method: 'PATCH', ...options })
 
     return [data, null]
   } catch (error: any) {

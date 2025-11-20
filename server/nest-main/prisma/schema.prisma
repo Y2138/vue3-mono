@@ -19,8 +19,9 @@ model User {
 }
 
 model Resource {
-  id            String         @id @default(uuid())
+  id            String         @id @default(cuid())
   name          String
+  parentName    String?
   type          Int
   icon          String?
   parentId      String?

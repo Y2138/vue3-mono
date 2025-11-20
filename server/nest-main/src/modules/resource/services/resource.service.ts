@@ -3,8 +3,9 @@ import { Prisma, Resource as ResourcePrisma } from '@prisma/client'
 import { PrismaService } from '@/prisma/prisma.service'
 import { CreateResourceRequest, UpdateResourceRequest } from '@/shared/resource'
 import { PaginationRequest } from '@/shared/common'
-import { ResourceType, isValidResourceType } from '@/modules/resource/enums/resource.enums'
+import { isValidResourceType, ResourceType } from '@/modules/resource/enums/resource.enums'
 import { ResourceGenerator } from '@/modules/resource/utils/resource-generator'
+import { isNotEmpty } from '@/utils'
 
 @Injectable()
 export class ResourceService {
@@ -19,7 +20,7 @@ export class ResourceService {
    * - module类型：MODULE_{自定义码}，用户手动配置
    */
   async create(createResourceRequest: CreateResourceRequest): Promise<ResourcePrisma> {
-    const { name, type, path, parentId, description } = createResourceRequest
+    const { name, type, path, parentId, sortOrder, description, suffix } = createResourceRequest
 
     try {
       // 验证必填字段
@@ -34,43 +35,38 @@ export class ResourceService {
       if (!isValidResourceType(type)) {
         throw new BadRequestException('无效的资源类型')
       }
-
+      let parent: ResourcePrisma | null = null
       // 如果有父级ID，验证父级是否存在
       if (parentId) {
-        const parent = await this.prisma.resource.findUnique({
+        parent = await this.prisma.resource.findUnique({
           where: { id: parentId }
         })
+        console.log('parent===>', parent)
         if (!parent) {
           throw new NotFoundException(`父级资源不存在，ID: ${parentId}`)
         }
       }
 
-      // 根据资源类型生成resCode
-      let resCode: string
-      // 使用ResourceGenerator工具类生成resCode
-      switch (type) {
-        case ResourceType.PAGE:
-          resCode = ResourceGenerator.generateResCode(ResourceType.PAGE, name)
-          break
-        case ResourceType.API:
-          resCode = ResourceGenerator.generateResCode(
-            ResourceType.API,
-            path // API类型使用path作为标识
-          )
-          break
-        case ResourceType.MODULE:
-          resCode = ResourceGenerator.generateResCode(
-            ResourceType.MODULE,
-            name // 模块类型使用name作为标识
-          )
-          break
-        default:
-          throw new BadRequestException(`不支持的资源类型: ${type}`)
-      }
+      // 使用ResourceGenerator工具类生成resCode生成resCode
+      // 确保suffix不是null类型
+      let resCode = type === ResourceType.MODULE ? ResourceGenerator.generateResCode(type, parent?.path || '', suffix || name) : ResourceGenerator.generateResCode(type, path)
 
       // 验证生成的resCode格式
       if (!ResourceGenerator.validateResCode(resCode)) {
-        throw new BadRequestException('生成的资源码格式无效')
+        throw new BadRequestException(`生成的资源码格式无效: ${resCode}`)
+      }
+
+      // 校验sortOrder唯一性 - 同一parentId下不能有相同的sortOrder
+      if (sortOrder !== undefined && sortOrder !== null) {
+        const existingResourceWithSameOrder = await this.prisma.resource.findFirst({
+          where: {
+            parentId: parentId || null,
+            sortOrder: sortOrder
+          }
+        })
+        if (existingResourceWithSameOrder) {
+          throw new BadRequestException(`在相同父级资源下已存在排序值为 ${sortOrder} 的资源`)
+        }
       }
 
       // 创建资源 - 使用业务枚举验证类型，并自动设置resCode
@@ -79,8 +75,12 @@ export class ResourceService {
         type,
         path,
         resCode, // resCode字段必需
+        sortOrder,
         ...(parentId && parentId.trim() !== '' && { parentId }),
-        ...(description && description.trim() !== '' && { description })
+        ...(description && description.trim() !== '' && { description }),
+        ...(suffix && suffix.trim() !== '' && { suffix }),
+        // 自动填充父资源名称
+        ...(parentId && parentId.trim() !== '' ? { parentName: parent?.name || '' } : { parentName: null })
       }
 
       const resource = await this.prisma.resource.create({
@@ -104,14 +104,15 @@ export class ResourceService {
   /**
    * 查询所有资源
    */
-  async findAll(type?: number, name?: string, path?: string, isActive?: number, pagination?: PaginationRequest): Promise<{ data: ResourcePrisma[]; total: number }> {
+  async findAll(type?: number | null, name?: string | null, path?: string | null, isActive?: number | null, pagination?: PaginationRequest | null): Promise<{ data: ResourcePrisma[]; total: number }> {
     try {
       const where = {
-        ...(type !== undefined && type !== null && { type }),
-        ...(name && { name: { contains: name, mode: Prisma.QueryMode.insensitive } }),
-        ...(path && { path: { equals: path } }),
-        ...(isActive !== undefined && { isActive: isActive === 1 })
+        ...(isNotEmpty(type) && { type }),
+        ...(isNotEmpty(name) && { name: { contains: name, mode: Prisma.QueryMode.insensitive } }),
+        ...(isNotEmpty(path) && { path: { equals: path } }),
+        ...(isNotEmpty(isActive) && { isActive: isActive === 1 })
       }
+      console.log(where)
 
       let data: ResourcePrisma[]
       let total: number
@@ -243,12 +244,28 @@ export class ResourceService {
       }
 
       // 如果有父级ID，验证父级是否存在
+      let parent: ResourcePrisma | null = null
       if (parentId) {
-        const parent = await this.prisma.resource.findUnique({
+        parent = await this.prisma.resource.findUnique({
           where: { id: parentId }
         })
         if (!parent) {
           throw new NotFoundException(`父级资源不存在，ID: ${parentId}`)
+        }
+      }
+
+      // 校验sortOrder唯一性 - 如果更新了sortOrder值
+      if (restUpdateData.sortOrder !== undefined && restUpdateData.sortOrder !== null && restUpdateData.sortOrder !== existingResource.sortOrder) {
+        // 构建查询条件，排除当前资源自身
+        const existingResourceWithSameOrder = await this.prisma.resource.findFirst({
+          where: {
+            id: { not: id }, // 排除当前正在更新的资源
+            parentId: (parentId !== undefined && parentId !== null) ? (parentId.trim() !== '' ? parentId : null) : existingResource.parentId || null,
+            sortOrder: restUpdateData.sortOrder
+          }
+        })
+        if (existingResourceWithSameOrder) {
+          throw new BadRequestException(`在相同父级资源下已存在排序值为 ${restUpdateData.sortOrder} 的资源`)
         }
       }
 
@@ -257,6 +274,9 @@ export class ResourceService {
         ...restUpdateData,
         type,
         ...(parentId !== undefined && parentId !== null && parentId.trim() !== '' && { parentId }),
+        // 自动填充父资源名称
+        ...(parentId !== undefined && parentId !== null && parentId.trim() !== '' && { parentName: parent?.name || '' }),
+        ...(parentId === null && { parentName: null }),
         updatedAt: new Date()
       }
 

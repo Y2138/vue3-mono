@@ -1,6 +1,6 @@
 <template>
   <n-card title="这是一个表单页">
-    <d-form-root v-model:formModel="formModel" :formConfigs="formConfigs" :select-options="selections" show-label label-placement="left" label-width="auto" :disabled="isDisabled" @submit="handleSubmit" class="max-w-[560px]"> </d-form-root>
+    <form-root v-model:formModel="formModel" :formConfigs="formConfigs" :select-options="selections" show-label label-placement="left" label-width="auto" :disabled="isDisabled" @submit="handleSubmit" class="max-w-[560px]"> </form-root>
     <n-button @click="test">改变禁用状态</n-button>
   </n-card>
 </template>
@@ -8,7 +8,6 @@
 <script setup lang="ts">
 import { IFormConfig } from '@/components/dForm/types'
 import { ref } from 'vue'
-import DFormRoot from '@/components/dForm/root.vue'
 
 const isDisabled = ref(false)
 const test = () => {

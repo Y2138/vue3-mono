@@ -5,8 +5,9 @@ import { RESOURCE_ENUMS } from '@/modules/resource/enums/resource.enums'
 import { ResourceService } from '@/modules/resource/services/resource.service'
 import { ResourceTreeService } from '@/modules/resource/services/resource-tree.service'
 import { BaseController } from '@/common/controllers/base.controller'
-import { CreateResourceRequest, UpdateResourceRequest, MoveResourceRequest, DuplicateResourceRequest, BatchDeleteResourcesRequest, GetResourcesRequest } from '@/shared/resource'
-
+import { Resource, CreateResourceRequest, UpdateResourceRequest, MoveResourceRequest, DuplicateResourceRequest, BatchDeleteResourcesRequest, GetResourcesRequest } from '@/shared/resource'
+import { isNotEmpty } from '@/utils'
+import { QueryObjectPipe } from '@/common/pipes/query.pipe'
 @Controller('api/resources')
 @ApiTags('资源管理')
 export class ResourceController extends BaseController {
@@ -47,10 +48,15 @@ export class ResourceController extends BaseController {
   @ApiQuery({ name: 'pagination', required: false, description: '分页信息' })
   @ApiProduces('application/json')
   @ApiResponse({ status: 200, description: '获取成功', type: Object })
-  async list(@Query() getResourcesRequest: GetResourcesRequest) {
+  async list(@Query(QueryObjectPipe) getResourcesRequest: GetResourcesRequest) {
     const { type, name, path, isActive, pagination } = getResourcesRequest
-    const result = await this.resourceService.findAll(type, name, path, isActive, pagination)
-    return this.paginated(result.data, {
+    const result = await this.resourceService.findAll(isNotEmpty(type) ? Number(type) : undefined, name, path, isNotEmpty(isActive) ? Number(isActive) : undefined, pagination)
+    const data: Resource[] = result.data.map((item) => ({
+      ...item,
+      createdAt: this.formatDateTime(item.createdAt),
+      updatedAt: this.formatDateTime(item.updatedAt)
+    }))
+    return this.paginated(data, {
       total: result.total,
       page: pagination?.page || 1,
       pageSize: pagination?.pageSize || 20
@@ -150,6 +156,7 @@ export class ResourceController extends BaseController {
   @ApiResponse({ status: 200, description: '获取成功', type: Object })
   @ApiResponse({ status: 404, description: '资源不存在' })
   async getResource(@Query('id') id: string) {
+    this.logger.log(`获取资源详情，ID: ${JSON.stringify(id)}`)
     const result = await this.resourceService.findOne(id)
     this.assertDataExists(result, '资源', id)
     return this.success(result)
@@ -166,9 +173,9 @@ export class ResourceController extends BaseController {
   @ApiResponse({ status: 200, description: '更新成功', type: Object })
   @ApiResponse({ status: 400, description: '请求参数错误' })
   @ApiResponse({ status: 404, description: '资源不存在' })
-  async update(@Query('id') id: string, @Body() updateResourceRequest: UpdateResourceRequest) {
-    this.assertNotEmpty(id, '资源ID')
-    const result = await this.resourceService.update(id, updateResourceRequest)
+  async update(@Body() updateResourceRequest: UpdateResourceRequest) {
+    this.assertNotEmpty(updateResourceRequest.id, '资源ID')
+    const result = await this.resourceService.update(updateResourceRequest.id, updateResourceRequest)
     return this.success({
       data: result
     })

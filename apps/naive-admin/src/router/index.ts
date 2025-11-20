@@ -3,7 +3,6 @@ import { useTabStore } from '@/store/modules/tab'
 import { useUserStore } from '@/store/modules/user'
 import { NavigationGuardNext, RouteLocationNormalized, createRouter, createWebHistory } from 'vue-router'
 import systemRoutes from './modules/system'
-import resourceRoutes from './modules/resource'
 import testRouters from './test-router'
 
 // const modules = import.meta.glob(`./*-router.ts`, { eager: true, import: 'default' });
@@ -20,7 +19,7 @@ export const routes: CustomRouteRecord[] = [
     meta: {
       title: '用户登录',
       noAuth: true, // 不需要认证
-      activeMenu: '/home' // 不在菜单中显示
+      activeMenuPath: '/home' // 不在菜单中显示
     }
   },
   {
@@ -32,7 +31,6 @@ export const routes: CustomRouteRecord[] = [
     }
   },
   systemRoutes,
-  resourceRoutes,
   ...testRouters
 ]
 

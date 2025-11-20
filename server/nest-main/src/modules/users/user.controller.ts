@@ -7,6 +7,7 @@ import { UserService as UserServiceImpl } from './user.service'
 import { User, AuthResponse, GetUsersRequest, GetUsersResponse, LoginRequest, RegisterRequest, CreateUserRequest, CreateUserFormRequest, UpdateUserRequest } from '../../shared/users'
 import { Validator } from '../../common/validators'
 import { USER_ENUMS, getUserStatusDesc } from './enums/user.enums'
+import { isNotEmpty } from '../../utils'
 
 /**
  * 用户状态操作请求
@@ -240,9 +241,9 @@ export class UserHttpController extends BaseController {
 
     // 构建查询参数
     const queryParams: any = {
-      pagination: getUsersRequest.pagination,
+      pagination: getUsersRequest.pagination
     }
-    
+
     if (getUsersRequest.phone) queryParams.phone = getUsersRequest.phone
     if (getUsersRequest.username) queryParams.username = getUsersRequest.username
     if (getUsersRequest.roleIds) queryParams.roleIds = getUsersRequest.roleIds
@@ -499,7 +500,7 @@ export class UserHttpController extends BaseController {
     Validator.phone(phone)
 
     // 验证更新字段（如果提供）
-    if (updateUserRequest.username !== undefined) {
+    if (isNotEmpty(updateUserRequest.username)) {
       Validator.username(updateUserRequest.username)
     }
 
@@ -513,8 +514,8 @@ export class UserHttpController extends BaseController {
 
     // 更新用户信息
     const updatedUser = await this.userService.update(phone, {
-      username: updateUserRequest.username,
-      status: updateUserRequest.status
+      username: updateUserRequest.username || '',
+      status: updateUserRequest.status || undefined
     })
 
     // 直接组装用户数据

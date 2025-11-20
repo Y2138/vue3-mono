@@ -32,6 +32,8 @@ export interface Resource {
   level: number;
   /** 移除metadata字段，code不再在metadata中维护，改为独立字段resCode */
   path: string;
+  /** 资源后缀，模块类型专用 */
+  suffix?: string | undefined;
 }
 
 /** 树形资源类型（包含children，用于树形结构） */
@@ -57,6 +59,10 @@ export interface ResourceTree {
   level: number;
   /** 移除metadata字段，code不再在metadata中维护，改为独立字段resCode */
   path: string;
+  /** 资源后缀，模块类型专用 */
+  suffix?:
+    | string
+    | undefined;
   /** 树形结构包含children */
   children: ResourceTree[];
 }
@@ -68,8 +74,14 @@ export interface CreateResourceRequest {
   /** 可选字段 */
   parentId?: string | undefined;
   path: string;
+  /** 排序字段 */
+  sortOrder: number;
   /** 可选字段 */
-  description?: string | undefined;
+  description?:
+    | string
+    | undefined;
+  /** 资源后缀，模块类型专用 */
+  suffix?: string | undefined;
 }
 
 export interface UpdateResourceRequest {
@@ -80,11 +92,13 @@ export interface UpdateResourceRequest {
   /** 可选字段 */
   parentId?: string | undefined;
   path: string;
+  /** 排序字段 */
+  sortOrder: number;
   /** 可选字段 */
   description?:
     | string
     | undefined;
-  /** 移除metadata字段，resCode将在服务端自动生成或更新 */
+  /** 注意：更新时不能修改suffix字段，resCode将在服务端自动生成或更新 */
   isActive: boolean;
 }
 

@@ -44,10 +44,14 @@ export class ResourceGenerator {
   /**
    * 生成模块资源码
    * @param customCode 用户自定义的模块码
-   * @returns 格式：MODULE_user_create, MODULE_role_manage
+   * @param suffix 资源后缀（可选）
+   * @returns 格式：MODULE_user_create, MODULE_role_manage_suffix
    */
-  static generateModuleResCode(customCode: string): string {
+  static generateModuleResCode(customCode: string, suffix?: string): string {
     // 模块类型由开发者手动配置，不进行路径转换
+    if (suffix) {
+      return `MODULE_${customCode}_${suffix}`
+    }
     return `MODULE_${customCode}`
   }
 
@@ -55,20 +59,22 @@ export class ResourceGenerator {
    * 根据资源类型和路径生成资源码
    * @param type 资源类型（1=page, 2=api, 3=module）
    * @param path 资源路径
-   * @param customCode 自定义代码（module类型时使用）
+   * @param customCodeOrSuffix 自定义代码或后缀（module类型时使用）
+   * @param suffix 资源后缀（module类型时使用，作为第三个参数）
    * @returns 生成的资源码
    */
-  static generateResCode(type: ResourceType, path: string, customCode?: string): string {
+  static generateResCode(type: ResourceType, path: string, suffix?: string): string {
     switch (type) {
       case ResourceType.PAGE: // ResourceType.PAGE
         return this.generatePageResCode(path)
       case ResourceType.API: // ResourceType.API
         return this.generateApiResCode(path)
       case ResourceType.MODULE: // ResourceType.MODULE
-        if (!customCode) {
-          throw new Error('模块类型资源需要提供自定义代码')
+        if (!suffix) {
+          throw new Error('模块类型资源需要提供后缀')
         }
-        return this.generateModuleResCode(customCode)
+        // 如果提供了suffix参数，则使用它作为后缀
+        return this.generateModuleResCode(path, suffix)
       default:
         throw new Error(`未知的资源类型: ${type}`)
     }
@@ -92,7 +98,7 @@ export class ResourceGenerator {
    */
   static validateResCode(resCode: string): boolean {
     // 验证资源码格式：^(PAGE|API|MODULE)_[a-zA-Z0-9_]+$
-    const pattern = /^(PAGE|API|MODULE)_[a-zA-Z0-9_]+$/
+    const pattern = /^(PAGE|API|MODULE)_[a-zA-Z0-9_-]+$/
     return pattern.test(resCode)
   }
 
@@ -144,6 +150,7 @@ export class ResourceGenerator {
    * 批量生成资源码
    * @param resources 资源对象数组，每个对象包含type和path属性
    * @param customCodes module类型的自定义代码映射
+   * @param suffixes module类型的后缀映射
    * @returns 生成的资源码映射
    */
   static batchGenerateResCodes(resources: Array<{ id: string; type: ResourceType; path: string }>, customCodes: Record<string, string> = {}): Record<string, string> {

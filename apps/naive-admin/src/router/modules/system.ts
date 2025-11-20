@@ -22,6 +22,32 @@ const systemRoutes: CustomRouteRecord = {
         title: '人员详情',
         activeMenuPath: '/system-manage/person'
       }
+    },
+    {
+      path: 'resource',
+      name: 'resourceList',
+      component: () => import('@/views/resources/index.vue'),
+      meta: {
+        title: '资源管理'
+      }
+    },
+    {
+      path: 'resource/create',
+      name: 'resourceCreate',
+      component: () => import('@/views/resources/components/resource-form.vue'),
+      meta: {
+        title: '创建资源',
+        activeMenuPath: '/system-manage/resource'
+      }
+    },
+    {
+      path: 'resource/edit',
+      name: 'resourceEdit',
+      component: () => import('@/views/resources/components/resource-form.vue'),
+      meta: {
+        title: '编辑资源',
+        activeMenuPath: '/system-manage/resource'
+      }
     }
   ]
 }

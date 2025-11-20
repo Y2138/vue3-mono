@@ -1,6 +1,6 @@
 <template>
   <n-modal v-model:show="visible" preset="dialog" title="新增人员" class="w-120">
-    <d-form-root ref="formRef" class="pt-4" v-model:formModel="formModel" :formConfigs="formConfigs" :selectOptions="{}" label-placement="left" label-width="80" :disabled="loading" />
+    <form-root ref="formRef" class="pt-4" v-model:formModel="formModel" :formConfigs="formConfigs" :selectOptions="{}" label-placement="left" label-width="80" :disabled="loading" />
 
     <n-alert v-if="passwordTip" type="info" class="mb-4">
       {{ passwordTip }}
@@ -19,7 +19,6 @@
 import { ref, computed, watch, useTemplateRef } from 'vue'
 import { NModal, NButton, NAlert, useMessage } from 'naive-ui'
 import { createUserForm, type UserInfo } from '@/request/api/users'
-import DFormRoot from '@/components/dForm/root.vue'
 import type { IFormConfig, DFormRootInst } from '@/components/dForm/types'
 
 // Props

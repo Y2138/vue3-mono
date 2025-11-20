@@ -29,7 +29,7 @@
     </WrapCol>
   </SearchPanel>
 
-  <n-data-table class="mt-4" :columns="tableColumns" :data="tableData" :pagination="pagination" :loading="loading" />
+  <n-data-table class="mt-4" scroll-x="100%" :columns="tableColumns" :data="tableData" :pagination="pagination" :loading="loading" />
 </template>
 
 <script setup lang="tsx">
@@ -91,7 +91,7 @@ const resourceEnums = computed(() => {
 
 // 状态枚举选项
 const statusOptions = computed(() => {
-  return enumsData.value?.isActive || []
+  return enumsData.value?.resourceStatus || []
 })
 
 // 处理搜索重置
@@ -104,7 +104,7 @@ function handleReset() {
 }
 
 // 处理请求参数
-const dealParams = (): GetResourcesRequest => {
+const dealParams = (): GetResourcesRequest & Required<Pick<GetResourcesRequest, 'pagination'>> => {
   return {
     pagination: {
       page: pagination.page,
@@ -133,9 +133,9 @@ const customColumns: DataTableColumns<Resource> = [
     width: 100,
     render: (row) => {
       const typeMap: Record<number, { label: string; color: string }> = {
-        0: { label: '页面', color: 'blue' },
-        1: { label: '接口', color: 'green' },
-        2: { label: '按钮', color: 'orange' }
+        1: { label: '页面', color: 'info' },
+        2: { label: '接口', color: 'success' },
+        3: { label: '模块', color: 'warning' }
       }
       const typeInfo = typeMap[row.type] || { label: '未知', color: 'default' }
       return (
@@ -143,6 +143,13 @@ const customColumns: DataTableColumns<Resource> = [
           {typeInfo.label}
         </NTag>
       )
+    }
+  },
+  {
+    title: '资源编码',
+    key: 'resCode',
+    ellipsis: {
+      tooltip: true
     }
   },
   {
@@ -215,11 +222,11 @@ tableColumns.value = customColumns
 
 // 操作函数
 function handleAddResource() {
-  router.push('/resource/create')
+  router.push('/system-manage/resource/create')
 }
 
 function handleEdit(resource: Resource) {
-  router.push(`/resource/edit/${resource.id}`)
+  router.push(`/system-manage/resource/edit?id=${resource.id}`)
 }
 
 async function handleDelete(id: string) {

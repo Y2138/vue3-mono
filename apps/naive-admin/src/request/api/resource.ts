@@ -33,18 +33,14 @@ export const getResourceById = async (id: string) => {
  * 创建资源
  */
 export const createResource = async (params: CreateResourceRequest) => {
-  return post<CreateResourceRequest, ResourceResponse>('/api/resources', { data: params })
+  return post<CreateResourceRequest, ResourceResponse>('/api/resources/create', { data: params })
 }
 
 /**
  * 更新资源
  */
-export const updateResource = async (params: UpdateResourceRequest) => {
-  const { id, ...updateData } = params
-  return post<Omit<UpdateResourceRequest, 'id'>, ResourceResponse>('/api/resources/update', {
-    params: { id },
-    data: updateData
-  })
+export const updateResource = async (data: UpdateResourceRequest) => {
+  return post<Omit<UpdateResourceRequest, 'id'>, ResourceResponse>('/api/resources/update', { data })
 }
 
 /**

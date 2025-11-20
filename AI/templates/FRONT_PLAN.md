@@ -20,8 +20,7 @@
 
 ### 初始化配置
 
-**页面文件**: `[MANUAL_FILL: 页面文件完整路径]`
-**路由文件**: `[MANUAL_FILL: 路由文件路径]`
+**页面文件**: `[MANUAL_FILL: 页面文件完整路径]` **路由文件**: `[MANUAL_FILL: 路由文件路径]`
 
 ---
 
@@ -31,21 +30,22 @@
 
 ### 核心模块与接口
 
-**[AI_FILL: 根据需求识别主要功能和接口]**
-**[Attention: 请先从项目的 Protobuf 定义中寻找功能对应的接口，若无法找到则从后端 Controller 中查找]**
+**[AI_FILL: 根据需求识别主要功能和接口]** **[Attention: 请先从项目的 Protobuf 定义中寻找功能对应的接口，若无法找到则从后端 Controller 中查找]**
 
-| 功能模块          | 接口方法                                           | 优先级              |
-| ----------------- | -------------------------------------------------- | ------------------- |
-| [AI_FILL: 模块名] | `apiClient.[AI_FILL: 方法名]`         | [AI_FILL: 高/中/低] |
+| 功能模块          | 接口方法                            | 优先级              |
+| ----------------- | ----------------------------------- | ------------------- |
+| [AI_FILL: 模块名] | `apiClient.[AI_FILL: 方法名]`       | [AI_FILL: 高/中/低] |
 | [AI_FILL: 模块名] | `[MANUAL_FILL: gRPC或REST接口路径]` | [AI_FILL: 高/中/低] |
 
 **接口调用方式说明**：
+
 - 使用 axios 封装的请求方法：`post`, `get`, `patch` 等
 - 类型安全：基于 Protobuf 自动生成的类型
 - API 模块：统一在 `@/request/api/[模块名].ts` 中定义
 - 响应处理：统一使用 `[result, error]` 格式
 
 **API 模块示例**：
+
 ```typescript
 export const getUserList = async (params: GetUsersRequest) => {
   return get<void, GetUsersResponse>('/api/users/list', { params })
@@ -56,10 +56,10 @@ export const getUserList = async (params: GetUsersRequest) => {
 
 **Global Store 数据获取方式**：
 
--   全局选项数据通过 `useGlobalStore().globalData` 获取
--   各组件直接从对应的 Pinia store 中获取枚举数据
--   支持 gRPC 实时数据推送和缓存策略
--   无需频繁调用接口，提高性能和用户体验
+- 全局选项数据通过 `useGlobalStore().globalData` 获取
+- 各组件直接从对应的 Pinia store 中获取枚举数据
+- 支持 gRPC 实时数据推送和缓存策略
+- 无需频繁调用接口，提高性能和用户体验
 
 ---
 
@@ -67,15 +67,15 @@ export const getUserList = async (params: GetUsersRequest) => {
 
 #### 🏗️ 阶段一：基础框架
 
--   **A0**: 页面结构与路由（非必须，仅新页面） → **A1**: 组件选型设计 → **A2**: 布局实现
+- **A0**: 页面结构与路由（非必须，仅新页面） → **A1**: 组件选型设计 → **A2**: 布局实现
 
 #### ⚙️ 阶段二：核心功能
 
--   **B1**: 筛选+列表+操作等核心功能 → **B2**: 表单弹窗组件 → **Bn**: xxx 组件
+- **B1**: 筛选+列表+操作等核心功能 → **B2**: 表单弹窗组件 → **Bn**: xxx 组件
 
 #### 🚀 阶段三：集成优化
 
--   **C1**: 功能集成联调 → **C2**: 性能优化完善
+- **C1**: 功能集成联调 → **C2**: 性能优化完善
 
 ### 🔧 执行规则
 
@@ -105,6 +105,7 @@ src/views/system/
 ```
 
 **示例**：
+
 ```
 src/views/system/person/
 ├── list.vue                 # 人员列表页面
@@ -138,8 +139,8 @@ src/views/[页面路径]/
 
 **验收标准**:
 
--   [ ] 页面正常访问，无路由错误
--   [ ] 显示基本框架结构
+- [ ] 页面正常访问，无路由错误
+- [ ] 显示基本框架结构
 
 **完成标识**: `[MODULE_A0_COMPLETED]`
 
@@ -163,18 +164,18 @@ src/views/[页面路径]/
 
 **参考示例文件**:
 
--   **表单页**: `src/views/formDemo.vue` - 标准表单实现
--   **列表页**: `src/views/listDemo.vue` - 标准筛选+列表实现
--   **动态表单**: `src/components/dForm/root.vue` - 动态表单根组件
--   **搜索面板**: `src/components/searchPanel/index.vue` - 搜索筛选实现
+- **表单页**: `src/views/formDemo.vue` - 标准表单实现
+- **列表页**: `src/views/listDemo.vue` - 标准筛选+列表实现
+- **动态表单**: `src/components/dForm/root.vue` - 动态表单根组件
+- **搜索面板**: `src/components/searchPanel/index.vue` - 搜索筛选实现
 
 **架构核心策略**:
 
--   **使用 Naive UI + 自定义组件**: 结合项目现有组件体系
--   **基于 Protobuf 的类型安全**: 所有数据类型从 Protobuf 自动生成
--   **混合 API 调用**: 智能选择 gRPC 或 REST 协议
--   **组件化拆分**: 基于项目现有组件架构，合理拆分业务组件
--   **架构优先**: 专注于设计决策和实现指导，避免过多具体代码
+- **使用 Naive UI + 自定义组件**: 结合项目现有组件体系
+- **基于 Protobuf 的类型安全**: 所有数据类型从 Protobuf 自动生成
+- **混合 API 调用**: 智能选择 gRPC 或 REST 协议
+- **组件化拆分**: 基于项目现有组件架构，合理拆分业务组件
+- **架构优先**: 专注于设计决策和实现指导，避免过多具体代码
 
 #### [结果] 架构决策与实施清单
 
@@ -193,8 +194,8 @@ src/views/[页面路径]/
 
 **验收标准**:
 
--   [ ] 选型决策有明确理由
--   [ ] 数据流设计合理
+- [ ] 选型决策有明确理由
+- [ ] 数据流设计合理
 
 **完成标识**: `[MODULE_A1_COMPLETED]`
 
@@ -218,11 +219,11 @@ src/views/[页面路径]/
 
 ```vue
 <template>
-    <div class="[AI_FILL: 页面类名]">
-        <!-- TODO: 根据A1选型方案引入主要组件 -->
-        <!-- TODO: 配置组件基础属性 -->
-        <!-- TODO: 添加弹窗/抽屉组件占位 -->
-    </div>
+  <div class="[AI_FILL: 页面类名]">
+    <!-- TODO: 根据A1选型方案引入主要组件 -->
+    <!-- TODO: 配置组件基础属性 -->
+    <!-- TODO: 添加弹窗/抽屉组件占位 -->
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -235,8 +236,8 @@ src/views/[页面路径]/
 
 **验收标准**:
 
--   [ ] 布局结构完整显示
--   [ ] 响应式布局正常
+- [ ] 布局结构完整显示
+- [ ] 响应式布局正常
 
 **完成标识**: `[MODULE_A2_COMPLETED]`
 
@@ -250,10 +251,10 @@ src/views/[页面路径]/
 
 **实现指引**:
 
--   **使用项目现有组件**: 参考 `SearchPanel` + `Naive UI DataTable` 方案
--   **API 调用**: 使用 axios 封装的请求方法
--   **表格分页**: 使用 `useTablePage` Hook 统一处理分页逻辑
--   **枚举值**: 使用 `useEnums` Hook 获取枚举数据
+- **使用项目现有组件**: 参考 `SearchPanel` + `Naive UI DataTable` 方案
+- **API 调用**: 使用 axios 封装的请求方法
+- **表格分页**: 使用 `useTablePage` Hook 统一处理分页逻辑
+- **枚举值**: 使用 `useEnums` Hook 获取枚举数据
 
 #### [结果] 架构决策与实施清单
 
@@ -271,13 +272,13 @@ src/views/[页面路径]/
 
 ```vue
 <template>
-    <SearchPanel :cols="4" labelWidth="60" :formModel="formModel" searchOnUpdate @search="refresh" @reset="handleReset">
-        <!-- TODO: 配置搜索表单字段 -->
-    </SearchPanel>
+  <SearchPanel :cols="4" labelWidth="60" :formModel="formModel" searchOnUpdate @search="refresh" @reset="handleReset">
+    <!-- TODO: 配置搜索表单字段 -->
+  </SearchPanel>
 
-    <n-data-table class="mt-4" :columns="tableColumns" :data="tableData" :pagination="pagination" :loading="loading" />
+  <n-data-table class="mt-4" :columns="tableColumns" :data="tableData" :pagination="pagination" :loading="loading" />
 
-    <!-- TODO: 配置弹窗组件 -->
+  <!-- TODO: 配置弹窗组件 -->
 </template>
 
 <script setup lang="tsx">
@@ -361,9 +362,9 @@ function handleCreateSuccess(user: UserInfo) {
 
 **验收标准**:
 
--   [ ] 筛选、列表、操作功能正常
--   [ ] API 接口调用正常
--   [ ] 数据加载和分页正常
+- [ ] 筛选、列表、操作功能正常
+- [ ] API 接口调用正常
+- [ ] 数据加载和分页正常
 
 **完成标识**: `[MODULE_B1_COMPLETED]`
 
@@ -391,34 +392,33 @@ function handleCreateSuccess(user: UserInfo) {
 ```vue
 <!-- CreateUserModal.vue -->
 <template>
-    <n-modal v-model:show="visible" preset="dialog" title="[AI_FILL: 弹窗标题]" class="w-120">
-        <d-form-root ref="formRef" class="pt-4" v-model:formModel="formModel" :formConfigs="formConfigs" :selectOptions="{}" label-placement="left" label-width="80" :disabled="loading" />
+  <n-modal v-model:show="visible" preset="dialog" title="[AI_FILL: 弹窗标题]" class="w-120">
+    <form-root ref="formRef" class="pt-4" v-model:formModel="formModel" :formConfigs="formConfigs" :selectOptions="{}" label-placement="left" label-width="80" :disabled="loading" />
 
-        <template #action>
-            <div class="flex justify-end space-x-2">
-                <n-button @click="handleCancel" :disabled="loading"> 取消 </n-button>
-                <n-button type="primary" @click="handleSubmit" :loading="loading"> 确定 </n-button>
-            </div>
-        </template>
-    </n-modal>
+    <template #action>
+      <div class="flex justify-end space-x-2">
+        <n-button @click="handleCancel" :disabled="loading"> 取消 </n-button>
+        <n-button type="primary" @click="handleSubmit" :loading="loading"> 确定 </n-button>
+      </div>
+    </template>
+  </n-modal>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, useTemplateRef } from 'vue'
 import { NModal, NButton, NAlert, useMessage } from 'naive-ui'
-import DFormRoot from '@/components/dForm/root.vue'
 import type { IFormConfig, DFormRootInst } from '@/components/dForm/types'
 import { createUserForm, type UserInfo } from '@/request/api/users'
 
 // Props
 interface Props {
-    visible: boolean
+  visible: boolean
 }
 
 // Emits
 interface Emits {
-    (e: 'update:visible', value: boolean): void
-    (e: 'success', user: UserInfo): void
+  (e: 'update:visible', value: boolean): void
+  (e: 'success', user: UserInfo): void
 }
 
 const props = defineProps<Props>()
@@ -426,8 +426,8 @@ const emit = defineEmits<Emits>()
 
 // 响应式数据
 const visible = computed({
-    get: () => props.visible,
-    set: (value) => emit('update:visible', value)
+  get: () => props.visible,
+  set: (value) => emit('update:visible', value)
 })
 
 const message = useMessage()
@@ -435,76 +435,76 @@ const formRef = useTemplateRef<DFormRootInst>('formRef')
 const loading = ref(false)
 
 // 表单数据
-const formModel = ref<Record<string, unknown>>({}) 
+const formModel = ref<Record<string, unknown>>({})
 
 // dForm 表单配置
 const formConfigs: IFormConfig[] = [
-    // TODO: 配置表单字段
+  // TODO: 配置表单字段
 ]
 
 // 重置表单
 const resetForm = () => {
-    formModel.value = {}
-    formRef.value?.restoreValidation()
+  formModel.value = {}
+  formRef.value?.restoreValidation()
 }
 
 // 监听弹窗显示状态，重置表单
 watch(visible, (newVisible) => {
-    if (newVisible) {
-        resetForm()
-    }
+  if (newVisible) {
+    resetForm()
+  }
 })
 
 // 处理取消
 const handleCancel = () => {
-    visible.value = false
+  visible.value = false
 }
 
 // 处理提交
 const handleSubmit = async () => {
-    try {
-        // 表单验证
-        const validateResult = await formRef.value?.validate()
-        if (validateResult?.warnings) {
-            return
-        }
-
-        loading.value = true
-
-        // 转换表单数据
-        const formData = {
-            // TODO: 转换表单数据
-        }
-
-        // 调用创建用户接口
-        const [result, error] = await createUserForm(formData)
-        if (error) {
-            message.error(error.message || '操作失败')
-            return
-        }
-
-        if (result?.data) {
-            message.success('[AI_FILL: 成功提示]')
-            emit('success', result.data)
-            visible.value = false
-        } else {
-            message.error('操作失败：返回数据异常')
-        }
-    } catch (error) {
-        console.error('[AI_FILL: 错误提示]', error)
-        message.error('[AI_FILL: 错误提示]')
-    } finally {
-        loading.value = false
+  try {
+    // 表单验证
+    const validateResult = await formRef.value?.validate()
+    if (validateResult?.warnings) {
+      return
     }
+
+    loading.value = true
+
+    // 转换表单数据
+    const formData = {
+      // TODO: 转换表单数据
+    }
+
+    // 调用创建用户接口
+    const [result, error] = await createUserForm(formData)
+    if (error) {
+      message.error(error.message || '操作失败')
+      return
+    }
+
+    if (result?.data) {
+      message.success('[AI_FILL: 成功提示]')
+      emit('success', result.data)
+      visible.value = false
+    } else {
+      message.error('操作失败：返回数据异常')
+    }
+  } catch (error) {
+    console.error('[AI_FILL: 错误提示]', error)
+    message.error('[AI_FILL: 错误提示]')
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 ```
 
 **验收标准**:
 
--   [ ] 弹窗正常开关，表单验证正常
--   [ ] 新增编辑模式功能正常
--   [ ] API 提交接口正常
+- [ ] 弹窗正常开关，表单验证正常
+- [ ] 新增编辑模式功能正常
+- [ ] API 提交接口正常
 
 **完成标识**: `[MODULE_B2_COMPLETED]`
 
@@ -529,9 +529,9 @@ const handleSubmit = async () => {
 ```vue
 <!-- 主页面完整集成 -->
 <template>
-    <div class="page-container">
-        <!-- TODO: 集成所有功能组件 -->
-    </div>
+  <div class="page-container">
+    <!-- TODO: 集成所有功能组件 -->
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -551,9 +551,9 @@ const handleSubmit = async () => {
 
 **验收标准**:
 
--   [ ] 所有功能模块协同工作正常
--   [ ] gRPC + REST 混合调用正常
--   [ ] 用户操作流程顺畅
+- [ ] 所有功能模块协同工作正常
+- [ ] gRPC + REST 混合调用正常
+- [ ] 用户操作流程顺畅
 
 **完成标识**: `[MODULE_C1_COMPLETED]`
 
@@ -587,9 +587,9 @@ const handleSubmit = async () => {
 
 ```vue
 <template>
-    <!-- TODO: 添加加载状态优化 -->
-    <!-- TODO: 添加空状态优化 -->
-    <!-- TODO: 添加操作确认优化 -->
+  <!-- TODO: 添加加载状态优化 -->
+  <!-- TODO: 添加空状态优化 -->
+  <!-- TODO: 添加操作确认优化 -->
 </template>
 ```
 
@@ -604,13 +604,13 @@ const handleSubmit = async () => {
 
 **验收标准**:
 
--   [ ] 页面响应速度满足要求（< 2s）
--   [ ] gRPC 连接稳定，降级机制正常
--   [ ] 大数据量场景下性能良好
--   [ ] 用户体验流畅，操作反馈及时
--   [ ] 错误处理完善，异常情况可恢复
--   [ ] 代码质量符合规范，无明显缺陷
--   [ ] 所有功能验收通过
+- [ ] 页面响应速度满足要求（< 2s）
+- [ ] gRPC 连接稳定，降级机制正常
+- [ ] 大数据量场景下性能良好
+- [ ] 用户体验流畅，操作反馈及时
+- [ ] 错误处理完善，异常情况可恢复
+- [ ] 代码质量符合规范，无明显缺陷
+- [ ] 所有功能验收通过
 
 **完成标识**: `[MODULE_C2_COMPLETED]`
 
@@ -626,22 +626,22 @@ const handleSubmit = async () => {
 
 ### 技术要求与验收标准
 
--   **框架**: Vue 3 + TypeScript + Composition API
--   **组件库**: `Naive UI` + 项目自定义组件
--   **接口调用**: 使用 gRPC + REST 混合 API 客户端
--   **类型安全**: 基于 Protobuf 自动生成的类型
--   **状态管理**: Pinia Store
--   **质量标准**: 无语法错误，TypeScript 类型检查通过，符合 ESLint 规范
--   **性能标准**: 页面加载正常，gRPC 调用稳定，交互响应及时，错误处理完善
+- **框架**: Vue 3 + TypeScript + Composition API
+- **组件库**: `Naive UI` + 项目自定义组件
+- **接口调用**: 使用 gRPC + REST 混合 API 客户端
+- **类型安全**: 基于 Protobuf 自动生成的类型
+- **状态管理**: Pinia Store
+- **质量标准**: 无语法错误，TypeScript 类型检查通过，符合 ESLint 规范
+- **性能标准**: 页面加载正常，gRPC 调用稳定，交互响应及时，错误处理完善
 
 ---
 
 > **使用说明**:
 >
-> -   **AI 开发者**: 按模块顺序执行，完成后输出标识等待用户确认
-> -   **项目开发者**: 填写 `[MANUAL_FILL]` 标记内容
-> -   **生成时**: 仅保留 `[结果]` 部分，隐藏 `[指引]` 部分
-> -   **实施清单**: 使用精炼语言，避免过度拆分
-> -   **接口调用**: 优先使用 gRPC，自动降级到 REST
+> - **AI 开发者**: 按模块顺序执行，完成后输出标识等待用户确认
+> - **项目开发者**: 填写 `[MANUAL_FILL]` 标记内容
+> - **生成时**: 仅保留 `[结果]` 部分，隐藏 `[指引]` 部分
+> - **实施清单**: 使用精炼语言，避免过度拆分
+> - **接口调用**: 优先使用 gRPC，自动降级到 REST
 
 ---

@@ -17,16 +17,17 @@
       </n-flex>
     </template>
 
-    <FormRoot ref="formRef" v-model:form-model="formData" :form-configs="formConfigs" :select-options="selectOptions" @submit="handleSubmit" />
+    <FormRoot ref="formRef" v-model:form-model="formData" :form-configs="formConfigs" :select-options="selectOptions" label-width="100px" @submit="handleSubmit" />
   </n-card>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { getResources, getResourceById, getResourceEnums, createResource, updateResource } from '@/request/api/resource'
+import { CreateResourceRequest, UpdateResourceRequest } from '@/shared/resource'
 import type { IFormConfig, IOption } from '@/components/dForm/types'
 import type { Resource } from '@/shared/resource'
 
@@ -41,62 +42,56 @@ const formRef = ref()
 const formLoading = ref(false)
 
 // 表单数据
-const formData = reactive<Partial<Resource>>({
+const formData = reactive<any>({
   id: '',
   name: '',
-  type: 0,
+  type: undefined,
   parentId: (route.query.parentId as string) || '',
   path: '',
-  code: '',
   resCode: '',
   sortOrder: 0,
-  description: ''
+  description: '',
+  suffix: ''
 })
 
 // 判断是否为编辑模式
-const isEditMode = computed(() => !!route.params.id)
+const isEditMode = computed(() => !!route.query.id)
 
-// 表单配置
-const formConfigs: IFormConfig[] = [
-  {
-    comp: 'n-input',
-    valueKey: 'name',
-    label: '资源名称',
-    required: true,
-    rules: {
-      message: '请输入资源名称',
-      trigger: 'blur'
-    },
-    props: {
-      placeholder: '请输入资源名称',
-      maxlength: 50,
-      showCount: true
-    }
-    // span: 12
-  },
+// 表单配置项 - 使用ref使其响应式，以便动态更新验证规则
+const formConfigs = computed<IFormConfig[]>(() => [
   {
     comp: 'n-select',
     valueKey: 'type',
     label: '资源类型',
     required: true,
-    rules: {
-      message: '请选择资源类型',
-      trigger: 'change'
-    },
-    optionsKey: 'resourceTypes',
     props: {
-      placeholder: '请选择资源类型'
-    }
+      placeholder: '请选择资源类型',
+      clearable: false
+    },
+    optionsKey: 'resourceTypes'
   },
   {
     comp: 'n-select',
     valueKey: 'parentId',
     label: '父级资源',
-    optionsKey: 'parentResources',
+    required: formData.type === 2 || formData.type === 3,
+    showRequireMark: formData.type === 2 || formData.type === 3,
     props: {
       placeholder: '请选择父级资源',
       clearable: true,
       filterable: true
+    },
+    optionsKey: 'parentResources'
+  },
+  {
+    comp: 'n-input',
+    valueKey: 'name',
+    label: '资源名称',
+    required: true,
+    props: {
+      placeholder: '请输入资源名称',
+      maxlength: 50,
+      showCount: true
     }
   },
   {
@@ -104,51 +99,73 @@ const formConfigs: IFormConfig[] = [
     valueKey: 'path',
     label: '路径',
     required: true,
-    rules: {
-      message: '请输入路径',
-      trigger: 'blur'
-    },
     props: {
       placeholder: '请输入路径',
       maxlength: 200,
       showCount: true
-    },
-    innerSlots: ['suffix']
-  },
-  {
-    comp: 'n-input',
-    valueKey: 'code',
-    label: '编码',
-    required: true,
-    rules: {
-      message: '请输入资源编码',
-      trigger: 'blur'
-    },
-    props: {
-      placeholder: '请输入资源编码',
-      maxlength: 50,
-      showCount: true
     }
   },
   {
-    comp: 'n-input',
+    comp: 'text',
+    visibleLinks: (data: any) => isEditMode.value,
     valueKey: 'resCode',
-    label: '资源码',
-    required: true,
-    rules: {
-      message: '请输入资源码',
-      trigger: 'blur'
-    },
+    label: '资源编码',
+    isText: true
+  },
+  {
+    comp: 'n-input',
+    valueKey: 'suffix',
+    label: '资源后缀',
+    required: false,
+    visibleLinks: (data: any) => !isEditMode.value && data.type === 3,
+    rules: [
+      {
+        message: '请输入资源后缀',
+        trigger: 'blur',
+        validator: (rule: any, value: string) => {
+          // 模块类型时必填
+          if (formData.type === 3 && (!value || value.trim() === '')) {
+            return new Error('资源后缀不能为空')
+          }
+          return true
+        }
+      },
+      {
+        message: '资源后缀格式不正确',
+        trigger: 'blur',
+        validator: (rule: any, value: string) => {
+          if (value && !/^[a-zA-Z0-9_]+$/.test(value)) {
+            return new Error('资源后缀只能包含字母、数字和下划线')
+          }
+          return true
+        }
+      }
+    ],
     props: {
-      placeholder: '请输入资源码（基于RBAC权限系统自动生成）',
-      maxlength: 100,
+      placeholder: '请输入资源后缀（模块类型必填，字母、数字、下划线）',
+      maxlength: 50,
       showCount: true,
-      readonly: true
+      ...(isEditMode.value && { readonly: true }) // 编辑模式下不可修改
     }
   },
+  // {
+  //   comp: 'n-input',
+  //   valueKey: 'resCode',
+  //   label: '资源编码',
+  //   rules: {
+  //     message: '请输入资源编码',
+  //     trigger: 'blur'
+  //   },
+  //   props: {
+  //     placeholder: '请输入资源码（自动生成）',
+  //     maxlength: 100,
+  //     showCount: true,
+  //     readonly: true
+  //   }
+  // },
   {
     comp: 'n-input-number',
-    valueKey: 'sort',
+    valueKey: 'sortOrder',
     label: '排序',
     props: {
       min: 0,
@@ -160,6 +177,7 @@ const formConfigs: IFormConfig[] = [
     comp: 'n-input',
     valueKey: 'description',
     label: '描述',
+    showRequireMark: false,
     props: {
       type: 'textarea',
       placeholder: '请输入资源描述',
@@ -168,7 +186,7 @@ const formConfigs: IFormConfig[] = [
       autosize: { minRows: 3, maxRows: 5 }
     }
   }
-]
+])
 
 // 选择器选项数据
 const selectOptions = reactive<Record<string, IOption[]>>({
@@ -202,7 +220,7 @@ const fetchParentResources = async () => {
         .filter(
           (res: Resource) =>
             // 过滤掉自己和子级资源，避免循环引用
-            !res.id || (isEditMode.value ? res.id !== route.params.id : true)
+            !res.id || (isEditMode.value ? res.id !== route.query.id : true)
         )
         .map((res: Resource) => ({
           label: res.name,
@@ -231,6 +249,7 @@ const fetchResourceDetail = async (id: string) => {
       formData.resCode = resource.resCode || ''
       formData.sortOrder = resource.sortOrder || 0
       formData.description = resource.description || ''
+      formData.suffix = (resource as any).suffix || ''
     } else {
       nMessage.error(error?.message || '获取资源详情失败')
     }
@@ -246,43 +265,50 @@ const handleSubmit = async () => {
 
   formLoading.value = true
   try {
-    let response, error
     if (isEditMode.value) {
       // 编辑资源
-      const updateParams = {
-        id: route.params.id as string,
-        name: formData.name,
-        type: formData.type,
+      const updateParams: UpdateResourceRequest = {
+        id: route.query.id as string,
+        name: formData.name || '',
+        type: formData.type || 1,
         parentId: formData.parentId || undefined,
-        path: formData.path,
-        code: formData.code,
+        path: formData.path || '',
         // resCode在服务端自动生成，不需要在更新时发送
         description: formData.description,
-        isActive: true,
-        sortOrder: formData.sortOrder
+        sortOrder: formData.sortOrder || 0,
+        isActive: true
       }
-      ;[response, error] = await updateResource(updateParams)
+      const [response, error] = await updateResource(updateParams)
+      console.log('updateResource response', response)
+      if (error) return
+      if (response && response.success) {
+        nMessage.success('资源修改成功')
+        router.push('/system-manage/resource')
+      } else {
+        nMessage.error(response?.message || '资源修改失败')
+        return
+      }
     } else {
       // 创建资源
       const createParams = {
-        name: formData.name,
-        type: formData.type,
+        name: formData.name || '',
+        type: formData.type || 1,
         parentId: formData.parentId || undefined,
-        path: formData.path,
-        code: formData.code,
+        path: formData.path || '',
         // resCode在服务端自动生成，不需要在创建时发送
         description: formData.description,
-        isActive: true,
-        sortOrder: formData.sortOrder
+        suffix: formData.suffix || undefined,
+        sortOrder: formData.sortOrder || 0
+      } as CreateResourceRequest
+      const [response, error] = await createResource(createParams)
+      if (error) return
+      if (response && response.success) {
+        nMessage.success('资源创建成功')
+        router.push('/system-manage/resource')
+      } else {
+        nMessage.error(response?.message || '资源创建失败')
+        return
       }
-      ;[response, error] = await createResource(createParams)
-    }
-
-    if (response) {
-      nMessage.success(isEditMode.value ? '资源修改成功' : '资源创建成功')
-      router.push('/resource/list')
-    } else {
-      nMessage.error(error?.message || (isEditMode.value ? '资源修改失败' : '资源创建失败'))
     }
   } catch (error: any) {
     nMessage.error((isEditMode.value ? '资源修改失败' : '资源创建失败') + ': ' + error.message)
@@ -293,15 +319,16 @@ const handleSubmit = async () => {
 
 // 取消操作
 const handleCancel = () => {
-  router.push('/resource/list')
+  router.push('/resource')
 }
 
 // 页面加载时获取数据
 onMounted(async () => {
   await Promise.all([fetchResourceTypes(), fetchParentResources()])
 
+  // 如果是编辑模式，获取资源详情
   if (isEditMode.value) {
-    fetchResourceDetail(route.params.id as string)
+    await fetchResourceDetail(route.query.id as string)
   }
 })
 </script>

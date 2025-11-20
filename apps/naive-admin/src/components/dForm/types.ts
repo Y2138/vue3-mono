@@ -11,6 +11,7 @@ type withOption<T> = T & {
 }
 // 组件及其内部属性
 type FormType =
+  | { comp: 'text'; props?: {} }
   | { comp: 'd-radio'; props?: withOption<RadioButtonProps> }
   | { comp: 'n-select'; props?: withOption<SelectProps> }
   | { comp: 'd-date-picker'; props?: Omit<DatePickerProps, 'value'> & { value?: string | [string, string] | null } }
@@ -33,9 +34,9 @@ type WithConfig<T> = T & {
   innerSlots?: string[]
   visibleLinks?: Record<string, any[]>[] | ((formModel: Record<string, unknown>) => boolean)
   /* 网格布局相关 */
-  span?: number
-  offset?: number
-  suffix?: boolean
+  // span?: number
+  // offset?: number
+  // suffix?: boolean
 }
 export type IFormConfig = WithConfig<FormType>
 
@@ -52,6 +53,7 @@ export type DFormRootProp = {
   size?: 'small' | 'medium' | 'large'
   disabled?: boolean
   inline?: boolean
+  cols?: number
 }
 
 export type DFormRootInst = FormInst

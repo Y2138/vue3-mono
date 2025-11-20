@@ -154,7 +154,7 @@ export class ResourceTreeService {
   /**
    * 复制资源
    */
-  async duplicateResource(resourceId: string, newParentId?: string, newName?: string): Promise<any> {
+  async duplicateResource(resourceId: string, newParentId?: string | null, newName?: string | null): Promise<any> {
     const originalResource = await this.prisma.client?.resource.findUnique({
       where: { id: resourceId },
       include: { children: true }

@@ -19,6 +19,7 @@ message Resource {
   int32 level = 12;
   // 移除metadata字段，code不再在metadata中维护，改为独立字段resCode
   string path = 13;
+  optional string suffix = 14;  // 资源后缀，模块类型专用
 }
 
 // 树形资源类型（包含children，用于树形结构）
@@ -37,7 +38,8 @@ message ResourceTree {
   int32 level = 12;
   // 移除metadata字段，code不再在metadata中维护，改为独立字段resCode
   string path = 13;
-  repeated ResourceTree children = 14;  // 树形结构包含children
+  optional string suffix = 14;  // 资源后缀，模块类型专用
+  repeated ResourceTree children = 15;  // 树形结构包含children
 }
 
 message CreateResourceRequest {
@@ -45,7 +47,9 @@ message CreateResourceRequest {
   int32 type = 2;  // 使用基础类型（1=page, 2=api, 3=module）
   optional string parentId = 3;  // 可选字段
   string path = 4;
-  optional string description = 5;  // 可选字段
+  int32 sortOrder = 5;  // 排序字段
+  optional string description = 6;  // 可选字段
+  optional string suffix = 7;  // 资源后缀，模块类型专用
   // 移除metadata字段，resCode将在服务端自动生成
 }
 
@@ -55,9 +59,10 @@ message UpdateResourceRequest {
   int32 type = 3;  // 使用基础类型（1=page, 2=api, 3=module）
   optional string parentId = 4;  // 可选字段
   string path = 5;
-  optional string description = 6;  // 可选字段
-  bool isActive = 7;
-  // 移除metadata字段，resCode将在服务端自动生成或更新
+  int32 sortOrder = 6;  // 排序字段
+  optional string description = 7;  // 可选字段
+  bool isActive = 8;
+  // 注意：更新时不能修改suffix字段，resCode将在服务端自动生成或更新
 }
 
 message GetResourceRequest {
