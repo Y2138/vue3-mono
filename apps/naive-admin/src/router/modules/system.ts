@@ -26,7 +26,7 @@ const systemRoutes: CustomRouteRecord = {
     {
       path: 'resource',
       name: 'resourceList',
-      component: () => import('@/views/resources/index.vue'),
+      component: () => import('@/views/system/resources/index.vue'),
       meta: {
         title: '资源管理'
       }
@@ -34,7 +34,7 @@ const systemRoutes: CustomRouteRecord = {
     {
       path: 'resource/create',
       name: 'resourceCreate',
-      component: () => import('@/views/resources/components/resource-form.vue'),
+      component: () => import('@/views/system/resources/components/resource-form.vue'),
       meta: {
         title: '创建资源',
         activeMenuPath: '/system-manage/resource'
@@ -43,12 +43,38 @@ const systemRoutes: CustomRouteRecord = {
     {
       path: 'resource/edit',
       name: 'resourceEdit',
-      component: () => import('@/views/resources/components/resource-form.vue'),
+      component: () => import('@/views/system/resources/components/resource-form.vue'),
       meta: {
         title: '编辑资源',
         activeMenuPath: '/system-manage/resource'
       }
     }
+    // {
+    //   path: 'role',
+    //   name: 'roleManage',
+    //   component: () => import('@/views/system/role/list.vue'),
+    //   meta: {
+    //     title: '角色管理'
+    //   }
+    // },
+    // {
+    //   path: 'role/create',
+    //   name: 'roleCreate',
+    //   component: () => import('@/views/system/role/form.vue'),
+    //   meta: {
+    //     title: '创建角色',
+    //     activeMenuPath: '/system-manage/role'
+    //   }
+    // },
+    // {
+    //   path: 'role/edit',
+    //   name: 'roleEdit',
+    //   component: () => import('@/views/system/role/form.vue'),
+    //   meta: {
+    //     title: '编辑角色',
+    //     activeMenuPath: '/system-manage/role'
+    //   }
+    // },
   ]
 }
 

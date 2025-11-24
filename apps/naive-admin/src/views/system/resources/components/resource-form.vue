@@ -319,7 +319,7 @@ const handleSubmit = async () => {
 
 // 取消操作
 const handleCancel = () => {
-  router.push('/resource')
+  router.push('/system-manage/resource')
 }
 
 // 页面加载时获取数据

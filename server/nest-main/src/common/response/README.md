@@ -275,7 +275,7 @@ try {
   }
   return this.success(user, '获取成功')
 } catch (error) {
-  return this.handleError(error, '获取失败')
+  this.throwBusinessError(error, '获取用户失败')
 }
 ```
 

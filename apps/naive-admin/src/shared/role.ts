@@ -5,7 +5,7 @@
 // source: role.proto
 
 /* eslint-disable */
-import type { EmptyRequest, PaginationRequest, PaginationResponse, ResponseStatus } from "./common";
+import type { PaginationRequest, PaginationResponse, ResponseStatus } from "./common";
 import type { Resource } from "./resource";
 
 export const protobufPackage = "role";
@@ -138,8 +138,6 @@ export interface RemoveRolePermissionsRequest {
 export interface GetRolePermissionsRequest {
   /** 角色ID */
   roleId: string;
-  /** 是否包含子权限（可选，默认false） */
-  includeChildren?: boolean | undefined;
 }
 
 /** 角色权限响应 */
@@ -190,69 +188,6 @@ export interface GetRoleUsersResponse {
   pagination?: PaginationResponse | undefined;
 }
 
-/** 检查用户角色请求 */
-export interface CheckUserRoleRequest {
-  /** 用户ID（手机号） */
-  userId: string;
-  /** 角色ID（可选，如果不指定则检查所有角色） */
-  roleId?: string | undefined;
-}
-
-/** 检查用户角色响应 */
-export interface CheckUserRoleResponse {
-  /** 是否拥有指定角色 */
-  hasRole: boolean;
-  /** 用户拥有的角色列表 */
-  userRoles: Role[];
-}
-
-/** 获取用户角色请求 */
-export interface GetUserRolesRequest {
-  /** 用户ID（手机号） */
-  userId: string;
-}
-
-/** 获取用户角色响应 */
-export interface GetUserRolesResponse {
-  /** 用户ID */
-  userId: string;
-  /** 角色列表 */
-  roles: Role[];
-}
-
-/** 检查角色权限请求 */
-export interface CheckRolePermissionRequest {
-  /** 角色ID */
-  roleId: string;
-  /** 权限码 */
-  permissionCode: string;
-}
-
-/** 检查角色权限响应 */
-export interface CheckRolePermissionResponse {
-  /** 是否拥有权限 */
-  hasPermission: boolean;
-  /** 匹配的资源信息 */
-  matchedResources: Resource[];
-}
-
-/** 角色统计信息 */
-export interface RoleStatistics {
-  /** 总角色数 */
-  totalRoles: number;
-  /** 按状态统计 */
-  rolesByStatus: Map<string, number>;
-  /** 平均权限数 */
-  averagePermissionsPerRole: number;
-  /** 总用户角色关联数 */
-  totalUserRoleAssignments: number;
-}
-
-export interface RoleStatistics_RolesByStatusEntry {
-  key: string;
-  value: number;
-}
-
 /** 角色服务定义 */
 export interface RoleService {
   /** 获取角色信息 */
@@ -277,12 +212,4 @@ export interface RoleService {
   RemoveRoleUsers(request: RemoveRoleUsersRequest): Promise<ResponseStatus>;
   /** 获取角色用户 */
   GetRoleUsers(request: GetRoleUsersRequest): Promise<GetRoleUsersResponse>;
-  /** 检查用户角色 */
-  CheckUserRole(request: CheckUserRoleRequest): Promise<CheckUserRoleResponse>;
-  /** 获取用户角色 */
-  GetUserRoles(request: GetUserRolesRequest): Promise<GetUserRolesResponse>;
-  /** 检查角色权限 */
-  CheckRolePermission(request: CheckRolePermissionRequest): Promise<CheckRolePermissionResponse>;
-  /** 获取角色统计信息 */
-  GetRoleStatistics(request: EmptyRequest): Promise<RoleStatistics>;
 }

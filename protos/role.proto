@@ -115,8 +115,6 @@ message RemoveRolePermissionsRequest {
 message GetRolePermissionsRequest {
   // 角色ID
   string role_id = 1;
-  // 是否包含子权限（可选，默认false）
-  optional bool include_children = 2;
 }
 
 // 角色权限响应
@@ -163,64 +161,6 @@ message GetRoleUsersResponse {
   optional common.PaginationResponse pagination = 3;
 }
 
-// 检查用户角色请求
-message CheckUserRoleRequest {
-  // 用户ID（手机号）
-  string user_id = 1;
-  // 角色ID（可选，如果不指定则检查所有角色）
-  optional string role_id = 2;
-}
-
-// 检查用户角色响应
-message CheckUserRoleResponse {
-  // 是否拥有指定角色
-  bool has_role = 1;
-  // 用户拥有的角色列表
-  repeated Role user_roles = 2;
-}
-
-// 获取用户角色请求
-message GetUserRolesRequest {
-  // 用户ID（手机号）
-  string user_id = 1;
-}
-
-// 获取用户角色响应
-message GetUserRolesResponse {
-  // 用户ID
-  string user_id = 1;
-  // 角色列表
-  repeated Role roles = 2;
-}
-
-// 检查角色权限请求
-message CheckRolePermissionRequest {
-  // 角色ID
-  string role_id = 1;
-  // 权限码
-  string permission_code = 2;
-}
-
-// 检查角色权限响应
-message CheckRolePermissionResponse {
-  // 是否拥有权限
-  bool has_permission = 1;
-  // 匹配的资源信息
-  repeated resource.Resource matched_resources = 2;
-}
-
-// 角色统计信息
-message RoleStatistics {
-  // 总角色数
-  int32 total_roles = 1;
-  // 按状态统计
-  map<string, int32> roles_by_status = 2;
-  // 平均权限数
-  double average_permissions_per_role = 3;
-  // 总用户角色关联数
-  int32 total_user_role_assignments = 4;
-}
-
 // 角色服务定义
 service RoleService {
   // 获取角色信息
@@ -255,16 +195,4 @@ service RoleService {
 
   // 获取角色用户
   rpc GetRoleUsers(GetRoleUsersRequest) returns (GetRoleUsersResponse);
-
-  // 检查用户角色
-  rpc CheckUserRole(CheckUserRoleRequest) returns (CheckUserRoleResponse);
-
-  // 获取用户角色
-  rpc GetUserRoles(GetUserRolesRequest) returns (GetUserRolesResponse);
-
-  // 检查角色权限
-  rpc CheckRolePermission(CheckRolePermissionRequest) returns (CheckRolePermissionResponse);
-
-  // 获取角色统计信息
-  rpc GetRoleStatistics(common.EmptyRequest) returns (RoleStatistics);
 }

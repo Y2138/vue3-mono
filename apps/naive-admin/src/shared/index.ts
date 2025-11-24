@@ -2,7 +2,7 @@
 // 只包含接口类型定义，不包含编码/解码逻辑
 // 自动解决 protobufPackage 命名冲突
 // 请勿手动修改
-// PROTO SOURCE: /Users/staff/Documents/my-tools/vue3-mono/protosresource.proto
+// PROTO SOURCE: /Users/staff/Documents/my-tools/vue3-mono/protosrole.proto
 
 // Common types
 export type {
@@ -61,14 +61,6 @@ export type {
   RemoveRoleUsersRequest,
   GetRoleUsersRequest,
   GetRoleUsersResponse,
-  CheckUserRoleRequest,
-  CheckUserRoleResponse,
-  GetUserRolesRequest,
-  GetUserRolesResponse,
-  CheckRolePermissionRequest,
-  CheckRolePermissionResponse,
-  RoleStatistics,
-  RoleStatistics_RolesByStatusEntry,
   RoleService
 } from './role';
 
