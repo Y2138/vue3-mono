@@ -18,7 +18,7 @@ import { RoleService } from './services/role.service'
   imports: [PrismaModule]
 })
 export class RoleModule {
-  constructor() {}
+  
 
   async onModuleInit() {
     // 模块初始化逻辑

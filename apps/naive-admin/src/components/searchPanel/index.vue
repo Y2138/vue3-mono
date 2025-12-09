@@ -87,5 +87,3 @@ const handleReset = () => {
   emits('reset')
 }
 </script>
-
-<style scoped></style>

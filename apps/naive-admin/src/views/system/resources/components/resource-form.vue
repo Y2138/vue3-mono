@@ -333,14 +333,4 @@ onMounted(async () => {
 })
 </script>
 
-<style scoped>
-:deep(.resource-form-card) {
-  margin: 16px;
-}
-
-:deep(.path-hint) {
-  font-size: 12px;
-  color: #666;
-  margin-top: 4px;
-}
-</style>
+<!-- 样式已迁移到Tailwind CSS类 -->

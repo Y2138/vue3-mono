@@ -23,18 +23,8 @@ message Role {
   string created_at = 6;
   // 更新时间
   string updated_at = 7;
-}
-
-// 角色权限树节点
-message RolePermissionTreeNode {
-  // 资源信息
-  resource.Resource resource = 1;
-  // 是否已分配
-  bool is_assigned = 2;
-  // 是否部分分配
-  bool is_indeterminate = 3;
-  // 子节点
-  repeated RolePermissionTreeNode children = 4;
+  // 角色拥有的资源ID列表
+  repeated string resource_ids = 8;
 }
 
 // 创建角色请求
@@ -47,6 +37,8 @@ message CreateRoleRequest {
   optional bool is_active = 3;
   // 是否为超级管理员（可选，默认false）
   optional bool is_super_admin = 4;
+  // 角色拥有的资源ID列表
+  repeated string resource_ids = 5;
 }
 
 // 更新角色请求
@@ -61,6 +53,8 @@ message UpdateRoleRequest {
   optional bool is_active = 4;
   // 是否为超级管理员（可选）
   optional bool is_super_admin = 5;
+  // 角色拥有的资源ID列表
+  repeated string resource_ids = 6;
 }
 
 // 获取角色请求
@@ -81,12 +75,8 @@ message GetRolesRequest {
   optional common.PaginationRequest pagination = 4;
 }
 
-// 角色列表响应
 message GetRolesResponse {
-  // 角色列表
-  repeated Role roles = 1;
-  // 分页信息
-  optional common.PaginationResponse pagination = 2;
+  repeated Role data = 1;
 }
 
 // 删除角色请求
@@ -111,56 +101,6 @@ message RemoveRolePermissionsRequest {
   repeated string resource_ids = 2;
 }
 
-// 获取角色权限请求
-message GetRolePermissionsRequest {
-  // 角色ID
-  string role_id = 1;
-}
-
-// 角色权限响应
-message GetRolePermissionsResponse {
-  // 角色信息
-  Role role = 1;
-  // 权限树
-  repeated RolePermissionTreeNode permission_tree = 2;
-  // 权限资源列表
-  repeated resource.Resource permissions = 3;
-}
-
-// 分配用户给角色请求
-message AssignUsersToRoleRequest {
-  // 角色ID
-  string role_id = 1;
-  // 用户ID列表（手机号）
-  repeated string user_ids = 2;
-}
-
-// 移除角色用户请求
-message RemoveRoleUsersRequest {
-  // 角色ID
-  string role_id = 1;
-  // 用户ID列表（手机号）
-  repeated string user_ids = 2;
-}
-
-// 获取角色用户请求
-message GetRoleUsersRequest {
-  // 角色ID
-  string role_id = 1;
-  // 分页信息
-  optional common.PaginationRequest pagination = 2;
-}
-
-// 角色用户响应
-message GetRoleUsersResponse {
-  // 角色信息
-  Role role = 1;
-  // 用户列表
-  repeated string user_ids = 2;
-  // 分页信息
-  optional common.PaginationResponse pagination = 3;
-}
-
 // 角色服务定义
 service RoleService {
   // 获取角色信息
@@ -183,16 +123,4 @@ service RoleService {
 
   // 移除角色权限
   rpc RemoveRolePermissions(RemoveRolePermissionsRequest) returns (common.ResponseStatus);
-
-  // 获取角色权限
-  rpc GetRolePermissions(GetRolePermissionsRequest) returns (GetRolePermissionsResponse);
-
-  // 分配用户给角色
-  rpc AssignUsersToRole(AssignUsersToRoleRequest) returns (common.ResponseStatus);
-
-  // 移除角色用户
-  rpc RemoveRoleUsers(RemoveRoleUsersRequest) returns (common.ResponseStatus);
-
-  // 获取角色用户
-  rpc GetRoleUsers(GetRoleUsersRequest) returns (GetRoleUsersResponse);
 }

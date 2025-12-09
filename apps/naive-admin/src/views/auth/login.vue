@@ -1,69 +1,78 @@
 <template>
-  <div class="relative min-h-screen flex items-center justify-center p-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
+  <div class="relative min-h-screen flex items-center justify-center p-4 bg-[linear-gradient(135deg,_#667eea_0%,_#764ba2_100%)] bg-pattern">
     <!-- 背景装饰 -->
     <div class="absolute inset-0 overflow-hidden">
       <div class="bg-pattern absolute inset-0 opacity-10"></div>
     </div>
 
     <!-- 登录卡片 -->
-    <div class="login-card relative w-full max-w-md bg-white dark:bg-gray-800 dark:text-white rounded-2xl shadow-2xl p-8">
-      <!-- 头部 -->
+    <div class="w-full max-w-md mx-auto">
+      <!-- Logo -->
       <div class="text-center mb-8">
-        <div class="flex items-center justify-center mb-4">
-          <div class="mr-3 p-2 bg-primary-500 text-white rounded-xl">
-            <Icon icon="mdi:shield-account" width="32" height="32" />
-          </div>
-          <h1 class="text-2xl font-bold text-gray-800 dark:text-white">管理系统</h1>
-        </div>
-        <p class="text-gray-600 dark:text-gray-300 text-sm">欢迎回来，请登录您的账户</p>
+        <h1 class="text-3xl font-bold text-white mb-2">Naive Admin</h1>
+        <p class="text-blue-100">基于 Vue3 和 TypeScript 的后台管理系统</p>
       </div>
 
       <!-- 登录表单 -->
-      <n-form ref="formRef" :model="formData" :rules="formRules" size="large" :show-label="false" class="space-y-4">
-        <!-- 手机号输入 -->
-        <n-form-item path="phone" class="mb-4">
-          <n-input v-model:value="formData.phone" placeholder="请输入手机号" :maxlength="11" clearable :input-props="{ autocomplete: 'username' }">
-            <template #prefix>
-              <Icon icon="mdi:phone" class="text-gray-400 w-5 h-5" />
-            </template>
-          </n-input>
-        </n-form-item>
-
-        <!-- 密码输入 -->
-        <n-form-item path="password" class="mb-4">
-          <n-input v-model:value="formData.password" type="password" placeholder="请输入密码" :maxlength="50" show-password-on="mousedown" :input-props="{ autocomplete: 'current-password' }" @keyup.enter="handleLogin">
-            <template #prefix>
-              <Icon icon="mdi:lock" class="text-gray-400 w-5 h-5" />
-            </template>
-          </n-input>
-        </n-form-item>
-
-        <!-- 记住我选项 -->
-        <div class="flex items-center justify-between mb-6">
-          <n-checkbox v-model:checked="formData.rememberMe"> 记住我 </n-checkbox>
-          <n-button text type="primary" class="text-sm"> 忘记密码？ </n-button>
+      <div class="login-card relative w-full max-w-md bg-white dark:bg-gray-800 dark:text-white rounded-2xl shadow-2xl p-8">
+        <!-- 头部 -->
+        <div class="text-center mb-8">
+          <div class="flex items-center justify-center mb-4">
+            <div class="mr-3 p-2 bg-primary-500 text-white rounded-xl">
+              <Icon icon="mdi:shield-account" width="32" height="32" />
+            </div>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white">管理系统</h1>
+          </div>
+          <p class="text-gray-600 dark:text-gray-300 text-sm">欢迎回来，请登录您的账户</p>
         </div>
 
-        <!-- 登录按钮 -->
-        <n-button type="primary" size="large" :loading="loginLoading" :disabled="!isFormValid" block class="login-button mb-6 h-12 text-base font-medium" @click="handleLogin">
-          <template #icon>
-            <Icon icon="mdi:login" />
-          </template>
-          {{ loginLoading ? '登录中...' : '登录' }}
-        </n-button>
-      </n-form>
+        <!-- 登录表单 -->
+        <n-form ref="formRef" :model="formData" :rules="formRules" size="large" :show-label="false" class="space-y-4">
+          <!-- 手机号输入 -->
+          <n-form-item path="phone" class="mb-4">
+            <n-input v-model:value="formData.phone" placeholder="请输入手机号" :maxlength="11" clearable :input-props="{ autocomplete: 'username' }">
+              <template #prefix>
+                <Icon icon="mdi:phone" class="text-gray-400 w-5 h-5" />
+              </template>
+            </n-input>
+          </n-form-item>
 
-      <!-- 底部信息 -->
-      <div class="text-center">
-        <p class="text-gray-600 dark:text-gray-300 pt-4 text-sm">
-          还没有账号？
-          <n-button text type="primary" @click="handleRegister"> 立即注册 </n-button>
-        </p>
+          <!-- 密码输入 -->
+          <n-form-item path="password" class="mb-4">
+            <n-input v-model:value="formData.password" type="password" placeholder="请输入密码" :maxlength="50" show-password-on="mousedown" :input-props="{ autocomplete: 'current-password' }" @keyup.enter="handleLogin">
+              <template #prefix>
+                <Icon icon="mdi:lock" class="text-gray-400 w-5 h-5" />
+              </template>
+            </n-input>
+          </n-form-item>
+
+          <!-- 记住我选项 -->
+          <div class="flex items-center justify-between mb-6">
+            <n-checkbox v-model:checked="formData.rememberMe"> 记住我 </n-checkbox>
+            <n-button text type="primary" class="text-sm"> 忘记密码？ </n-button>
+          </div>
+
+          <!-- 登录按钮 -->
+          <n-button type="primary" size="large" :loading="loginLoading" :disabled="!isFormValid" block class="login-button mb-6 h-12 text-base font-medium" @click="handleLogin">
+            <template #icon>
+              <Icon icon="mdi:login" />
+            </template>
+            {{ loginLoading ? '登录中...' : '登录' }}
+          </n-button>
+        </n-form>
+
+        <!-- 底部信息 -->
+        <div class="text-center">
+          <p class="text-gray-600 dark:text-gray-300 pt-4 text-sm">
+            还没有账号？
+            <n-button text type="primary" @click="handleRegister"> 立即注册 </n-button>
+          </p>
+        </div>
       </div>
     </div>
 
     <!-- 错误提示 -->
-    <n-alert v-if="errorMessage" type="error" :title="errorMessage" closable class="error-alert fixed top-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md" @close="errorMessage = ''" />
+    <n-alert v-if="errorMessage" type="error" :title="errorMessage" closable class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md animate-slide-down" @close="errorMessage = ''" />
   </div>
 </template>
 
@@ -193,52 +202,3 @@ onMounted(() => {
   }
 })
 </script>
-
-<style scoped>
-/* 背景装饰动画 */
-.bg-pattern {
-  background-image: radial-gradient(circle at 25% 25%, white 2px, transparent 2px), radial-gradient(circle at 75% 75%, white 2px, transparent 2px);
-  background-size: 60px 60px;
-  animation: float 20s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0px) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-20px) rotate(180deg);
-  }
-}
-
-/* 登录卡片特效 */
-.login-card {
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-/* 错误提示动画 */
-.error-alert {
-  animation: slideDown 0.3s ease-out;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -20px);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-}
-
-/* 响应式设计 */
-@media (max-width: 640px) {
-  .login-card {
-    margin: 0 1rem;
-    padding: 1.5rem;
-  }
-}
-</style>

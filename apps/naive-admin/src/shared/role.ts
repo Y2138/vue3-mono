@@ -5,8 +5,7 @@
 // source: role.proto
 
 /* eslint-disable */
-import type { PaginationRequest, PaginationResponse, ResponseStatus } from "./common";
-import type { Resource } from "./resource";
+import type { PaginationRequest, ResponseStatus } from "./common";
 
 export const protobufPackage = "role";
 
@@ -28,20 +27,8 @@ export interface Role {
   createdAt: string;
   /** 更新时间 */
   updatedAt: string;
-}
-
-/** 角色权限树节点 */
-export interface RolePermissionTreeNode {
-  /** 资源信息 */
-  resource?:
-    | Resource
-    | undefined;
-  /** 是否已分配 */
-  isAssigned: boolean;
-  /** 是否部分分配 */
-  isIndeterminate: boolean;
-  /** 子节点 */
-  children: RolePermissionTreeNode[];
+  /** 角色拥有的资源ID列表 */
+  resourceIds: string[];
 }
 
 /** 创建角色请求 */
@@ -57,7 +44,11 @@ export interface CreateRoleRequest {
     | boolean
     | undefined;
   /** 是否为超级管理员（可选，默认false） */
-  isSuperAdmin?: boolean | undefined;
+  isSuperAdmin?:
+    | boolean
+    | undefined;
+  /** 角色拥有的资源ID列表 */
+  resourceIds: string[];
 }
 
 /** 更新角色请求 */
@@ -77,7 +68,11 @@ export interface UpdateRoleRequest {
     | boolean
     | undefined;
   /** 是否为超级管理员（可选） */
-  isSuperAdmin?: boolean | undefined;
+  isSuperAdmin?:
+    | boolean
+    | undefined;
+  /** 角色拥有的资源ID列表 */
+  resourceIds: string[];
 }
 
 /** 获取角色请求 */
@@ -104,12 +99,8 @@ export interface GetRolesRequest {
   pagination?: PaginationRequest | undefined;
 }
 
-/** 角色列表响应 */
 export interface GetRolesResponse {
-  /** 角色列表 */
-  roles: Role[];
-  /** 分页信息 */
-  pagination?: PaginationResponse | undefined;
+  data: Role[];
 }
 
 /** 删除角色请求 */
@@ -134,60 +125,6 @@ export interface RemoveRolePermissionsRequest {
   resourceIds: string[];
 }
 
-/** 获取角色权限请求 */
-export interface GetRolePermissionsRequest {
-  /** 角色ID */
-  roleId: string;
-}
-
-/** 角色权限响应 */
-export interface GetRolePermissionsResponse {
-  /** 角色信息 */
-  role?:
-    | Role
-    | undefined;
-  /** 权限树 */
-  permissionTree: RolePermissionTreeNode[];
-  /** 权限资源列表 */
-  permissions: Resource[];
-}
-
-/** 分配用户给角色请求 */
-export interface AssignUsersToRoleRequest {
-  /** 角色ID */
-  roleId: string;
-  /** 用户ID列表（手机号） */
-  userIds: string[];
-}
-
-/** 移除角色用户请求 */
-export interface RemoveRoleUsersRequest {
-  /** 角色ID */
-  roleId: string;
-  /** 用户ID列表（手机号） */
-  userIds: string[];
-}
-
-/** 获取角色用户请求 */
-export interface GetRoleUsersRequest {
-  /** 角色ID */
-  roleId: string;
-  /** 分页信息 */
-  pagination?: PaginationRequest | undefined;
-}
-
-/** 角色用户响应 */
-export interface GetRoleUsersResponse {
-  /** 角色信息 */
-  role?:
-    | Role
-    | undefined;
-  /** 用户列表 */
-  userIds: string[];
-  /** 分页信息 */
-  pagination?: PaginationResponse | undefined;
-}
-
 /** 角色服务定义 */
 export interface RoleService {
   /** 获取角色信息 */
@@ -204,12 +141,4 @@ export interface RoleService {
   AssignPermissionsToRole(request: AssignPermissionsToRoleRequest): Promise<ResponseStatus>;
   /** 移除角色权限 */
   RemoveRolePermissions(request: RemoveRolePermissionsRequest): Promise<ResponseStatus>;
-  /** 获取角色权限 */
-  GetRolePermissions(request: GetRolePermissionsRequest): Promise<GetRolePermissionsResponse>;
-  /** 分配用户给角色 */
-  AssignUsersToRole(request: AssignUsersToRoleRequest): Promise<ResponseStatus>;
-  /** 移除角色用户 */
-  RemoveRoleUsers(request: RemoveRoleUsersRequest): Promise<ResponseStatus>;
-  /** 获取角色用户 */
-  GetRoleUsers(request: GetRoleUsersRequest): Promise<GetRoleUsersResponse>;
 }

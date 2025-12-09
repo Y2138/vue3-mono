@@ -55,7 +55,7 @@ src/views/system/
 // ...
 
 // API 函数
-export const login = async (params: LoginParams) => {
+export const api_login = async (params: LoginParams) => {
   return post<LoginParams, LoginResponse>('/api/auth/login', { data: params })
 }
 ```

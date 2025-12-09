@@ -1405,7 +1405,7 @@ define(['exports'], (function (exports) { 'use strict';
       if (func === IDBDatabase.prototype.transaction && !('objectStoreNames' in IDBTransaction.prototype)) {
         return function (storeNames, ...args) {
           const tx = func.call(unwrap(this), storeNames, ...args);
-          transactionStoreNamesMap.set(tx, storeNames.sort ? storeNames.sort() : [storeNames]);
+          transactionStoreNamesMap.set(tx, storeNames.sort ? storeNames.toSorted() : [storeNames]);
           return wrap(tx);
         };
       }

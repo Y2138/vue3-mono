@@ -160,9 +160,6 @@ service UserService {
   // 用户登录
   rpc Login(LoginRequest) returns (AuthResponse);
 
-  // 用户注册
-  rpc Register(RegisterRequest) returns (AuthResponse);
-
   // 获取当前用户信息
   rpc GetProfile(GetUserRequest) returns (User);
 
@@ -171,9 +168,6 @@ service UserService {
 
   // 获取用户列表
   rpc GetUsers(GetUsersRequest) returns (GetUsersResponse);
-
-  // 创建用户
-  rpc CreateUser(CreateUserRequest) returns (User);
 
   // 更新用户
   rpc UpdateUser(UpdateUserRequest) returns (User);

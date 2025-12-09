@@ -173,16 +173,12 @@ export interface UserService {
   GetUserEnums(request: GetUserEnumsRequest): Promise<GetUserEnumsResponse>;
   /** 用户登录 */
   Login(request: LoginRequest): Promise<AuthResponse>;
-  /** 用户注册 */
-  Register(request: RegisterRequest): Promise<AuthResponse>;
   /** 获取当前用户信息 */
   GetProfile(request: GetUserRequest): Promise<User>;
   /** 获取用户信息 */
   GetUser(request: GetUserRequest): Promise<User>;
   /** 获取用户列表 */
   GetUsers(request: GetUsersRequest): Promise<GetUsersResponse>;
-  /** 创建用户 */
-  CreateUser(request: CreateUserRequest): Promise<User>;
   /** 更新用户 */
   UpdateUser(request: UpdateUserRequest): Promise<User>;
   /** 删除用户 */

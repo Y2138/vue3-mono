@@ -127,25 +127,6 @@ export interface GetResourcesRequest {
   pagination?: PaginationRequest | undefined;
 }
 
-export interface GetResourceByPathRequest {
-  path: string;
-}
-
-export interface MoveResourceRequest {
-  id: string;
-  parentId?: string | undefined;
-}
-
-export interface DuplicateResourceRequest {
-  id: string;
-  parentId?: string | undefined;
-  newName?: string | undefined;
-}
-
-export interface BatchDeleteResourcesRequest {
-  ids: string[];
-}
-
 export interface ResourceListResponse {
   data: Resource[];
 }
@@ -159,11 +140,6 @@ export interface ResourceTreeResponse {
   data: ResourceTree[];
 }
 
-export interface ResourcePathResponse {
-  /** 路径响应使用基础Resource类型 */
-  data: Resource[];
-}
-
 export interface ResourceService {
   /** 获取资源枚举 */
   GetResourceEnums(request: EmptyRequest): Promise<EnumResponse>;
@@ -175,22 +151,8 @@ export interface ResourceService {
   GetResourceTree(request: GetResourcesRequest): Promise<ResourceTreeResponse>;
   /** 根据ID获取资源 */
   GetResource(request: GetResourceRequest): Promise<ResourceResponse>;
-  /** 获取资源路径 */
-  GetResourcePath(request: GetResourceRequest): Promise<ResourcePathResponse>;
-  /** 获取资源子级树 */
-  GetSubtree(request: GetResourceRequest): Promise<ResourceTreeResponse>;
   /** 更新资源 */
   UpdateResource(request: UpdateResourceRequest): Promise<ResourceResponse>;
-  /** 移动资源 */
-  MoveResource(request: MoveResourceRequest): Promise<ResourceResponse>;
-  /** 复制资源 */
-  DuplicateResource(request: DuplicateResourceRequest): Promise<ResourceResponse>;
   /** 删除资源 */
   DeleteResource(request: GetResourceRequest): Promise<ResponseStatus>;
-  /** 批量删除资源 */
-  BatchDeleteResources(request: BatchDeleteResourcesRequest): Promise<ResponseStatus>;
-  /** 根据路径获取资源 */
-  GetResourceByPath(request: GetResourceByPathRequest): Promise<ResourceResponse>;
-  /** 验证树形结构 */
-  ValidateTree(request: EmptyRequest): Promise<ResponseStatus>;
 }

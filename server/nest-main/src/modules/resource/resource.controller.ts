@@ -1,11 +1,11 @@
-import { Body, Controller, Get, Param, Post, Query, HttpCode, HttpStatus } from '@nestjs/common'
-import { ApiTags, ApiOperation, ApiConsumes, ApiProduces, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger'
+import { Body, Controller, Get, Post, Query, HttpCode, HttpStatus } from '@nestjs/common'
+import { ApiTags, ApiOperation, ApiConsumes, ApiProduces, ApiQuery, ApiResponse } from '@nestjs/swagger'
 import { Public } from '@/common/decorators/public.decorator'
 import { RESOURCE_ENUMS } from '@/modules/resource/enums/resource.enums'
 import { ResourceService } from '@/modules/resource/services/resource.service'
 import { ResourceTreeService } from '@/modules/resource/services/resource-tree.service'
 import { BaseController } from '@/common/controllers/base.controller'
-import { Resource, CreateResourceRequest, UpdateResourceRequest, MoveResourceRequest, DuplicateResourceRequest, BatchDeleteResourcesRequest, GetResourcesRequest } from '@/shared/resource'
+import { Resource, CreateResourceRequest, UpdateResourceRequest, GetResourcesRequest } from '@/shared/resource'
 import { isNotEmpty } from '@/utils'
 import { QueryObjectPipe } from '@/common/pipes/query.pipe'
 @Controller('api/resources')
@@ -113,23 +113,6 @@ export class ResourceController extends BaseController {
   }
 
   /**
-   * 获取资源路径
-   */
-  @Get('path')
-  @ApiOperation({ summary: '获取资源路径', description: '获取资源的完整路径' })
-  @ApiQuery({ name: 'id', description: '资源ID', required: true })
-  @ApiProduces('application/json')
-  @ApiResponse({ status: 200, description: '获取成功', type: Object })
-  @ApiResponse({ status: 404, description: '资源不存在' })
-  async getResourcePath(@Query('id') id: string) {
-    this.assertNotEmpty(id, '资源ID')
-    const result = await this.resourceTreeService.getResourcePath(id)
-    return this.success({
-      data: result
-    })
-  }
-
-  /**
    * 获取资源祖先
    */
   @Get('ancestors')
@@ -167,7 +150,6 @@ export class ResourceController extends BaseController {
    */
   @Post('update')
   @ApiOperation({ summary: '更新资源', description: '更新指定资源信息' })
-  @ApiQuery({ name: 'id', description: '资源ID', required: true })
   @ApiConsumes('application/json')
   @ApiProduces('application/json')
   @ApiResponse({ status: 200, description: '更新成功', type: Object })
@@ -182,104 +164,20 @@ export class ResourceController extends BaseController {
   }
 
   /**
-   * 移动资源
-   */
-  @Post('move')
-  @ApiOperation({ summary: '移动资源', description: '移动资源到新的父级' })
-  @ApiQuery({ name: 'id', description: '资源ID', required: true })
-  @ApiConsumes('application/json')
-  @ApiProduces('application/json')
-  @ApiResponse({ status: 200, description: '移动成功', type: Object })
-  @ApiResponse({ status: 400, description: '请求参数错误或循环引用' })
-  @ApiResponse({ status: 404, description: '资源不存在' })
-  async move(@Query('id') id: string, @Body() moveRequest: MoveResourceRequest) {
-    this.assertNotEmpty(id, '资源ID')
-    const result = await this.resourceTreeService.moveResource(id, moveRequest.parentId || null)
-    return this.success(result)
-  }
-
-  /**
-   * 复制资源
-   */
-  @Post('duplicate')
-  @ApiOperation({ summary: '复制资源', description: '复制资源到指定位置' })
-  @ApiQuery({ name: 'id', description: '资源ID', required: true })
-  @ApiConsumes('application/json')
-  @ApiProduces('application/json')
-  @ApiResponse({ status: 201, description: '复制成功', type: Object })
-  @ApiResponse({ status: 400, description: '请求参数错误' })
-  @ApiResponse({ status: 404, description: '资源不存在' })
-  @HttpCode(HttpStatus.CREATED)
-  async duplicate(@Query('id') id: string, @Body() duplicateRequest: DuplicateResourceRequest) {
-    this.assertNotEmpty(id, '资源ID')
-    const result = await this.resourceTreeService.duplicateResource(id, duplicateRequest.parentId, duplicateRequest.newName)
-    return this.created({
-      data: result
-    })
-  }
-
-  /**
    * 删除资源
    */
-  @Post('remove')
+  @Post('delete')
   @ApiOperation({ summary: '删除资源', description: '删除指定资源' })
-  @ApiQuery({ name: 'id', description: '资源ID', required: true })
+  @ApiConsumes('application/json')
   @ApiProduces('application/json')
   @ApiResponse({ status: 200, description: '删除成功' })
   @ApiResponse({ status: 404, description: '资源不存在' })
   @HttpCode(HttpStatus.OK)
-  async remove(@Query('id') id: string) {
-    this.assertNotEmpty(id, '资源ID')
-    await this.resourceService.remove(id)
+  async delete(@Body() body: { id: string }) {
+    this.assertNotEmpty(body.id, '资源ID')
+    await this.resourceService.remove(body.id)
     return this.success({
       message: '删除成功'
     })
-  }
-
-  /**
-   * 批量删除资源
-   */
-  @Post('batch-delete')
-  @ApiOperation({ summary: '批量删除资源', description: '批量删除多个资源' })
-  @ApiConsumes('application/json')
-  @ApiProduces('application/json')
-  @ApiResponse({ status: 204, description: '删除成功' })
-  @ApiResponse({ status: 400, description: '请求参数错误' })
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async removeMany(@Body() batchDeleteRequest: BatchDeleteResourcesRequest) {
-    this.assertNotEmpty(batchDeleteRequest.ids, '资源ID列表')
-    await this.resourceService.removeMany(batchDeleteRequest.ids)
-    return this.noContent()
-  }
-
-  /**
-   * 根据路径获取资源
-   */
-  @Get('by-path/:path')
-  @ApiOperation({ summary: '根据路径获取资源', description: '根据路径获取资源信息' })
-  @ApiParam({ name: 'path', description: '资源路径', required: true })
-  @ApiProduces('application/json')
-  @ApiResponse({ status: 200, description: '获取成功', type: Object })
-  @ApiResponse({ status: 404, description: '资源不存在' })
-  async findByPath(@Param('path') path: string) {
-    this.assertNotEmpty(path, '资源路径')
-    const result = await this.resourceService.findByPath(path)
-    this.assertDataExists(result, '资源', `路径: ${path}`)
-    return this.success({
-      data: result
-    })
-  }
-
-  /**
-   * 验证树形结构
-   */
-  @Get('validate/tree')
-  @ApiOperation({ summary: '验证树形结构', description: '验证资源树结构的完整性' })
-  @ApiProduces('application/json')
-  @ApiResponse({ status: 200, description: '验证成功', type: Object })
-  @ApiResponse({ status: 400, description: '树形结构存在问题' })
-  async validateTree() {
-    const result = await this.resourceTreeService.validateTree()
-    return this.success(result)
   }
 }

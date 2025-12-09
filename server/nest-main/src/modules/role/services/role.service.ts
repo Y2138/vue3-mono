@@ -13,7 +13,7 @@ export class RoleService {
   /**
    * 创建角色
    */
-  async create(data: { name: string; description?: string; is_active?: boolean; is_super_admin?: boolean }) {
+  async create(data: { name: string; description?: string; is_active?: boolean; is_super_admin?: boolean; resource_ids?: string[] }) {
     this.logger.log(`创建角色: ${data.name}`)
 
     // 验证角色名称
@@ -30,13 +30,42 @@ export class RoleService {
       throw new ConflictException(`角色名称 ${data.name} 已存在`)
     }
 
-    return this.prisma.client.role.create({
-      data: {
-        name: data.name.trim(),
-        description: data.description?.trim(),
-        isActive: data.is_active !== false, // 默认为 true
-        isSuperAdmin: data.is_super_admin || false // 默认为 false
+    // 使用事务确保数据一致性
+    return this.prisma.$transaction(async (tx) => {
+      // 创建角色
+      const role = await tx.role.create({
+        data: {
+          name: data.name.trim(),
+          description: data.description?.trim(),
+          isActive: data.is_active !== false, // 默认为 true
+          isSuperAdmin: data.is_super_admin || false // 默认为 false
+        }
+      })
+
+      // 如果提供了资源ID列表，创建角色资源关联
+      if (data.resource_ids && data.resource_ids.length > 0) {
+        // 验证所有资源存在
+        const resources = await tx.resource.findMany({
+          where: { id: { in: data.resource_ids } }
+        })
+
+        if (resources.length !== data.resource_ids.length) {
+          throw new DataNotFoundException('资源', '部分资源不存在')
+        }
+
+        // 创建角色资源关联
+        const roleResources = data.resource_ids.map((resourceId) => ({
+          roleId: role.id,
+          resourceId
+        }))
+
+        await tx.roleResource.createMany({
+          data: roleResources,
+          skipDuplicates: true
+        })
       }
+
+      return role
     })
   }
 
@@ -54,11 +83,6 @@ export class RoleService {
     const role = await this.prisma.client.role.findUnique({
       where: { id },
       include: {
-        role_permissions: {
-          include: {
-            permission: true
-          }
-        },
         role_resources: {
           include: {
             resource: true
@@ -158,6 +182,7 @@ export class RoleService {
       description?: string
       is_active?: boolean
       is_super_admin?: boolean
+      resource_ids?: string[]
     }
   ) {
     this.logger.log(`更新角色: ${id}`)
@@ -205,9 +230,46 @@ export class RoleService {
       updateData.isSuperAdmin = data.is_super_admin
     }
 
-    return this.prisma.client.role.update({
-      where: { id },
-      data: updateData
+    // 使用事务确保数据一致性
+    return this.prisma.$transaction(async (tx) => {
+      // 更新角色基本信息
+      const updatedRole = await tx.role.update({
+        where: { id },
+        data: updateData
+      })
+
+      // 如果提供了资源ID列表，更新角色资源关联
+      if (data.resource_ids !== undefined) {
+        // 删除现有关联
+        await tx.roleResource.deleteMany({
+          where: { roleId: id }
+        })
+
+        // 如果资源ID列表不为空，创建新关联
+        if (data.resource_ids.length > 0) {
+          // 验证所有资源存在
+          const resources = await tx.resource.findMany({
+            where: { id: { in: data.resource_ids } }
+          })
+
+          if (resources.length !== data.resource_ids.length) {
+            throw new DataNotFoundException('资源', '部分资源不存在')
+          }
+
+          // 创建新的角色资源关联
+          const roleResources = data.resource_ids.map((resourceId) => ({
+            roleId: id,
+            resourceId
+          }))
+
+          await tx.roleResource.createMany({
+            data: roleResources,
+            skipDuplicates: true
+          })
+        }
+      }
+
+      return updatedRole
     })
   }
 
@@ -242,152 +304,6 @@ export class RoleService {
     return this.prisma.client.role.delete({
       where: { id }
     })
-  }
-
-  /**
-   * 分配用户到角色
-   */
-  async assignUsersToRole(roleId: string, userIds: string[]) {
-    this.logger.log(`分配用户到角色: ${roleId}, 用户数量: ${userIds.length}`)
-
-    // 验证参数
-    if (!roleId) {
-      throw new ValidationException('角色ID不能为空')
-    }
-
-    if (!userIds || userIds.length === 0) {
-      throw new ValidationException('用户ID列表不能为空')
-    }
-
-    // 验证角色存在
-    const existingRole = await this.findOne(roleId)
-
-    // 验证所有用户存在
-    const users = await this.prisma.client.user.findMany({
-      where: { phone: { in: userIds } }
-    })
-
-    if (users.length !== userIds.length) {
-      throw new DataNotFoundException('用户', '部分用户不存在')
-    }
-
-    // 使用事务确保数据一致性
-    return this.prisma.$transaction(async (tx) => {
-      // 删除现有关联
-      await tx.userRole.deleteMany({
-        where: { roleId, user: { phone: { in: userIds } } }
-      })
-
-      // 创建新关联
-      const createData = userIds.map((phone) => ({
-        roleId,
-        user: { connect: { phone } }
-      }))
-
-      await tx.userRole.createMany({
-        data: createData,
-        skipDuplicates: true
-      })
-
-      this.logger.log(`成功为角色 ${roleId} 分配 ${userIds.length} 个用户`)
-      return { success: true, assignedCount: userIds.length }
-    })
-  }
-
-  /**
-   * 移除角色用户
-   */
-  async removeUsersFromRole(roleId: string, userIds: string[]) {
-    this.logger.log(`移除角色用户: ${roleId}, 用户数量: ${userIds.length}`)
-
-    // 验证参数
-    if (!roleId) {
-      throw new ValidationException('角色ID不能为空')
-    }
-
-    if (!userIds || userIds.length === 0) {
-      throw new ValidationException('用户ID列表不能为空')
-    }
-
-    // 验证角色存在
-    await this.findOne(roleId)
-
-    // 删除关联
-    const deletedCount = await this.prisma.client.userRole.deleteMany({
-      where: {
-        roleId,
-        userId: { in: userIds }
-      }
-    })
-
-    this.logger.log(`成功从角色 ${roleId} 移除 ${deletedCount.count} 个用户`)
-    return { success: true, removedCount: deletedCount.count }
-  }
-
-  /**
-   * 获取角色用户列表
-   */
-  async getRoleUsers(roleId: string, pagination?: PaginationRequest) {
-    this.logger.log(`获取角色用户: ${roleId}`)
-
-    // 验证参数
-    if (!roleId) {
-      throw new ValidationException('角色ID不能为空')
-    }
-
-    // 验证角色存在并获取角色信息
-    const existingRole = await this.findOne(roleId)
-
-    let skip: number | undefined
-    let take: number | undefined
-
-    if (pagination) {
-      const { page, pageSize } = pagination
-      skip = (page - 1) * pageSize
-      take = pageSize
-    }
-
-    // 查询角色用户关联
-    const roleUsers = await this.prisma.client.userRole.findMany({
-      where: { roleId },
-      include: {
-        user: {
-          select: {
-            phone: true,
-            username: true,
-            status: true,
-            statusDesc: true,
-            createdAt: true
-          }
-        }
-      },
-      skip,
-      take,
-      orderBy: { assignedAt: 'desc' }
-    })
-
-    // 转换用户时间字段格式
-    const convertedUsers = roleUsers.map((ur) => ({
-      ...ur.user,
-      createdAt: ur.user.createdAt.toISOString()
-    }))
-
-    // 提取用户ID列表
-    const userIds = convertedUsers.map((user) => user.phone)
-
-    // 转换角色时间字段格式
-    const convertedRole = {
-      ...existingRole,
-      createdAt: existingRole.createdAt.toISOString(),
-      updatedAt: existingRole.updatedAt.toISOString()
-    }
-
-    return {
-      role: convertedRole,
-      data: userIds,
-      users: convertedUsers,
-      total: await this.prisma.client.userRole.count({ where: { roleId } })
-    }
   }
 
   /**
@@ -518,6 +434,104 @@ export class RoleService {
   }
 
   /**
+   * 根据角色ID列表聚合查询权限
+   * @param roleIds 角色ID列表
+   * @returns 资源树和平铺列表
+   */
+  async getResourcesByRoleIds(roleIds: string[]) {
+    this.logger.log(`根据角色ID列表查询权限: ${roleIds.join(', ')}`)
+
+    // 验证角色ID列表不为空
+    if (!roleIds || roleIds.length === 0) {
+      return {
+        tree: [],
+        list: []
+      }
+    }
+
+    // 查询这些角色关联的所有资源
+    const roleResources = await this.prisma.client.roleResource.findMany({
+      where: {
+        roleId: { in: roleIds }
+      },
+      include: {
+        resource: true
+      }
+    })
+
+    // 收集所有资源ID（去重）
+    const resourceIdSet = new Set<string>()
+    const resourceMap = new Map<string, any>()
+
+    roleResources.forEach((rr) => {
+      if (!resourceIdSet.has(rr.resourceId)) {
+        resourceIdSet.add(rr.resourceId)
+        resourceMap.set(rr.resourceId, {
+          ...rr.resource,
+          createdAt: rr.resource.createdAt.toISOString(),
+          updatedAt: rr.resource.updatedAt.toISOString()
+        })
+      }
+    })
+
+    // 获取所有资源（包括父级资源，用于构建完整树）
+    const allResourceIds = Array.from(resourceIdSet)
+    if (allResourceIds.length === 0) {
+      return {
+        tree: [],
+        list: []
+      }
+    }
+
+    // 查询所有相关资源（包括父级）
+    const resources = await this.prisma.client.resource.findMany({
+      where: {
+        OR: [
+          { id: { in: allResourceIds } },
+          {
+            children: {
+              some: {
+                id: { in: allResourceIds }
+              }
+            }
+          }
+        ]
+      },
+      orderBy: [{ level: 'asc' }, { sortOrder: 'asc' }, { name: 'asc' }]
+    })
+
+    // 转换资源时间字段
+    const convertedResources = resources.map((r) => ({
+      ...r,
+      createdAt: r.createdAt.toISOString(),
+      updatedAt: r.updatedAt.toISOString()
+    }))
+
+    // 构建资源树（使用简化的树结构，不包含 is_assigned 等字段）
+    const tree = this.buildResourcesTreeForPreview(convertedResources)
+
+    // 过滤出实际拥有的资源（平铺列表）
+    const resourceList = convertedResources.filter((r) => resourceIdSet.has(r.id))
+
+    return {
+      tree,
+      list: resourceList
+    }
+  }
+
+  /**
+   * 构建资源树（用于预览，返回简化的树结构）
+   */
+  private buildResourcesTreeForPreview(resources: any[], parentId?: string | null): any[] {
+    return resources
+      .filter((resource) => resource.parentId === parentId)
+      .map((resource) => ({
+        ...resource,
+        children: this.buildResourcesTreeForPreview(resources, resource.id)
+      }))
+  }
+
+  /**
    * 构建资源树
    */
   private buildResourceTree(resources: any[], parentId?: string): any[] {
@@ -533,6 +547,41 @@ export class RoleService {
         is_indeterminate: false,
         children: this.buildResourceTree(resources, resource.id)
       }))
+  }
+
+  /**
+   * 获取角色总数
+   */
+  async getCount(
+    options: {
+      search?: string
+      is_active?: boolean
+      is_super_admin?: boolean
+    } = {}
+  ): Promise<number> {
+    this.logger.log(`获取角色总数，查询条件: ${JSON.stringify(options)}`)
+
+    const { search, is_active, is_super_admin } = options
+
+    // 构建查询条件
+    const where: any = {}
+
+    if (search && search.trim()) {
+      where.OR = [{ name: { contains: search.trim() } }, { description: { contains: search.trim() } }]
+    }
+
+    if (is_active !== undefined) {
+      where.isActive = is_active
+    }
+
+    if (is_super_admin !== undefined) {
+      where.isSuperAdmin = is_super_admin
+    }
+
+    // 计算总数
+    return this.prisma.client.role.count({
+      where
+    })
   }
 
   /**

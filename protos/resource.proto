@@ -78,25 +78,6 @@ message GetResourcesRequest {
   common.PaginationRequest pagination = 5; // 分页信息
 }
 
-message GetResourceByPathRequest {
-  string path = 1;
-}
-
-message MoveResourceRequest {
-  string id = 1;
-  optional string parentId = 2;
-}
-
-message DuplicateResourceRequest {
-  string id = 1;
-  optional string parentId = 2;
-  optional string newName = 3;
-}
-
-message BatchDeleteResourcesRequest {
-  repeated string ids = 1;
-}
-
 message ResourceListResponse {
   repeated Resource data = 1;
 }
@@ -107,10 +88,6 @@ message ResourceResponse {
 
 message ResourceTreeResponse {
   repeated ResourceTree data = 1;  // 树形响应使用ResourceTree类型
-}
-
-message ResourcePathResponse {
-  repeated Resource data = 1;  // 路径响应使用基础Resource类型
 }
 
 service ResourceService {
@@ -129,30 +106,9 @@ service ResourceService {
   // 根据ID获取资源
   rpc GetResource(GetResourceRequest) returns (ResourceResponse);
 
-  // 获取资源路径
-  rpc GetResourcePath(GetResourceRequest) returns (ResourcePathResponse);
-
-  // 获取资源子级树
-  rpc GetSubtree(GetResourceRequest) returns (ResourceTreeResponse);
-
   // 更新资源
   rpc UpdateResource(UpdateResourceRequest) returns (ResourceResponse);
 
-  // 移动资源
-  rpc MoveResource(MoveResourceRequest) returns (ResourceResponse);
-
-  // 复制资源
-  rpc DuplicateResource(DuplicateResourceRequest) returns (ResourceResponse);
-
   // 删除资源
   rpc DeleteResource(GetResourceRequest) returns (common.ResponseStatus);
-
-  // 批量删除资源
-  rpc BatchDeleteResources(BatchDeleteResourcesRequest) returns (common.ResponseStatus);
-
-  // 根据路径获取资源
-  rpc GetResourceByPath(GetResourceByPathRequest) returns (ResourceResponse);
-
-  // 验证树形结构
-  rpc ValidateTree(common.EmptyRequest) returns (common.ResponseStatus);
 }

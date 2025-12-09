@@ -30,13 +30,10 @@
   </SearchPanel>
 
   <n-data-table class="mt-4" :columns="tableColumns" :data="tableData" :pagination="pagination" :loading="loading" />
-
-  <!-- 新增人员弹窗 -->
-  <CreateUserModal v-model:visible="showCreateModal" @success="handleCreateSuccess" />
 </template>
 
 <script setup lang="tsx">
-import { ref } from 'vue'
+import { ref, onActivated } from 'vue'
 import { useRouter } from 'vue-router'
 import { NButton, NTag, NIcon, NPopconfirm, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
@@ -46,7 +43,6 @@ import { useEnums } from '@/hooks/useEnums'
 import type { DataTableColumns } from 'naive-ui'
 import { usePageLoading } from '@/hooks/usePageLoading'
 import { EnumItem } from '@/shared/common'
-import CreateUserModal from './CreateUserModal.vue'
 
 // 页面加载状态
 usePageLoading()
@@ -56,9 +52,6 @@ const message = useMessage()
 
 // 路由
 const router = useRouter()
-
-// 新增人员弹窗状态
-const showCreateModal = ref(false)
 
 // 图标组件定义
 const ActivateIcon = () => <Icon icon="ion:checkmark-circle-outline" width={16} height={16} />
@@ -197,7 +190,7 @@ const customColumns: DataTableColumns<UserInfo> = [
   {
     title: '角色',
     key: 'roleIds',
-    width: 150,
+    width: 200,
     render: (row) => {
       if (!row.roleIds || row.roleIds.length === 0) {
         return (
@@ -206,6 +199,8 @@ const customColumns: DataTableColumns<UserInfo> = [
           </NTag>
         )
       }
+      // TODO: 这里应该显示角色名称，而不是角色ID
+      // 需要从角色列表获取角色名称映射
       return row.roleIds.map((roleId) => (
         <NTag key={roleId} type="info" size="small" class="mr-1">
           {roleId}
@@ -285,26 +280,24 @@ tableColumns.value = customColumns
 
 // 操作函数
 function handleCreate() {
-  showCreateModal.value = true
-}
-
-function handleCreateSuccess(user: UserInfo) {
-  message.success(`人员 ${user.username} 新增成功`)
-  refresh() // 刷新列表
+  router.push({
+    path: '/system-manage/user/create'
+  })
 }
 
 // 处理查看详情
 const handleViewDetail = (row: UserInfo) => {
-  // 使用query参数传递手机号
   router.push({
-    path: '/system-manage/person/detail',
+    path: '/system-manage/user/detail',
     query: { phone: row.phone }
   })
 }
 
 function handleEdit(user: UserInfo) {
-  // TODO: 跳转到编辑用户页面或打开编辑用户弹窗
-  message.info(`编辑用户: ${user.username}`)
+  router.push({
+    path: '/system-manage/user/edit',
+    query: { phone: user.phone }
+  })
 }
 
 async function handleDelete(phone: string) {
@@ -421,14 +414,11 @@ function getStatusActions(user: UserInfo) {
 
 // 首次加载用户列表
 refresh()
+
+// 页面激活时刷新列表（从其他页面返回时）
+onActivated(() => {
+  refresh()
+})
 </script>
 
-<style scoped>
-:deep(.n-data-table-th) {
-  background-color: var(--n-th-color);
-}
-
-:deep(.n-data-table-td) {
-  border-bottom: 1px solid var(--n-divider-color);
-}
-</style>
+<!-- 样式已迁移到Tailwind CSS类 -->

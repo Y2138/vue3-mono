@@ -53,7 +53,7 @@ declare global {
     totalData?: Record<string, string>
   }
   interface IPaginationRequest {
-    pagination: {
+    pagination?: {
       page: number
       // pageSize: number
       pageSize: number

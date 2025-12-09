@@ -18,13 +18,13 @@ export class UserService {
   async findAll(options?: { search?: string; phone?: string; username?: string; statusList?: number[]; roleIds?: string[]; pagination?: PaginationRequest }) {
     this.logger.log(`查询用户列表: ${JSON.stringify(options)}`)
 
-    let skip: number | undefined;
-    let take: number | undefined;
+    let skip: number | undefined
+    let take: number | undefined
 
     if (options?.pagination) {
-      const { page, pageSize } = options.pagination;
-      skip = (page - 1) * pageSize;
-      take = pageSize;
+      const { page, pageSize } = options.pagination
+      skip = (page - 1) * pageSize
+      take = pageSize
     }
 
     // 构建查询条件
@@ -51,6 +51,17 @@ export class UserService {
       }
     }
 
+    // 角色筛选：如果提供了 roleIds，查询拥有这些角色的用户
+    if (options?.roleIds && options.roleIds.length > 0) {
+      where.user_roles = {
+        some: {
+          roleId: {
+            in: options.roleIds
+          }
+        }
+      }
+    }
+
     let data: any[]
     let total: number
 
@@ -62,6 +73,13 @@ export class UserService {
           where,
           skip,
           take,
+          include: {
+            user_roles: {
+              include: {
+                role: true
+              }
+            }
+          },
           orderBy: { createdAt: 'desc' }
         })
       ])
@@ -69,6 +87,13 @@ export class UserService {
       // 没有分页参数时查询所有数据
       data = await this.prisma.client.user.findMany({
         where,
+        include: {
+          user_roles: {
+            include: {
+              role: true
+            }
+          }
+        },
         orderBy: { createdAt: 'desc' }
       })
       total = data.length
@@ -91,9 +116,15 @@ export class UserService {
     // 验证手机号格式
     this.validatePhone(phone)
 
-    // RBAC模块已删除，不再关联角色信息
     const user = await this.prisma.client.user.findUnique({
-      where: { phone }
+      where: { phone },
+      include: {
+        user_roles: {
+          include: {
+            role: true
+          }
+        }
+      }
     })
 
     return user
@@ -247,42 +278,6 @@ export class UserService {
     }
   }
 
-  /**
-   * 注册新用户并生成 JWT token
-   */
-  async register(registerInput: { phone: string; username: string; password: string; verificationCode?: string }) {
-    this.logger.log(`用户注册: ${registerInput.phone}`)
-
-    // 验证手机号格式
-    this.validatePhone(registerInput.phone)
-
-    // 检查手机号是否已存在
-    const existingUser = await this.findOne(registerInput.phone)
-
-    if (existingUser) {
-      throw new ConflictException(`手机号 ${registerInput.phone} 已被注册`)
-    }
-
-    // RBAC模块已删除，不再分配角色，直接创建用户
-    const savedUser = await this.create({
-      phone: registerInput.phone,
-      username: registerInput.username,
-      password: registerInput.password,
-      status: 2 // 激活状态
-    })
-
-    // 生成 token
-    const token = this.jwtService.sign({
-      sub: savedUser.phone,
-      phone: savedUser.phone
-    })
-
-    return {
-      user: savedUser,
-      token,
-      expiresIn: parseInt(process.env.JWT_EXPIRES_IN || '86400', 10)
-    }
-  }
 
   /**
    * 获取用户信息（包含角色和权限）
@@ -390,38 +385,6 @@ export class UserService {
     return updatedUser
   }
 
-  /**
-   * 获取用户统计信息
-   */
-  async getStats() {
-    this.logger.log('获取用户统计信息')
-
-    const totalUsers = await this.prisma.client.user.count()
-    const activeUsers = await this.prisma.client.user.count({
-      where: { status: 2 } // 激活状态
-    })
-    const inactiveUsers = await this.prisma.client.user.count({
-      where: { status: { in: [1, 3, 4] } } // 待激活、下线、锁定
-    })
-
-    // 获取今天新增用户数
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const newUsersToday = await this.prisma.client.user.count({
-      where: {
-        createdAt: {
-          gte: today
-        }
-      }
-    })
-
-    return {
-      totalUsers,
-      activeUsers,
-      inactiveUsers,
-      newUsersToday
-    }
-  }
 
   /**
    * 验证密码强度
@@ -432,5 +395,184 @@ export class UserService {
     if (!passwordRegex.test(password)) {
       throw new ValidationException('密码至少8位，包含大小写字母、数字和特殊字符')
     }
+  }
+
+      isActive: ur.role.isActive,
+      isSuperAdmin: ur.role.isSuperAdmin,
+      createdAt: ur.role.createdAt.toISOString(),
+      updatedAt: ur.role.updatedAt.toISOString(),
+      assignedAt: ur.assignedAt.toISOString()
+    }))
+  }
+
+  /**
+   * 分配用户角色（覆盖式）
+   * @param phone 手机号
+   * @param roleIds 角色ID列表
+   */
+  async assignUserRoles(phone: string, roleIds: string[]) {
+    this.logger.log(`分配用户角色: ${phone}, 角色数量: ${roleIds.length}`)
+
+    // 验证手机号格式
+    this.validatePhone(phone)
+
+    // 检查用户是否存在
+    const user = await this.prisma.client.user.findUnique({
+      where: { phone }
+    })
+
+    if (!user) {
+      throw new DataNotFoundException('用户', phone)
+    }
+
+    // 验证角色ID列表
+    if (!Array.isArray(roleIds)) {
+      throw new ValidationException('角色ID列表必须为数组')
+    }
+
+    // 如果提供了角色ID列表，验证所有角色存在
+    if (roleIds.length > 0) {
+      const roles = await this.prisma.client.role.findMany({
+        where: { id: { in: roleIds } }
+      })
+
+      if (roles.length !== roleIds.length) {
+        throw new DataNotFoundException('角色', '部分角色不存在')
+      }
+    }
+
+    // 使用事务确保数据一致性
+    return this.prisma.$transaction(async (tx) => {
+      // 删除用户现有关联
+      await tx.userRole.deleteMany({
+        where: { userId: phone }
+      })
+
+      // 如果角色ID列表不为空，创建新关联
+      if (roleIds.length > 0) {
+        const userRoles = roleIds.map((roleId) => ({
+          userId: phone,
+          roleId
+        }))
+
+        await tx.userRole.createMany({
+          data: userRoles,
+          skipDuplicates: true
+        })
+      }
+
+      this.logger.log(`成功为用户 ${phone} 分配 ${roleIds.length} 个角色`)
+      return { success: true, assignedCount: roleIds.length }
+    })
+  }
+
+  /**
+   * 获取用户资源树（聚合用户所有角色的资源）
+   * @param phone 手机号
+   * @returns 资源树和平铺列表
+   */
+  async getUserResources(phone: string) {
+    this.logger.log(`获取用户资源: ${phone}`)
+
+    // 验证手机号格式
+    this.validatePhone(phone)
+
+    // 检查用户是否存在
+    const user = await this.prisma.client.user.findUnique({
+      where: { phone }
+    })
+
+    if (!user) {
+      throw new DataNotFoundException('用户', phone)
+    }
+
+    // 获取用户的所有角色
+    const userRoles = await this.prisma.client.userRole.findMany({
+      where: { userId: phone },
+      include: {
+        role: {
+          include: {
+            role_resources: {
+              include: {
+                resource: true
+              }
+            }
+          }
+        }
+      }
+    })
+
+    // 收集所有资源ID（去重）
+    const resourceIdSet = new Set<string>()
+    const resourceMap = new Map<string, any>()
+
+    userRoles.forEach((ur) => {
+      ur.role.role_resources.forEach((rr) => {
+        if (!resourceIdSet.has(rr.resourceId)) {
+          resourceIdSet.add(rr.resourceId)
+          resourceMap.set(rr.resourceId, {
+            ...rr.resource,
+            createdAt: rr.resource.createdAt.toISOString(),
+            updatedAt: rr.resource.updatedAt.toISOString()
+          })
+        }
+      })
+    })
+
+    // 获取所有资源（包括父级资源，用于构建完整树）
+    const allResourceIds = Array.from(resourceIdSet)
+    if (allResourceIds.length === 0) {
+      return {
+        tree: [],
+        list: []
+      }
+    }
+
+    // 查询所有相关资源（包括父级）
+    const resources = await this.prisma.client.resource.findMany({
+      where: {
+        OR: [
+          { id: { in: allResourceIds } },
+          {
+            children: {
+              some: {
+                id: { in: allResourceIds }
+              }
+            }
+          }
+        ]
+      },
+      orderBy: [{ level: 'asc' }, { sortOrder: 'asc' }, { name: 'asc' }]
+    })
+
+    // 转换资源时间字段
+    const convertedResources = resources.map((r) => ({
+      ...r,
+      createdAt: r.createdAt.toISOString(),
+      updatedAt: r.updatedAt.toISOString()
+    }))
+
+    // 构建资源树
+    const tree = this.buildResourceTree(convertedResources)
+
+    // 过滤出用户实际拥有的资源（平铺列表）
+    const userResourceList = convertedResources.filter((r) => resourceIdSet.has(r.id))
+
+    return {
+      tree,
+      list: userResourceList
+    }
+  }
+
+  /**
+   * 构建资源树
+   */
+  private buildResourceTree(resources: any[], parentId?: string | null): any[] {
+    return resources
+      .filter((resource) => (parentId === null || parentId === undefined ? !resource.parentId : resource.parentId === parentId))
+      .map((resource) => ({
+        ...resource,
+        children: this.buildResourceTree(resources, resource.id)
+      }))
   }
 }

@@ -1,10 +1,10 @@
-import { Controller, Post, Get, Body, Param, Query, HttpCode, HttpStatus, UnauthorizedException } from '@nestjs/common'
+import { Controller, Post, Get, Body, Query, HttpCode, HttpStatus, UnauthorizedException } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse as SwaggerApiResponse } from '@nestjs/swagger'
 import { BaseController } from '../../common/controllers/base.controller'
 import { Public } from '../../common/decorators/public.decorator'
 import { ApiResponse } from '../../common/response/types'
 import { UserService as UserServiceImpl } from './user.service'
-import { User, AuthResponse, GetUsersRequest, GetUsersResponse, LoginRequest, RegisterRequest, CreateUserRequest, CreateUserFormRequest, UpdateUserRequest } from '../../shared/users'
+import { User, AuthResponse, GetUsersRequest, GetUsersResponse, LoginRequest, CreateUserFormRequest, UpdateUserRequest } from '../../shared/users'
 import { Validator } from '../../common/validators'
 import { USER_ENUMS, getUserStatusDesc } from './enums/user.enums'
 import { isNotEmpty } from '../../utils'
@@ -93,77 +93,25 @@ export class UserHttpController extends BaseController {
       throw new UnauthorizedException('手机号或密码错误')
     }
 
+    // 获取用户角色信息
+    const userWithRoles = await this.userService.findOne(loginRequest.phone)
+
     // 直接组装响应数据
     const authResponse: AuthResponse = {
       user: {
-        phone: result.user.phone,
-        username: result.user.username || '',
-        status: result.user.status,
-        statusDesc: getUserStatusDesc(result.user.status),
-        createdAt: this.formatDateTime(result.user.createdAt),
-        updatedAt: this.formatDateTime(result.user.updatedAt),
-        roleIds: [] // RBAC模块已删除，提供空数组以符合类型要求
+        phone: userWithRoles!.phone,
+        username: userWithRoles!.username || '',
+        status: userWithRoles!.status,
+        statusDesc: getUserStatusDesc(userWithRoles!.status),
+        createdAt: this.formatDateTime(userWithRoles!.createdAt),
+        updatedAt: this.formatDateTime(userWithRoles!.updatedAt),
+        roleIds: userWithRoles!.user_roles?.map((ur: any) => ur.roleId) || []
       },
       token: result.token,
       expiresAt: this.formatDateTime(new Date(Date.now() + 24 * 60 * 60 * 1000))
     }
 
     return this.success(authResponse, '登录成功')
-  }
-
-  /**
-   * 用户注册
-   */
-  @Public()
-  @Post('auth/register')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({
-    summary: '用户注册',
-    description: '注册新用户账号'
-  })
-  @SwaggerApiResponse({
-    status: 201,
-    description: '注册成功，返回用户信息和访问令牌'
-  })
-  @SwaggerApiResponse({
-    status: 409,
-    description: '注册失败，手机号已存在'
-  })
-  async register(@Body() registerRequest: RegisterRequest): Promise<ApiResponse<AuthResponse>> {
-    // 基础格式验证
-    Validator.phone(registerRequest.phone)
-    Validator.username(registerRequest.username)
-    Validator.password(registerRequest.password)
-
-    // 业务验证 - 检查手机号是否已存在
-    const existingUser = await this.userService.findOne(registerRequest.phone)
-    if (existingUser) {
-      this.throwConflictError('该手机号已被注册')
-    }
-
-    // 执行注册逻辑
-    const result = await this.userService.register({
-      phone: registerRequest.phone,
-      username: registerRequest.username,
-      password: registerRequest.password
-    })
-
-    // 直接组装响应数据
-    const authResponse: AuthResponse = {
-      user: {
-        phone: result.user.phone,
-        username: result.user.username || '',
-        status: result.user.status,
-        statusDesc: getUserStatusDesc(result.user.status),
-        createdAt: this.formatDateTime(result.user.createdAt),
-        updatedAt: this.formatDateTime(result.user.updatedAt),
-        roleIds: [] // RBAC模块已删除，提供空数组以符合类型要求
-      },
-      token: result.token,
-      expiresAt: this.formatDateTime(new Date(Date.now() + 24 * 60 * 60 * 1000))
-    }
-
-    return this.success(authResponse, '注册成功')
   }
 
   /**
@@ -193,7 +141,7 @@ export class UserHttpController extends BaseController {
       statusDesc: getUserStatusDesc(user.status),
       createdAt: this.formatDateTime(user.createdAt),
       updatedAt: this.formatDateTime(user.updatedAt),
-      roleIds: [] // RBAC模块已删除，提供空数组以符合类型要求
+      roleIds: user.user_roles?.map((ur: any) => ur.roleId) || []
     }
 
     return this.success(userResponse, '获取用户信息成功')
@@ -263,7 +211,7 @@ export class UserHttpController extends BaseController {
         statusDesc: getUserStatusDesc(user.status),
         createdAt: this.formatDateTime(user.createdAt),
         updatedAt: this.formatDateTime(user.updatedAt),
-        roleIds: [] // RBAC模块已删除，提供空数组以符合类型要求
+        roleIds: user.user_roles?.map((ur: any) => ur.roleId) || []
       })),
       pagination: {
         page,
@@ -277,33 +225,9 @@ export class UserHttpController extends BaseController {
   }
 
   /**
-   * 获取用户统计信息
-   */
-  @Get('users/stats')
-  @ApiOperation({
-    summary: '获取用户统计信息',
-    description: '获取用户相关的统计数据'
-  })
-  @SwaggerApiResponse({
-    status: 200,
-    description: '成功获取统计信息'
-  })
-  async getUserStats(): Promise<
-    ApiResponse<{
-      totalUsers: number
-      activeUsers: number
-      inactiveUsers: number
-      newUsersToday: number
-    }>
-  > {
-    const stats = await this.userService.getStats()
-    return this.success(stats, '获取统计信息成功')
-  }
-
-  /**
    * 检查手机号是否存在
    */
-  @Get('users/check-phone/:phone')
+  @Get('users/check-phone')
   @ApiOperation({
     summary: '检查手机号是否存在',
     description: '检查指定手机号是否已被注册'
@@ -312,7 +236,8 @@ export class UserHttpController extends BaseController {
     status: 200,
     description: '检查完成'
   })
-  async checkPhoneExists(@Param('phone') phone: string): Promise<ApiResponse<{ exists: boolean }>> {
+  async checkPhoneExists(@Query('phone') phone: string): Promise<ApiResponse<{ exists: boolean }>> {
+    Validator.phone(phone)
     const user = await this.userService.findOne(phone)
     return this.success({ exists: !!user }, '检查完成')
   }
@@ -320,7 +245,7 @@ export class UserHttpController extends BaseController {
   /**
    * 检查用户名是否存在
    */
-  @Get('users/check-username/:username')
+  @Get('users/check-username')
   @ApiOperation({
     summary: '检查用户名是否存在',
     description: '检查指定用户名是否已被使用'
@@ -329,7 +254,8 @@ export class UserHttpController extends BaseController {
     status: 200,
     description: '检查完成'
   })
-  async checkUsernameExists(@Param('username') username: string): Promise<ApiResponse<{ exists: boolean }>> {
+  async checkUsernameExists(@Query('username') username: string): Promise<ApiResponse<{ exists: boolean }>> {
+    Validator.username(username)
     const user = await this.userService.findByUsername(username)
     return this.success({ exists: !!user }, '检查完成')
   }
@@ -337,7 +263,7 @@ export class UserHttpController extends BaseController {
   /**
    * 根据手机号获取用户详情
    */
-  @Get('users/:phone')
+  @Get('users/detail')
   @ApiOperation({
     summary: '获取用户详情',
     description: '根据手机号获取用户的详细信息'
@@ -350,7 +276,7 @@ export class UserHttpController extends BaseController {
     status: 404,
     description: '用户不存在'
   })
-  async getUserByPhone(@Param('phone') phone: string): Promise<ApiResponse<User>> {
+  async getUserByPhone(@Query('phone') phone: string): Promise<ApiResponse<User>> {
     // 验证手机号格式 - 让异常直接抛出，由 HttpExceptionFilter 处理
     Validator.phone(phone)
 
@@ -365,72 +291,16 @@ export class UserHttpController extends BaseController {
       statusDesc: getUserStatusDesc(user.status),
       createdAt: this.formatDateTime(user.createdAt),
       updatedAt: this.formatDateTime(user.updatedAt),
-      roleIds: [] // RBAC模块已删除，提供空数组以符合类型要求
+      roleIds: user.user_roles?.map((ur: any) => ur.roleId) || []
     }
 
     return this.success(userResponse, '获取用户详情成功')
   }
 
   /**
-   * 创建用户
-   */
-  @Post('users')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({
-    summary: '创建用户',
-    description: '创建新的用户账号'
-  })
-  @SwaggerApiResponse({
-    status: 201,
-    description: '用户创建成功'
-  })
-  @SwaggerApiResponse({
-    status: 409,
-    description: '手机号已存在'
-  })
-  async createUser(@Body() createUserRequest: CreateUserRequest): Promise<ApiResponse<User>> {
-    console.log('createUserRequest ==>', createUserRequest)
-    // 基础格式验证
-    Validator.phone(createUserRequest.phone)
-    Validator.username(createUserRequest.username)
-    Validator.password(createUserRequest.password)
-
-    // 验证角色ID数组（如果提供）
-    if (createUserRequest.roleIds && createUserRequest.roleIds.length > 0) {
-      Validator.arrayNotEmpty(createUserRequest.roleIds, '角色列表')
-    }
-
-    // 检查手机号是否已存在
-    const existingUser = await this.userService.findOne(createUserRequest.phone)
-    if (existingUser) {
-      this.throwConflictError('该手机号已被注册')
-    }
-
-    // 创建用户
-    const user = await this.userService.create({
-      phone: createUserRequest.phone,
-      username: createUserRequest.username,
-      password: createUserRequest.password
-    })
-
-    // 直接组装用户数据
-    const userResponse: User = {
-      phone: user.phone,
-      username: user.username || '',
-      status: user.status,
-      statusDesc: getUserStatusDesc(user.status),
-      createdAt: this.formatDateTime(user.createdAt),
-      updatedAt: this.formatDateTime(user.updatedAt),
-      roleIds: [] // RBAC模块已删除，提供空数组以符合类型要求
-    }
-
-    return this.success(userResponse, '用户创建成功')
-  }
-
-  /**
    * 新增人员（表单方式）
    */
-  @Post('users/add')
+  @Post('users/create')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: '新增人员',
@@ -465,7 +335,7 @@ export class UserHttpController extends BaseController {
       password: defaultPassword
     })
 
-    // 直接组装用户数据
+    // 直接组装用户数据（新增人员时不分配角色）
     const userResponse: User = {
       phone: user.phone,
       username: user.username || '',
@@ -473,7 +343,7 @@ export class UserHttpController extends BaseController {
       statusDesc: getUserStatusDesc(user.status),
       createdAt: this.formatDateTime(user.createdAt),
       updatedAt: this.formatDateTime(user.updatedAt),
-      roleIds: [] // RBAC模块已删除，提供空数组以符合类型要求
+      roleIds: []
     }
 
     return this.success(userResponse, '人员新增成功')
@@ -482,7 +352,7 @@ export class UserHttpController extends BaseController {
   /**
    * 更新用户信息
    */
-  @Post('users/:phone')
+  @Post('users/update')
   @ApiOperation({
     summary: '更新用户信息',
     description: '更新指定用户的信息'
@@ -495,9 +365,10 @@ export class UserHttpController extends BaseController {
     status: 404,
     description: '用户不存在'
   })
-  async updateUser(@Param('phone') phone: string, @Body() updateUserRequest: UpdateUserRequest): Promise<ApiResponse<User>> {
-    // 验证路径参数
-    Validator.phone(phone)
+  async updateUser(@Body() updateUserRequest: UpdateUserRequest & { phone: string }): Promise<ApiResponse<User>> {
+    // 验证手机号
+    Validator.phone(updateUserRequest.phone)
+    const phone = updateUserRequest.phone
 
     // 验证更新字段（如果提供）
     if (isNotEmpty(updateUserRequest.username)) {
@@ -512,21 +383,28 @@ export class UserHttpController extends BaseController {
     const existingUser = await this.userService.findOne(phone)
     this.assertDataExists(existingUser, '用户', phone)
 
-    // 更新用户信息
-    const updatedUser = await this.userService.update(phone, {
-      username: updateUserRequest.username || '',
-      status: updateUserRequest.status || undefined
+    // 更新用户信息（不允许更新状态字段）
+    await this.userService.update(phone, {
+      username: updateUserRequest.username || ''
     })
+
+    // 如果提供了角色ID列表，更新用户角色
+    if (updateUserRequest.roleIds !== undefined) {
+      await this.userService.assignUserRoles(phone, updateUserRequest.roleIds)
+    }
+
+    // 重新查询用户以获取最新信息（包括角色）
+    const userWithRoles = await this.userService.findOne(phone)
 
     // 直接组装用户数据
     const userResponse: User = {
-      phone: updatedUser.phone,
-      username: updatedUser.username || '',
-      status: updatedUser.status,
-      statusDesc: getUserStatusDesc(updatedUser.status),
-      createdAt: this.formatDateTime(updatedUser.createdAt),
-      updatedAt: this.formatDateTime(updatedUser.updatedAt),
-      roleIds: [] // RBAC模块已删除，提供空数组以符合类型要求
+      phone: userWithRoles!.phone,
+      username: userWithRoles!.username || '',
+      status: userWithRoles!.status,
+      statusDesc: getUserStatusDesc(userWithRoles!.status),
+      createdAt: this.formatDateTime(userWithRoles!.createdAt),
+      updatedAt: this.formatDateTime(userWithRoles!.updatedAt),
+      roleIds: userWithRoles!.user_roles?.map((ur: any) => ur.roleId) || []
     }
 
     return this.success(userResponse, '用户信息更新成功')
@@ -535,7 +413,7 @@ export class UserHttpController extends BaseController {
   /**
    * 删除用户
    */
-  @Post('users/:phone/delete')
+  @Post('users/delete')
   @ApiOperation({
     summary: '删除用户',
     description: '删除指定的用户账号'
@@ -548,13 +426,16 @@ export class UserHttpController extends BaseController {
     status: 404,
     description: '用户不存在'
   })
-  async deleteUser(@Param('phone') phone: string): Promise<ApiResponse<void>> {
+  async deleteUser(@Body() body: { phone: string }): Promise<ApiResponse<void>> {
+    // 验证手机号格式
+    Validator.phone(body.phone)
+
     // 检查用户是否存在
-    const existingUser = await this.userService.findOne(phone)
-    this.assertDataExists(existingUser, '用户', phone)
+    const existingUser = await this.userService.findOne(body.phone)
+    this.assertDataExists(existingUser, '用户', body.phone)
 
     // 删除用户
-    await this.userService.remove(phone)
+    await this.userService.remove(body.phone)
 
     return this.success(undefined, '用户删除成功')
   }
@@ -566,7 +447,7 @@ export class UserHttpController extends BaseController {
   /**
    * 用户状态操作统一接口
    */
-  @Post('users/:phone/status')
+  @Post('users/update-status')
   @ApiOperation({
     summary: '用户状态操作',
     description: '统一的用户状态操作接口，支持激活、下线、锁定、解锁操作'
@@ -583,9 +464,10 @@ export class UserHttpController extends BaseController {
     status: 404,
     description: '用户不存在'
   })
-  async updateUserStatus(@Param('phone') phone: string, @Body() request: UserStatusActionRequest): Promise<ApiResponse<User>> {
+  async updateUserStatus(@Body() request: UserStatusActionRequest & { phone: string }): Promise<ApiResponse<User>> {
     // 验证手机号格式
-    Validator.phone(phone)
+    Validator.phone(request.phone)
+    const phone = request.phone
 
     // 验证操作类型
     const validActions = ['activate', 'deactivate', 'lock', 'unlock'] as const
@@ -598,7 +480,6 @@ export class UserHttpController extends BaseController {
     this.assertDataExists(existingUser, '用户', phone)
 
     // 根据操作类型调用相应的服务方法
-    let updatedUser
     let successMessage = ''
     let targetStatus: number
 
@@ -625,20 +506,83 @@ export class UserHttpController extends BaseController {
     }
 
     // 统一调用更新状态方法
-    updatedUser = await this.userService.updateUserStatus(phone, targetStatus)
+    await this.userService.updateUserStatus(phone, targetStatus)
+
+    // 重新查询用户以获取角色信息
+    const userWithRoles = await this.userService.findOne(phone)
 
     // 直接组装用户数据
     const userResponse: User = {
-      phone: updatedUser.phone,
-      username: updatedUser.username || '',
-      status: updatedUser.status,
-      statusDesc: getUserStatusDesc(updatedUser.status),
-      createdAt: this.formatDateTime(updatedUser.createdAt),
-      updatedAt: this.formatDateTime(updatedUser.updatedAt),
-      roleIds: [] // RBAC模块已删除，提供空数组以符合类型要求
+      phone: userWithRoles!.phone,
+      username: userWithRoles!.username || '',
+      status: userWithRoles!.status,
+      statusDesc: getUserStatusDesc(userWithRoles!.status),
+      createdAt: this.formatDateTime(userWithRoles!.createdAt),
+      updatedAt: this.formatDateTime(userWithRoles!.updatedAt),
+      roleIds: userWithRoles!.user_roles?.map((ur: any) => ur.roleId) || []
     }
 
     return this.success(userResponse, successMessage)
+  }
+
+  // ========================================
+  // 👤 用户角色管理相关接口
+  // ========================================
+
+  /**
+   * 分配用户角色
+   */
+  @Post('users/roles')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '分配用户角色',
+    description: '覆盖式分配用户角色，使用事务保证一致性'
+  })
+  @SwaggerApiResponse({
+    status: 200,
+    description: '角色分配成功'
+  })
+  @SwaggerApiResponse({
+    status: 404,
+    description: '用户不存在'
+  })
+  async assignUserRoles(@Body() body: { phone: string; roleIds: string[] }): Promise<ApiResponse<{ success: boolean; assignedCount: number }>> {
+    // 验证手机号格式
+    Validator.phone(body.phone)
+
+    // 验证角色ID列表
+    if (!Array.isArray(body.roleIds)) {
+      this.throwValidationError('角色ID列表必须为数组')
+    }
+
+    const result = await this.userService.assignUserRoles(body.phone, body.roleIds)
+
+    return this.success(result, '角色分配成功')
+  }
+
+  /**
+   * 获取用户资源树
+   */
+  @Get('users/resources')
+  @ApiOperation({
+    summary: '获取用户资源树',
+    description: '聚合用户所有角色的资源，返回资源树和平铺列表'
+  })
+  @SwaggerApiResponse({
+    status: 200,
+    description: '成功获取用户资源树'
+  })
+  @SwaggerApiResponse({
+    status: 404,
+    description: '用户不存在'
+  })
+  async getUserResources(@Query('phone') phone: string): Promise<ApiResponse<{ tree: any[]; list: any[] }>> {
+    // 验证手机号格式
+    Validator.phone(phone)
+
+    const resources = await this.userService.getUserResources(phone)
+
+    return this.success(resources, '获取用户资源树成功')
   }
 
   // ========================================

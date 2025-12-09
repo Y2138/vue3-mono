@@ -1,10 +1,10 @@
 <template>
   <SearchPanel :cols="4" :formModel="formModel" :searchLoading="loading" searchOnUpdate @search="refresh" @reset="handleReset">
     <template #top>
-      <n-radio-group v-model:value="formModel.type" class="mb-4" @update:value="handleRadioChange">
-        <n-radio-button value="date">日汇总</n-radio-button>
-        <n-radio-button value="month">月汇总</n-radio-button>
-        <n-radio-button value="year">年汇总</n-radio-button>
+      <n-radio-group v-model:value="formModel.type" class="mb-4 bg-blue-500 text-white rounded" @update:value="handleRadioChange">
+        <n-radio-button value="date" class="hover:bg-blue-600 rounded">日汇总</n-radio-button>
+        <n-radio-button value="month" class="hover:bg-blue-600 rounded">月汇总</n-radio-button>
+        <n-radio-button value="year" class="hover:bg-blue-600 rounded">年汇总</n-radio-button>
       </n-radio-group>
     </template>
     <WrapCol label="创建时间">
@@ -121,10 +121,3 @@ const { pagination, tableColumns, tableData, loading, refresh } = useTablePage<I
 })
 // 首次请求
 </script>
-
-<style scoped>
-:deep(.n-radio-group .n-radio-button.n-radio-button--checked) {
-  background: var(--n-button-text-color-active);
-  color: var(--n-button-color-active);
-}
-</style>

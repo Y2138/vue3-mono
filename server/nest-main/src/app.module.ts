@@ -7,6 +7,7 @@ import { RedisClientOptions } from 'redis'
 import databaseConfig from './config/database.config'
 import { UsersModule } from './modules/users/users.module'
 import { ResourceModule } from './modules/resource/resource.module'
+import { RoleModule } from './modules/role/role.module'
 import { HealthModule } from './health/health.module'
 import { PrismaModule } from './prisma/prisma.module'
 import { MonitoringInterceptor } from './interceptors/monitoring.interceptor'
@@ -35,6 +36,7 @@ import { ResponseInterceptor } from './common/response'
     }),
     UsersModule,
     ResourceModule,
+    RoleModule,
     HealthModule
   ],
   controllers: [],

@@ -47,7 +47,3 @@ const mergedProps = computed(() => {
   }
 })
 </script>
-
-<style scoped>
-
-</style>

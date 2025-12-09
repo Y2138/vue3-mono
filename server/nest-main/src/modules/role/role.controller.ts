@@ -1,17 +1,20 @@
-import { Controller, Post, Get, Put, Delete, Body, Query, Param } from '@nestjs/common'
+import { Controller, Post, Get, Body, Query } from '@nestjs/common'
 import { ApiResponse } from '../../common/response/types'
-import { Role, CreateRoleRequest, UpdateRoleRequest, GetRolesRequest, GetRolesResponse, GetRoleUsersRequest, GetRoleUsersResponse, AssignPermissionsToRoleRequest, RemoveRolePermissionsRequest, GetRolePermissionsResponse } from '../../shared/role'
+import { BaseController } from '../../common/controllers/base.controller'
+import { Role, CreateRoleRequest, UpdateRoleRequest, GetRolesRequest } from '../../shared/role'
 import { RoleService } from './services/role.service'
 
-@Controller('roles')
-export class RoleController {
-  constructor(private readonly roleService: RoleService) {}
+@Controller('api/roles')
+export class RoleController extends BaseController {
+  constructor(private readonly roleService: RoleService) {
+    super(RoleController.name)
+  }
 
   /**
    * 获取角色列表
    */
-  @Get()
-  async getRoles(@Query() request: GetRolesRequest): Promise<ApiResponse<GetRolesResponse>> {
+  @Get('list')
+  async getRoles(@Query() request: GetRolesRequest) {
     const search = request.search ?? undefined
     const is_active = request.isActive ?? undefined
     const is_super_admin = request.isSuperAdmin ?? undefined
@@ -23,223 +26,146 @@ export class RoleController {
       is_super_admin,
       pagination
     })
+    const total = await this.roleService.getCount({
+      search,
+      is_active,
+      is_super_admin
+    })
 
-    return {
-      success: true,
-      code: 200,
-      message: 'success',
-      data: {
-        roles: result.data,
-        pagination: {
-          page: pagination?.page || 1,
-          pageSize: pagination?.pageSize || 10,
-          total: result.total.toString(),
-          totalPages: Math.ceil(result.total / (pagination?.pageSize || 10))
-        }
-      }
-    }
+    // 格式化数据
+    const formattedRoles = result.data.map((role) => ({
+      ...role,
+      createdAt: this.formatDateTime(role.createdAt),
+      updatedAt: this.formatDateTime(role.updatedAt)
+    }))
+
+    return this.paginated(formattedRoles, {
+      page: pagination?.page || 1,
+      pageSize: pagination?.pageSize || 10,
+      total
+    })
   }
 
   /**
    * 获取角色详情
    */
-  @Get(':id')
-  async getRole(@Param('id') id: string): Promise<ApiResponse<Role>> {
+  @Get('detail')
+  async getRole(@Query('id') id: string): Promise<ApiResponse<Role>> {
+    this.assertNotEmpty(id, '角色ID')
     const role = await this.roleService.findOne(id)
+    this.assertDataExists(role, '角色', id)
 
-    return {
-      success: true,
-      code: 200,
-      message: 'success',
-      data: {
-        ...role,
-        createdAt: role.createdAt instanceof Date ? role.createdAt.toISOString() : role.createdAt,
-        updatedAt: role.updatedAt instanceof Date ? role.updatedAt.toISOString() : role.updatedAt
-      }
-    }
+    return this.success({
+      ...role,
+      resourceIds: role.role_resources.map((resource) => resource.resourceId),
+      createdAt: this.formatDateTime(role.createdAt),
+      updatedAt: this.formatDateTime(role.updatedAt)
+    })
   }
 
   /**
    * 创建角色
    */
-  @Post()
+  @Post('create')
   async createRole(@Body() request: CreateRoleRequest): Promise<ApiResponse<Role>> {
+    this.assertNotEmpty(request.name, '角色名称')
+
     const role = await this.roleService.create({
       name: request.name,
       description: request.description || undefined,
       is_active: request.isActive ?? true,
-      is_super_admin: request.isSuperAdmin ?? false
+      is_super_admin: request.isSuperAdmin ?? false,
+      resource_ids: request.resourceIds || []
     })
 
-    return {
-      success: true,
-      code: 200,
-      message: 'success',
-      data: {
-        ...role,
-        createdAt: role.createdAt instanceof Date ? role.createdAt.toISOString() : role.createdAt,
-        updatedAt: role.updatedAt instanceof Date ? role.updatedAt.toISOString() : role.updatedAt
-      }
-    }
+    return this.created({
+      ...role,
+      createdAt: this.formatDateTime(role.createdAt),
+      updatedAt: this.formatDateTime(role.updatedAt)
+    })
   }
 
   /**
    * 更新角色
    */
-  @Put(':id')
-  async updateRole(@Param('id') id: string, @Body() request: UpdateRoleRequest): Promise<ApiResponse<Role>> {
+  @Post('update')
+  async updateRole(@Body() request: UpdateRoleRequest & { id: string }): Promise<ApiResponse<Role>> {
+    this.assertNotEmpty(request.id, '角色ID')
+
     const updateData: any = {}
 
     if (request.name !== undefined) updateData.name = request.name
     if (request.description !== undefined) updateData.description = request.description
     if (request.isActive !== undefined) updateData.is_active = request.isActive
     if (request.isSuperAdmin !== undefined) updateData.is_super_admin = request.isSuperAdmin
+    if (request.resourceIds !== undefined) updateData.resource_ids = request.resourceIds
 
-    const role = await this.roleService.update(id, updateData)
+    const role = await this.roleService.update(request.id, updateData)
+    this.assertDataExists(role, '角色', request.id)
 
-    return {
-      success: true,
-      code: 200,
-      message: 'success',
-      data: {
-        ...role,
-        createdAt: role.createdAt instanceof Date ? role.createdAt.toISOString() : role.createdAt,
-        updatedAt: role.updatedAt instanceof Date ? role.updatedAt.toISOString() : role.updatedAt
-      }
-    }
+    return this.success({
+      ...role,
+      createdAt: this.formatDateTime(role.createdAt),
+      updatedAt: this.formatDateTime(role.updatedAt)
+    })
   }
 
   /**
    * 删除角色
    */
-  @Delete(':id')
-  async deleteRole(@Param('id') id: string): Promise<ApiResponse<{ success: boolean }>> {
-    await this.roleService.remove(id)
+  @Post('delete')
+  async deleteRole(@Body() body: { id: string }): Promise<ApiResponse<{ success: boolean }>> {
+    this.assertNotEmpty(body.id, '角色ID')
+    await this.roleService.remove(body.id)
 
-    return {
-      success: true,
-      code: 200,
-      message: 'success',
-      data: { success: true }
-    }
-  }
-
-  /**
-   * 获取角色用户列表
-   */
-  @Get(':id/users')
-  async getRoleUsers(@Param('id') roleId: string, @Query() request: GetRoleUsersRequest): Promise<ApiResponse<GetRoleUsersResponse>> {
-    const pagination = request.pagination || undefined
-    const result = await this.roleService.getRoleUsers(roleId, pagination)
-
-    return {
-      success: true,
-      code: 200,
-      message: 'success',
-      data: {
-        role: result.role,
-        userIds: result.users.map((user) => user.phone),
-        pagination: {
-          page: pagination?.page || 1,
-          pageSize: pagination?.pageSize || 10,
-          total: result.total.toString(),
-          totalPages: Math.ceil(result.total / (pagination?.pageSize || 10))
-        }
-      }
-    }
-  }
-
-  /**
-   * 分配用户到角色
-   */
-  @Post(':id/users')
-  async assignUsersToRole(@Param('id') roleId: string, @Body() request: { userIds: string[] }): Promise<ApiResponse<{ success: boolean; assignedCount: number }>> {
-    const result = await this.roleService.assignUsersToRole(roleId, request.userIds)
-
-    return {
-      success: true,
-      code: 200,
-      message: 'success',
-      data: result
-    }
-  }
-
-  /**
-   * 从角色移除用户
-   */
-  @Delete(':id/users')
-  async removeUsersFromRole(@Param('id') roleId: string, @Body() request: { userIds: string[] }): Promise<ApiResponse<{ success: boolean; removedCount: number }>> {
-    const result = await this.roleService.removeUsersFromRole(roleId, request.userIds)
-
-    return {
-      success: true,
-      code: 200,
-      message: 'success',
-      data: result
-    }
-  }
-
-  /**
-   * 获取角色权限树
-   */
-  @Get(':id/permissions')
-  async getRolePermissions(@Param('id') roleId: string): Promise<ApiResponse<GetRolePermissionsResponse>> {
-    const result = await this.roleService.getRoleResources(roleId)
-
-    return {
-      success: true,
-      code: 200,
-      message: 'success',
-      data: {
-        role: result.role,
-        permissionTree: result.permissionTree,
-        permissions: result.permissions
-      }
-    }
+    return this.success({ success: true })
   }
 
   /**
    * 分配权限给角色
    */
-  @Post(':id/permissions')
-  async assignResourcesToRole(@Param('id') roleId: string, @Body() request: AssignPermissionsToRoleRequest): Promise<ApiResponse<{ success: boolean; assignedCount: number }>> {
-    const result = await this.roleService.assignResourcesToRole(roleId, request.resourceIds)
+  @Post('assign-permissions')
+  async assignResourcesToRole(@Body() request: { roleId: string; resourceIds: string[] }): Promise<ApiResponse<{ success: boolean; assignedCount: number }>> {
+    this.assertNotEmpty(request.roleId, '角色ID')
+    this.assert(request.resourceIds && request.resourceIds.length > 0, '资源ID列表不能为空')
 
-    return {
-      success: true,
-      code: 200,
-      message: 'success',
-      data: result
-    }
+    const result = await this.roleService.assignResourcesToRole(request.roleId, request.resourceIds)
+
+    return this.success(result)
   }
 
   /**
    * 移除角色权限
    */
-  @Delete(':id/permissions')
-  async removeResourcesFromRole(@Param('id') roleId: string, @Body() request: RemoveRolePermissionsRequest): Promise<ApiResponse<{ success: boolean; removedCount: number }>> {
-    const result = await this.roleService.removeResourcesFromRole(roleId, request.resourceIds)
+  @Post('remove-permissions')
+  async removeResourcesFromRole(@Body() request: { roleId: string; resourceIds: string[] }): Promise<ApiResponse<{ success: boolean; removedCount: number }>> {
+    this.assertNotEmpty(request.roleId, '角色ID')
+    this.assert(request.resourceIds && request.resourceIds.length > 0, '资源ID列表不能为空')
 
-    return {
-      success: true,
-      code: 200,
-      message: 'success',
-      data: result
-    }
+    const result = await this.roleService.removeResourcesFromRole(request.roleId, request.resourceIds)
+
+    return this.success(result)
+  }
+
+  /**
+   * 根据角色ID列表预览权限
+   */
+  @Post('preview-permissions')
+  async previewPermissions(@Body() request: { roleIds: string[] }): Promise<ApiResponse<{ tree: any[]; list: any[] }>> {
+    this.assert(request.roleIds && Array.isArray(request.roleIds), '角色ID列表必须为数组')
+
+    const resources = await this.roleService.getResourcesByRoleIds(request.roleIds)
+
+    return this.success(resources, '获取权限预览成功')
   }
 
   /**
    * 获取角色统计信息
    */
-  @Get('stats/summary')
+  @Get('stats-summary')
   async getRoleStatistics(): Promise<ApiResponse<any>> {
     const stats = await this.roleService.getRoleStatistics()
 
-    return {
-      success: true,
-      code: 200,
-      message: 'success',
-      data: stats
-    }
+    return this.success(stats)
   }
 }

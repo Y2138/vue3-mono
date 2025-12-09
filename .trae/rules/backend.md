@@ -116,14 +116,14 @@ import { ApiTags, ApiOperation, ApiConsumes, ApiProduces, ApiParam, ApiResponse 
 import { BaseController } from '../../common/controllers/base.controller'
 import { CreateYourFeatureRequest } from '../../shared/your-feature'
 
-@Controller('your-feature')
+@Controller('api/your-feature')
 @ApiTags('功能管理')
 export class YourFeatureController extends BaseController {
   constructor(private readonly yourFeatureService: YourFeatureService) {
     super(YourFeatureController.name)
   }
 
-  @Post()
+  @Post('create')
   @ApiOperation({ summary: '创建功能', description: '创建新的功能项' })
   @ApiConsumes('application/json')
   @ApiProduces('application/json')
@@ -164,7 +164,7 @@ export class YourFeatureController extends BaseController {
     })
   }
 
-  @Get(':id')
+  @Get('detail')
   @ApiOperation({ summary: '获取功能详情', description: '根据ID获取功能详细信息' })
   @ApiParam({ name: 'id', description: '功能ID', required: true })
   @ApiResponse({
@@ -176,7 +176,7 @@ export class YourFeatureController extends BaseController {
     status: 404,
     description: '功能不存在'
   })
-  async getFeature(@Param('id') id: string) {
+  async getFeature(@Query('id') id: string) {
     // 参数验证
     this.assertNotEmpty(id, '功能ID')
 
@@ -201,9 +201,8 @@ export class YourFeatureController extends BaseController {
     })
   }
 
-  @Delete(':id')
+  @Delete('delete')
   @ApiOperation({ summary: '删除功能', description: '根据ID删除功能' })
-  @ApiParam({ name: 'id', description: '功能ID', required: true })
   @ApiResponse({
     status: 200,
     description: '删除成功',
@@ -213,7 +212,7 @@ export class YourFeatureController extends BaseController {
     status: 404,
     description: '功能不存在'
   })
-  async deleteFeature(@Param('id') id: string) {
+  async deleteFeature(@Query('id') id: string) {
     // 参数验证
     this.assertNotEmpty(id, '功能ID')
 

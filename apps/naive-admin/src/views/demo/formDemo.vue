@@ -100,5 +100,3 @@ const formConfigs: IFormConfig[] = [
   }
 ]
 </script>
-
-<style scoped></style>

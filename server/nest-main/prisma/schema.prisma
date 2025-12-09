@@ -54,7 +54,6 @@ model Role {
   isSuperAdmin     Boolean          @default(false)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
-  role_permissions RolePermission[]
   role_resources   RoleResource[]
   user_roles       UserRole[]
 
@@ -95,19 +94,6 @@ model Permission {
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   resource        Resource?        @relation(fields: [resourceId], references: [id], onDelete: Cascade)
-  rolePermissions RolePermission[]
 
   @@map("permissions")
-}
-
-model RolePermission {
-  id           String     @id @default(cuid())
-  roleId       String
-  permissionId String
-  createdAt    DateTime   @default(now())
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-
-  @@unique([roleId, permissionId])
-  @@map("role_permissions")
 }

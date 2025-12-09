@@ -1,7 +1,7 @@
 <template>
   <n-flex size="small">
-    <n-tag v-for="item in tabs" :key="item.fullPath" class="cursor-pointer" :type="item.fullPath === tabStore.activeTabKey ? 'info' : 'default'" :bordered="false" closable @click="handleTagClick(item)" @contextmenu.prevent="handleContextMenu(item, $event)" :on-close="() => handleTabClose(item)">
-      <span class="tabbar-span" :class="item.fullPath === tabStore.activeTabKey ? 'active' : ''">
+    <n-tag v-for="item in tabs" :key="item.fullPath" class="cursor-pointer hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950" :type="item.fullPath === tabStore.activeTabKey ? 'info' : 'default'" :bordered="false" closable @click="handleTagClick(item)" @contextmenu.prevent="handleContextMenu(item, $event)" :on-close="() => handleTabClose(item)">
+      <span class="text-gray-700 dark:text-gray-300" :class="item.fullPath === tabStore.activeTabKey ? 'text-blue-600 dark:text-blue-400' : ''">
         {{ item.name }}
       </span>
     </n-tag>
@@ -110,15 +110,3 @@ const handleContextMenu = (item: ITabItem, e: MouseEvent) => {
   ]
 }
 </script>
-
-<style scoped>
-.n-tag :deep(.tabbar-span:hover) {
-  color: var(--n-link-text-color-hover);
-}
-:deep(.mx-context-menu-item) {
-  cursor: pointer;
-}
-.n-tag .tabbar-span {
-  color: var(--n-text-color);
-}
-</style>

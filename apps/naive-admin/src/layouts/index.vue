@@ -38,5 +38,3 @@ const collapsed = computed(() => {
 })
 const { pageRefreshStatus } = usePageLoading()
 </script>
-
-<style scoped></style>

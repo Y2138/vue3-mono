@@ -76,5 +76,3 @@ const colWidth = computed(() => {
   return `${(100 / col).toFixed(2)}%`
 })
 </script>
-
-<style scoped></style>

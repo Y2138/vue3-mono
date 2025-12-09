@@ -2,7 +2,7 @@
 // 只包含接口类型定义，不包含编码/解码逻辑
 // 自动解决 protobufPackage 命名冲突
 // 请勿手动修改
-// PROTO SOURCE: /Users/staff/Documents/my-tools/vue3-mono/protosrole.proto
+// PROTO SOURCE: /Users/staff/Documents/my-tools/vue3-mono/protosusers.proto
 
 // Common types
 export type {
@@ -32,21 +32,15 @@ export type {
   UpdateResourceRequest,
   GetResourceRequest,
   GetResourcesRequest,
-  GetResourceByPathRequest,
-  MoveResourceRequest,
-  DuplicateResourceRequest,
-  BatchDeleteResourcesRequest,
   ResourceListResponse,
   ResourceResponse,
   ResourceTreeResponse,
-  ResourcePathResponse,
   ResourceService
 } from './resource';
 
 // Role types
 export type {
   Role,
-  RolePermissionTreeNode,
   CreateRoleRequest,
   UpdateRoleRequest,
   GetRoleRequest,
@@ -55,12 +49,6 @@ export type {
   DeleteRoleRequest,
   AssignPermissionsToRoleRequest,
   RemoveRolePermissionsRequest,
-  GetRolePermissionsRequest,
-  GetRolePermissionsResponse,
-  AssignUsersToRoleRequest,
-  RemoveRoleUsersRequest,
-  GetRoleUsersRequest,
-  GetRoleUsersResponse,
   RoleService
 } from './role';
 

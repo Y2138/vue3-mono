@@ -218,6 +218,7 @@ const request = async <Q = any, R = any>(config: string | AxiosRequestConfig<Q>,
 
 // 统一处理响应
 function handleResponseResult<Q = any, R = any>(data: ResResult<R>, config: ICustomAxiosConfig<Q>): boolean {
+  console.log('2501 data===>', data)
   // 错误处理
   if (data.code !== 200) {
     // 不需要显示提示文案
@@ -240,11 +241,9 @@ export async function get<Q = any, R = any>(url: string, options?: ICustomAxiosC
     return [data, null]
   } catch (error: any) {
     console.error('2501 error===>', error)
-    if (error) {
-      const { data, config } = error
-      if (data && config) {
-        handleResponseResult<Q, R>(data, config)
-      }
+    if (error.response) {
+      const { data, config } = error.response
+      handleResponseResult<Q, R>(data, config)
     }
     return [null, error]
   }

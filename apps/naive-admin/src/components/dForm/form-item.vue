@@ -97,5 +97,3 @@ defineExpose({
   validate: nFormRef.value?.validate
 })
 </script>
-
-<style scoped></style>

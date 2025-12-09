@@ -1,26 +1,44 @@
 const systemRoutes: CustomRouteRecord = {
   path: '/system-manage',
   name: 'systemManage',
-  redirect: '/system-manage/person',
+  redirect: '/system-manage/user',
   meta: {
     title: '系统管理'
   },
   children: [
     {
-      path: 'person',
-      name: 'personManage',
-      component: () => import('@/views/system/person/list.vue'),
+      path: 'user',
+      name: 'userManage',
+      component: () => import('@/views/system/user/list.vue'),
       meta: {
         title: '人员管理'
       }
     },
     {
-      path: 'person/detail',
-      name: 'personDetail',
-      component: () => import('@/views/system/person/detail.vue'),
+      path: 'user/create',
+      name: 'userCreate',
+      component: () => import('@/views/system/user/form.vue'),
+      meta: {
+        title: '新增人员',
+        activeMenuPath: '/system-manage/user'
+      }
+    },
+    {
+      path: 'user/edit',
+      name: 'userEdit',
+      component: () => import('@/views/system/user/form.vue'),
+      meta: {
+        title: '编辑人员',
+        activeMenuPath: '/system-manage/user'
+      }
+    },
+    {
+      path: 'user/detail',
+      name: 'userDetail',
+      component: () => import('@/views/system/user/form.vue'),
       meta: {
         title: '人员详情',
-        activeMenuPath: '/system-manage/person'
+        activeMenuPath: '/system-manage/user'
       }
     },
     {
@@ -48,33 +66,38 @@ const systemRoutes: CustomRouteRecord = {
         title: '编辑资源',
         activeMenuPath: '/system-manage/resource'
       }
+    },
+    {
+      path: 'role',
+      name: 'RoleList',
+      component: () => import('@/views/system/role/index.vue'),
+      meta: {
+        title: '角色列表',
+        permission: 'role:read'
+      }
+    },
+    {
+      path: 'role/create',
+      name: 'RoleCreate',
+      component: () => import('@/views/system/role/create.vue'),
+      meta: {
+        title: '创建角色',
+        permission: 'role:create',
+        hidden: true,
+        activeMenuPath: '/system-manage/role'
+      }
+    },
+    {
+      path: 'role/edit',
+      name: 'RoleEdit',
+      component: () => import('@/views/system/role/edit.vue'),
+      meta: {
+        title: '编辑角色',
+        permission: 'role:update',
+        hidden: true,
+        activeMenuPath: '/system-manage/role'
+      }
     }
-    // {
-    //   path: 'role',
-    //   name: 'roleManage',
-    //   component: () => import('@/views/system/role/list.vue'),
-    //   meta: {
-    //     title: '角色管理'
-    //   }
-    // },
-    // {
-    //   path: 'role/create',
-    //   name: 'roleCreate',
-    //   component: () => import('@/views/system/role/form.vue'),
-    //   meta: {
-    //     title: '创建角色',
-    //     activeMenuPath: '/system-manage/role'
-    //   }
-    // },
-    // {
-    //   path: 'role/edit',
-    //   name: 'roleEdit',
-    //   component: () => import('@/views/system/role/form.vue'),
-    //   meta: {
-    //     title: '编辑角色',
-    //     activeMenuPath: '/system-manage/role'
-    //   }
-    // },
   ]
 }
 

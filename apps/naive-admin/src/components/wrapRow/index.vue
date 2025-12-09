@@ -27,5 +27,3 @@ provide('wrapInjectKey', {
   size: props.size
 })
 </script>
-
-<style scoped></style>
