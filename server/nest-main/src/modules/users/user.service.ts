@@ -278,7 +278,6 @@ export class UserService {
     }
   }
 
-
   /**
    * 获取用户信息（包含角色和权限）
    */
@@ -385,7 +384,6 @@ export class UserService {
     return updatedUser
   }
 
-
   /**
    * 验证密码强度
    */
@@ -395,14 +393,6 @@ export class UserService {
     if (!passwordRegex.test(password)) {
       throw new ValidationException('密码至少8位，包含大小写字母、数字和特殊字符')
     }
-  }
-
-      isActive: ur.role.isActive,
-      isSuperAdmin: ur.role.isSuperAdmin,
-      createdAt: ur.role.createdAt.toISOString(),
-      updatedAt: ur.role.updatedAt.toISOString(),
-      assignedAt: ur.assignedAt.toISOString()
-    }))
   }
 
   /**

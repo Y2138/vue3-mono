@@ -22,7 +22,7 @@
         <n-spin />
       </div>
       <div v-else-if="resourceTree.length > 0" class="tree-container">
-        <ResourceTree :resources="resourceTree" :default-expanded-ids="[]" />
+        <ResourceTree mode="view" :resources="resourceTree" :default-expanded-ids="[]" />
       </div>
       <n-empty v-else description="暂无资源权限" />
     </div>
@@ -33,7 +33,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { NFormItem, NSelect, NDivider, NSpin, NEmpty, NButton, useMessage } from 'naive-ui'
 import { getRoles, previewPermissionsByRoleIds } from '@/request/api/role'
-import ResourceTree from '@/views/system/resources/components/resource-tree.vue'
+import ResourceTree from '@/views/system/components/ResourceTree.vue'
 import type { Role } from '@/shared/role'
 import type { Resource } from '@/shared/resource'
 

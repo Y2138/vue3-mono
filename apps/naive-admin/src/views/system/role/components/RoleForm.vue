@@ -58,7 +58,7 @@
               <n-spin size="medium" />
               <span class="ml-2 text-gray-600">加载中...</span>
             </div>
-            <ResourceTree v-else v-model:selected-resources="selectedResources" :role-id="roleId" :editable="true" @tree-change="handleTreeChange" />
+            <ResourceTree v-else mode="edit" :resources="resourceTree" v-model:selected-ids="selectedResources" />
           </div>
         </div>
       </div>
@@ -73,7 +73,8 @@ import { useMessage, NForm, NFormItemGi, NGrid, NSpin } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { createRole, updateRole, getRole } from '@/request/api/role'
 import type { Role, CreateRoleRequest, UpdateRoleRequest } from '@/shared/role'
-import ResourceTree from './ResourceTree.vue'
+import ResourceTree from '@/views/system/components/ResourceTree.vue'
+import { getResourceTree } from '@/request/api/resource'
 
 // 消息提示
 const message = useMessage()
@@ -101,6 +102,7 @@ const formData = ref({
 
 // 选中的资源
 const selectedResources = ref<string[]>([])
+const resourceTree = ref<any[]>([])
 
 // 表单验证规则
 const rules = {
@@ -131,9 +133,15 @@ const handleSelectNone = () => {
 }
 
 const getAllResourceIds = (): string[] => {
-  // 这里应该从权限树中获取所有资源的ID
-  // 暂时返回空数组，实际实现时需要递归遍历权限树
-  return []
+  const ids: string[] = []
+  const walk = (nodes: any[]) => {
+    for (const n of nodes) {
+      if (n.id) ids.push(n.id)
+      if (Array.isArray(n.children) && n.children.length) walk(n.children)
+    }
+  }
+  walk(resourceTree.value)
+  return ids
 }
 
 const handleSubmit = async () => {
@@ -241,5 +249,9 @@ const loadRoleData = async () => {
 // 生命周期
 onMounted(() => {
   loadRoleData()
+  ;(async () => {
+    const [res] = await getResourceTree()
+    if (res?.data) resourceTree.value = res.data
+  })()
 })
 </script>

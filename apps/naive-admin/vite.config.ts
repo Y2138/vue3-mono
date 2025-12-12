@@ -7,6 +7,7 @@ import UnoCSS from 'unocss/vite'
 import path from 'path'
 import { VitePWA } from 'vite-plugin-pwa'
 import { protobufPlugin } from './vite-plugins/protobuf'
+import VueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vitejs.dev/config/
 export default defineConfig(() => {
@@ -14,6 +15,11 @@ export default defineConfig(() => {
     plugins: [
       vue(),
       vueJsx(),
+      process.env.NODE_ENV !== 'production'
+        ? VueDevTools({
+            launchEditor: 'trae'
+          })
+        : null,
       UnoCSS(), // UnoCSS 插件
       Components({
         resolvers: [NaiveUiResolver()]

@@ -2,7 +2,7 @@
 // 只包含接口类型定义，不包含编码/解码逻辑
 // 自动解决 protobufPackage 命名冲突
 // 请勿手动修改
-// PROTO SOURCE: /Users/staff/Documents/my-tools/vue3-mono/protosusers.proto
+// PROTO SOURCE: /Users/staff/Documents/my-tools/vue3-mono/protosresource.proto
 
 // Common types
 export type {

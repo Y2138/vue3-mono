@@ -134,7 +134,6 @@ export class ResourceController extends BaseController {
    */
   @Get('detail')
   @ApiOperation({ summary: '获取单个资源', description: '根据ID获取单个资源' })
-  @ApiParam({ name: 'id', description: '资源ID', required: true })
   @ApiProduces('application/json')
   @ApiResponse({ status: 200, description: '获取成功', type: Object })
   @ApiResponse({ status: 404, description: '资源不存在' })

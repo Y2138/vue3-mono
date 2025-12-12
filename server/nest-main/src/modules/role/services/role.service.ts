@@ -524,7 +524,7 @@ export class RoleService {
    */
   private buildResourcesTreeForPreview(resources: any[], parentId?: string | null): any[] {
     return resources
-      .filter((resource) => resource.parentId === parentId)
+      .filter((resource) => (parentId === null || parentId === undefined ? !resource.parentId : resource.parentId === parentId))
       .map((resource) => ({
         ...resource,
         children: this.buildResourcesTreeForPreview(resources, resource.id)

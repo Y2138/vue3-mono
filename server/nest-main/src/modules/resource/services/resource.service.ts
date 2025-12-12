@@ -260,7 +260,7 @@ export class ResourceService {
         const existingResourceWithSameOrder = await this.prisma.resource.findFirst({
           where: {
             id: { not: id }, // 排除当前正在更新的资源
-            parentId: (parentId !== undefined && parentId !== null) ? (parentId.trim() !== '' ? parentId : null) : existingResource.parentId || null,
+            parentId: parentId !== undefined && parentId !== null ? (parentId.trim() !== '' ? parentId : null) : existingResource.parentId || null,
             sortOrder: restUpdateData.sortOrder
           }
         })
@@ -353,14 +353,11 @@ export class ResourceService {
     }
   }
 
-      }
-
-
   /**
    * 获取子资源
    */
   async getChildResources(parentId: string): Promise<ResourcePrisma[]> {
-    const resources = await this.prisma.client.resource.findMany({
+    const resources = await this.prisma.resource.findMany({
       where: { parentId },
       orderBy: { sortOrder: 'asc' }
     })
