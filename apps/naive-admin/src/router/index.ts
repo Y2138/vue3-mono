@@ -49,29 +49,21 @@ router.beforeEach(async (to: RouteLocationNormalized, from: RouteLocationNormali
   window.$loadingBar?.start()
 
   try {
-    // 恢复用户状态（如果有存储的token）
-    if (!userStore.isLoggedIn && userStore.authToken) {
-      try {
-        await userStore.fetchUserInfo()
-      } catch (error) {
-        console.warn('Failed to restore user session:', error)
-        // 清除无效的token
-        await userStore.logout()
-      }
-    }
-
     // 检查是否需要认证
     const requiresAuth = !to.meta?.noAuth
     const isLoggedIn = userStore.isLoggedIn
 
     // 登录验证
     if (requiresAuth && !isLoggedIn) {
-      console.log('Authentication required, redirecting to login')
-      window.$message?.warning('请先登录')
-      next({
-        path: '/login',
-        query: { redirect: to.fullPath } // 保存原始访问路径
-      })
+      if (!isLoggedIn) {
+        console.log('Authentication required, redirecting to login')
+        window.$message?.warning('请先登录')
+        next({
+          path: '/login',
+          query: { redirect: to.fullPath } // 保存原始访问路径
+        })
+      }
+      // TODO 验证菜单权限
       return
     }
 

@@ -7,6 +7,38 @@ import { get, post } from '@/request/axios'
 
 // 从共享类型文件导入角色管理相关类型
 import type { Role, CreateRoleRequest, UpdateRoleRequest, GetRolesRequest } from '@/shared/role'
+import type { ResourceListResponse } from '@/shared/resource'
+
+// 权限信息类型
+export interface PermissionInfo {
+  id: string
+  name: string
+  description?: string
+  resCode?: string
+  resource?: string
+  action?: string
+  parentId?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+// 角色信息类型
+export interface RoleInfo {
+  id: string
+  name: string
+  description?: string
+  code: string
+  permissions?: PermissionInfo[]
+  createdAt?: string
+  updatedAt?: string
+}
+
+// 权限检查参数类型
+export interface CheckPermissionParams {
+  userPhone: string
+  action: string
+  resource: string
+}
 
 /**
  * 获取角色列表
@@ -51,4 +83,23 @@ export const previewPermissionsByRoleIds = async (roleIds: string[]) => {
   return post<{ roleIds: string[] }, { tree: any[]; list: any[] }>('/api/roles/preview-permissions', {
     data: { roleIds }
   })
+}
+
+/**
+ * 获取权限列表 - 使用资源树替代
+ */
+export const getPermissions = async (params?: { page?: number; pageSize?: number; keyword?: string }) => {
+  return get<typeof params, ResourceListResponse>('/api/resources/list', { params })
+}
+
+// 检查用户权限 - 后端未实现
+export const checkPermission = async (_params: CheckPermissionParams) => {
+  console.warn('checkPermission API not implemented in backend')
+  return Promise.resolve({ hasPermission: true })
+}
+
+// 批量检查权限 - 后端未实现
+export const batchCheckPermissions = async (params: CheckPermissionParams[]) => {
+  console.warn('batchCheckPermissions API not implemented in backend')
+  return Promise.resolve(params.map(() => ({ hasPermission: true })))
 }

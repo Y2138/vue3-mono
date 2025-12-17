@@ -1,27 +1,22 @@
 <template>
-  <div class="role-assignment">
-    <div class="role-selection">
-      <n-form-item label="角色分配" :required="false">
-        <n-select v-model:value="selectedRoleIds" :options="roleOptions" placeholder="请选择角色（可多选）" multiple filterable :loading="rolesLoading" :disabled="disabled" @update:value="handleRoleChange" />
-      </n-form-item>
-    </div>
-
-    <!-- 预览权限按钮 -->
-    <div v-if="selectedRoleIds.length > 0" class="preview-button-container">
-      <n-button type="primary" :disabled="disabled || resourcesLoading" :loading="resourcesLoading" @click="previewPermissions"> 预览权限 </n-button>
+  <div class="w-full">
+    <div class="mb-2">用户角色：</div>
+    <div class="flex">
+      <n-select v-model:value="selectedRoleIds" :options="roleOptions" placeholder="请选择角色（可多选）" multiple filterable :loading="rolesLoading" :disabled="disabled" @update:value="handleRoleChange" />
+      <n-button class="ml-2" type="primary" :disabled="disabled || selectedRoleIds.length === 0" :loading="resourcesLoading" @click="previewPermissions"> 预览权限 </n-button>
     </div>
 
     <!-- 资源预览区域 -->
-    <div v-if="showResourcePreview" class="resource-preview">
+    <div v-if="showResourcePreview" class="mt-4">
       <n-divider />
-      <div class="preview-header">
-        <h4 class="preview-title">资源预览</h4>
+      <div class="flex justify-between items-center mb-3">
+        <h4 class="m-0 text-sm font-semibold">资源树</h4>
         <n-spin v-if="resourcesLoading" size="small" />
       </div>
-      <div v-if="resourcesLoading" class="loading-container">
+      <div v-if="resourcesLoading" class="flex justify-center items-center min-h-50">
         <n-spin />
       </div>
-      <div v-else-if="resourceTree.length > 0" class="tree-container">
+      <div v-else-if="resourceTree.length > 0" class="max-h-96 overflow-y-auto">
         <ResourceTree mode="view" :resources="resourceTree" :default-expanded-ids="[]" />
       </div>
       <n-empty v-else description="暂无资源权限" />
@@ -35,7 +30,7 @@ import { NFormItem, NSelect, NDivider, NSpin, NEmpty, NButton, useMessage } from
 import { getRoles, previewPermissionsByRoleIds } from '@/request/api/role'
 import ResourceTree from '@/views/system/components/ResourceTree.vue'
 import type { Role } from '@/shared/role'
-import type { Resource } from '@/shared/resource'
+import type { Resource, ResourceTree as ResourceTreeType } from '@/shared/resource'
 
 interface Props {
   phone?: string
@@ -59,7 +54,7 @@ const selectedRoleIds = ref<string[]>([])
 
 // 资源相关
 const resourcesLoading = ref(false)
-const resourceTree = ref<Resource[]>([])
+const resourceTree = ref<ResourceTreeType[]>([])
 const resourceList = ref<Resource[]>([])
 const showResourcePreview = ref(false)
 
@@ -120,10 +115,21 @@ const previewPermissions = async () => {
 }
 
 // 处理角色变化
+const arraysEqual = (a: string[] = [], b: string[] = []) => {
+  if (a === b) return true
+  if (!Array.isArray(a) || !Array.isArray(b)) return false
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false
+  return true
+}
+
 const handleRoleChange = (roleIds: string[]) => {
-  selectedRoleIds.value = roleIds
-  emit('update:roleIds', roleIds)
-  // 角色变化时隐藏资源预览
+  if (!arraysEqual(selectedRoleIds.value, roleIds)) {
+    selectedRoleIds.value = roleIds
+  }
+  if (!arraysEqual(roleIds, props.initialRoleIds || [])) {
+    emit('update:roleIds', roleIds)
+  }
   showResourcePreview.value = false
   resourceTree.value = []
   resourceList.value = []
@@ -133,61 +139,20 @@ const handleRoleChange = (roleIds: string[]) => {
 watch(
   () => props.initialRoleIds,
   (newIds) => {
-    if (newIds && newIds.length > 0) {
-      selectedRoleIds.value = [...newIds]
-      emit('update:roleIds', selectedRoleIds.value)
+    const ids = Array.isArray(newIds) ? newIds : []
+    if (!arraysEqual(selectedRoleIds.value, ids)) {
+      selectedRoleIds.value = [...ids]
+    }
+
+    // 如果是查看页面且有初始角色ID，自动获取资源树
+    if (props.disabled && ids.length > 0) {
+      showResourcePreview.value = true
+      previewPermissions()
     }
   },
   { immediate: true }
 )
-
 onMounted(() => {
   loadRoles()
-  if (props.initialRoleIds && props.initialRoleIds.length > 0) {
-    selectedRoleIds.value = [...props.initialRoleIds]
-  }
 })
 </script>
-
-<style scoped>
-.role-assignment {
-  width: 100%;
-}
-
-.role-selection {
-  margin-bottom: 16px;
-}
-
-.preview-button-container {
-  margin-bottom: 16px;
-}
-
-.resource-preview {
-  margin-top: 16px;
-}
-
-.preview-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.preview-title {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.loading-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 200px;
-}
-
-.tree-container {
-  max-height: 400px;
-  overflow-y: auto;
-}
-</style>

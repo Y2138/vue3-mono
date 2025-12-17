@@ -103,8 +103,7 @@ watch(
 watch(
   () => props.resources,
   () => {
-    if (props.expandAll) expandAll()
-    else expandedKeys.value = [...props.defaultExpandedIds]
+    expandedKeys.value = [...props.defaultExpandedIds]
   },
   { deep: true }
 )

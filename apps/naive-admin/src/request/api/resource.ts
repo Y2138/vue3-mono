@@ -6,7 +6,7 @@
 import { get, post } from '../axios'
 
 // 从共享类型文件导入资源管理相关类型
-import type { CreateResourceRequest, UpdateResourceRequest, ResourceListResponse, ResourceResponse, GetResourcesRequest, Resource, ResourceTree } from '@/shared/resource'
+import type { CreateResourceRequest, UpdateResourceRequest, ResourceResponse, GetResourcesRequest, Resource, ResourceTree } from '@/shared/resource'
 
 /**
  * 获取资源列表
@@ -52,81 +52,3 @@ export const deleteResource = async (id: string) => {
 
 // 获取资源枚举
 export const getResourceEnums = () => get<void, any>('/api/resources/enums')
-
-/**
- * RBAC API接口定义
- */
-
-// 权限信息类型
-export interface PermissionInfo {
-  id: string
-  name: string
-  description?: string
-  resCode?: string
-  resource?: string
-  action?: string
-  parentId?: string
-  createdAt?: string
-  updatedAt?: string
-}
-
-// 角色信息类型
-export interface RoleInfo {
-  id: string
-  name: string
-  description?: string
-  code: string
-  permissions?: PermissionInfo[]
-  createdAt?: string
-  updatedAt?: string
-}
-
-// 权限检查参数类型
-export interface CheckPermissionParams {
-  userPhone: string
-  action: string
-  resource: string
-}
-
-// 分页结果类型
-interface PaginationResult<T> {
-  list: T[]
-  total: number
-  page: number
-  pageSize: number
-}
-
-// 权限列表响应类型
-export interface PermissionListResponse {
-  permissions: PermissionInfo[]
-  pagination: PaginationResult<PermissionInfo>
-}
-
-// 角色列表响应类型
-export interface RoleListResponse {
-  roles: RoleInfo[]
-  pagination: PaginationResult<RoleInfo>
-}
-/**
- * 获取权限列表 - 使用资源树替代
- */
-export const getPermissions = async (params?: { page?: number; pageSize?: number; keyword?: string }) => {
-  return get<typeof params, ResourceListResponse>('/api/resources/list', { params })
-}
-
-// 获取角色列表
-export const getRoles = async (params?: { page?: number; pageSize?: number; keyword?: string; includePermissions?: boolean }) => {
-  return post<typeof params, RoleListResponse>('/api/roles/list', { data: params })
-}
-
-// 检查用户权限 - 后端未实现
-export const checkPermission = async (_params: CheckPermissionParams) => {
-  console.warn('checkPermission API not implemented in backend')
-  return Promise.resolve({ hasPermission: true })
-}
-
-// 批量检查权限 - 后端未实现
-export const batchCheckPermissions = async (params: CheckPermissionParams[]) => {
-  console.warn('batchCheckPermissions API not implemented in backend')
-  return Promise.resolve(params.map(() => ({ hasPermission: true })))
-}

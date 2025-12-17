@@ -52,7 +52,7 @@ const systemRoutes: CustomRouteRecord = {
     {
       path: 'resource/create',
       name: 'resourceCreate',
-      component: () => import('@/views/system/resources/components/resource-form.vue'),
+      component: () => import('@/views/system/resources/components/ResourceForm.vue'),
       meta: {
         title: '创建资源',
         activeMenuPath: '/system-manage/resource'
@@ -61,7 +61,7 @@ const systemRoutes: CustomRouteRecord = {
     {
       path: 'resource/edit',
       name: 'resourceEdit',
-      component: () => import('@/views/system/resources/components/resource-form.vue'),
+      component: () => import('@/views/system/resources/components/ResourceForm.vue'),
       meta: {
         title: '编辑资源',
         activeMenuPath: '/system-manage/resource'

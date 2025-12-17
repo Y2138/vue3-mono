@@ -1,3 +1,8 @@
+---
+alwaysApply: false
+description: 前端代码，前端代码开发
+---
+
 # 前端开发规范
 
 ## 1. 组件结构与组织

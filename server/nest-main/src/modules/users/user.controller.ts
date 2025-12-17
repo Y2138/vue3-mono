@@ -105,7 +105,8 @@ export class UserHttpController extends BaseController {
         statusDesc: getUserStatusDesc(userWithRoles!.status),
         createdAt: this.formatDateTime(userWithRoles!.createdAt),
         updatedAt: this.formatDateTime(userWithRoles!.updatedAt),
-        roleIds: userWithRoles!.user_roles?.map((ur: any) => ur.roleId) || []
+        roleIds: userWithRoles!.user_roles?.map((ur: any) => ur.roleId) || [],
+        roleNames: userWithRoles!.user_roles?.map((ur: any) => ur.role?.name).filter((n: string | undefined) => !!n) || []
       },
       token: result.token,
       expiresAt: this.formatDateTime(new Date(Date.now() + 24 * 60 * 60 * 1000))
@@ -141,7 +142,8 @@ export class UserHttpController extends BaseController {
       statusDesc: getUserStatusDesc(user.status),
       createdAt: this.formatDateTime(user.createdAt),
       updatedAt: this.formatDateTime(user.updatedAt),
-      roleIds: user.user_roles?.map((ur: any) => ur.roleId) || []
+      roleIds: user.user_roles?.map((ur: any) => ur.roleId) || [],
+      roleNames: user.user_roles?.map((ur: any) => ur.role?.name).filter((n: string | undefined) => !!n) || []
     }
 
     return this.success(userResponse, '获取用户信息成功')
@@ -211,7 +213,8 @@ export class UserHttpController extends BaseController {
         statusDesc: getUserStatusDesc(user.status),
         createdAt: this.formatDateTime(user.createdAt),
         updatedAt: this.formatDateTime(user.updatedAt),
-        roleIds: user.user_roles?.map((ur: any) => ur.roleId) || []
+        roleIds: user.user_roles?.map((ur: any) => ur.roleId) || [],
+        roleNames: user.user_roles?.map((ur: any) => ur.role?.name).filter((n: string | undefined) => !!n) || []
       })),
       pagination: {
         page,
@@ -291,7 +294,8 @@ export class UserHttpController extends BaseController {
       statusDesc: getUserStatusDesc(user.status),
       createdAt: this.formatDateTime(user.createdAt),
       updatedAt: this.formatDateTime(user.updatedAt),
-      roleIds: user.user_roles?.map((ur: any) => ur.roleId) || []
+      roleIds: user.user_roles?.map((ur: any) => ur.roleId) || [],
+      roleNames: user.user_roles?.map((ur: any) => ur.role?.name).filter((n: string | undefined) => !!n) || []
     }
 
     return this.success(userResponse, '获取用户详情成功')
@@ -343,7 +347,8 @@ export class UserHttpController extends BaseController {
       statusDesc: getUserStatusDesc(user.status),
       createdAt: this.formatDateTime(user.createdAt),
       updatedAt: this.formatDateTime(user.updatedAt),
-      roleIds: []
+      roleIds: [],
+      roleNames: []
     }
 
     return this.success(userResponse, '人员新增成功')
@@ -404,7 +409,8 @@ export class UserHttpController extends BaseController {
       statusDesc: getUserStatusDesc(userWithRoles!.status),
       createdAt: this.formatDateTime(userWithRoles!.createdAt),
       updatedAt: this.formatDateTime(userWithRoles!.updatedAt),
-      roleIds: userWithRoles!.user_roles?.map((ur: any) => ur.roleId) || []
+      roleIds: userWithRoles!.user_roles?.map((ur: any) => ur.roleId) || [],
+      roleNames: userWithRoles!.user_roles?.map((ur: any) => ur.role?.name).filter((n: string | undefined) => !!n) || []
     }
 
     return this.success(userResponse, '用户信息更新成功')
@@ -519,7 +525,8 @@ export class UserHttpController extends BaseController {
       statusDesc: getUserStatusDesc(userWithRoles!.status),
       createdAt: this.formatDateTime(userWithRoles!.createdAt),
       updatedAt: this.formatDateTime(userWithRoles!.updatedAt),
-      roleIds: userWithRoles!.user_roles?.map((ur: any) => ur.roleId) || []
+      roleIds: userWithRoles!.user_roles?.map((ur: any) => ur.roleId) || [],
+      roleNames: userWithRoles!.user_roles?.map((ur: any) => ur.role?.name).filter((n: string | undefined) => !!n) || []
     }
 
     return this.success(userResponse, successMessage)

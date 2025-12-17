@@ -1,26 +1,24 @@
 <template>
   <n-card size="small">
     <slot name="top"></slot>
-    <WrapRow v-if="inline" :cols="computedCols" v-bind="attrs">
-      <slot>
-        <WrapCol></WrapCol>
-      </slot>
+    <WrapRow v-if="inline" class="ml--2" :cols="computedCols" v-bind="attrs">
+      <slot> </slot>
       <WrapCol contentWidth="auto">
         <slot name="btn-affix"></slot>
-        <n-button size="small" type="primary" @click="handleSearch">查询</n-button>
-        <n-button size="small" class="ml-4" @click="handleReset">重置</n-button>
+        <n-button type="primary" @click="handleSearch">查询</n-button>
+        <n-button class="ml-2" @click="handleReset">重置</n-button>
         <slot name="btn-suffix"></slot>
       </WrapCol>
     </WrapRow>
-    <template v-if="!inline">
+    <template v-else>
       <div class="flex flex-wrap items-center ml-[-0.5rem]">
         <WrapRow :labelWidth="props.labelWidth" :cols="computedCols" v-bind="attrs">
           <slot></slot>
         </WrapRow>
       </div>
-      <div class="mt-2">
+      <div class="mt-2 flex items-center">
         <slot name="btn-affix"></slot>
-        <n-button type="primary" :disabled="props.searchLoading" @click="handleSearch">查询</n-button>
+        <n-button type="primary" :loading="props.searchLoading" @click="handleSearch">查询</n-button>
         <n-button class="ml-2" :disabled="props.searchLoading" @click="handleReset">重置</n-button>
         <slot name="btn-suffix"></slot>
       </div>
@@ -68,7 +66,6 @@ const debounceSearch = useDebounceFn(() => {
 watch(
   () => props.formModel,
   () => {
-    // console.log('2501 formUpdate: ', props)
     if (props.searchOnUpdate) {
       debounceSearch()
     }

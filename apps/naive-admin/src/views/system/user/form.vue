@@ -1,10 +1,10 @@
 <template>
-  <n-card :title="pageTitle" class="mt-4">
+  <n-card :title="pageTitle">
     <template #header-extra>
       <n-button @click="handleBack">返回</n-button>
     </template>
 
-    <div v-if="loading" class="loading-container">
+    <div v-if="loading" class="flex justify-center items-center min-h-50">
       <n-spin size="large" />
     </div>
 
@@ -17,8 +17,8 @@
         <template v-if="mode === 'edit'">
           <n-descriptions :column="2" bordered label-placement="left" class="mt-4">
             <n-descriptions-item label="状态">
-              <n-tag :type="getStatusType(formModel.status)">
-                {{ getStatusText(formModel.status) }}
+              <n-tag :type="getStatusType(userInfo?.status)">
+                {{ userInfo?.statusDesc }}
               </n-tag>
             </n-descriptions-item>
             <n-descriptions-item label="创建时间">
@@ -55,8 +55,8 @@
             {{ formModel.username }}
           </n-descriptions-item>
           <n-descriptions-item label="状态">
-            <n-tag :type="getStatusType(formModel.status)">
-              {{ getStatusText(formModel.status) }}
+            <n-tag :type="getStatusType(userInfo?.status)">
+              {{ userInfo?.statusDesc }}
             </n-tag>
           </n-descriptions-item>
           <n-descriptions-item label="创建时间">
@@ -66,11 +66,11 @@
             {{ userInfo?.updatedAt }}
           </n-descriptions-item>
           <n-descriptions-item label="角色">
-            <div v-if="formModel.roleIds && formModel.roleIds.length > 0">
-              <n-tag v-for="roleId in formModel.roleIds" :key="roleId" type="info" size="small" class="mr-1">
-                {{ roleId }}
+            <template v-if="userInfo?.roleNames">
+              <n-tag v-for="roleName in userInfo.roleNames" :key="roleName" type="info" size="small" class="mr-1">
+                {{ roleName }}
               </n-tag>
-            </div>
+            </template>
             <span v-else>无角色</span>
           </n-descriptions-item>
         </n-descriptions>
@@ -130,7 +130,7 @@ const userEnums = ref<Record<string, EnumItem[]>>({
 })
 
 // 表单数据
-const formModel = ref<Record<string, unknown>>({
+const formModel = ref({
   phone: '',
   username: '',
   status: 2,
@@ -295,22 +295,6 @@ const getStatusType = (status?: number) => {
   }
 }
 
-// 获取状态文本
-const getStatusText = (status?: number) => {
-  switch (status) {
-    case 1:
-      return '待激活'
-    case 2:
-      return '激活'
-    case 3:
-      return '下线'
-    case 4:
-      return '锁定'
-    default:
-      return '未知状态'
-  }
-}
-
 // 处理返回
 const handleBack = () => {
   router.back()
@@ -401,12 +385,3 @@ onMounted(() => {
   }
 })
 </script>
-
-<style scoped>
-.loading-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 200px;
-}
-</style>

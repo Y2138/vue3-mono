@@ -1,15 +1,12 @@
 <template>
-  <SearchPanel :cols="4" labelWidth="60" :formModel="formModel" :searchLoading="loading" searchOnUpdate @search="refresh" @reset="handleReset">
-    <template #top>
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-lg font-semibold">人员管理</h2>
-        <n-button type="primary" @click="handleCreate">
-          <template #icon>
-            <Icon icon="ion:add" width="16" height="16" />
-          </template>
-          新增人员
-        </n-button>
-      </div>
+  <SearchPanel :cols="4" labelWidth="60" :formModel="formModel" :searchLoading="loading" @search="refresh" @reset="handleReset">
+    <template #btn-suffix>
+      <n-button class="ml-2" type="primary" @click="handleCreate">
+        <template #icon>
+          <Icon icon="ion:add" width="16" height="16" />
+        </template>
+        新增人员
+      </n-button>
     </template>
 
     <WrapCol label="手机号">
@@ -78,7 +75,7 @@ const formModel = ref<IFormModel>({
 const { data: userEnums } = useEnums<Record<string, EnumItem[]>>({
   api: getUserEnums,
   key: 'user-enums',
-  refresh: true,
+  autoRefresh: true,
   defaultValue: {
     userStatus: [],
     userType: []
@@ -189,21 +186,20 @@ const customColumns: DataTableColumns<UserInfo> = [
   },
   {
     title: '角色',
-    key: 'roleIds',
+    key: 'roleNames',
     width: 200,
     render: (row) => {
-      if (!row.roleIds || row.roleIds.length === 0) {
+      const names = row.roleNames || []
+      if (!names || names.length === 0) {
         return (
           <NTag type="default" size="small">
             无角色
           </NTag>
         )
       }
-      // TODO: 这里应该显示角色名称，而不是角色ID
-      // 需要从角色列表获取角色名称映射
-      return row.roleIds.map((roleId) => (
-        <NTag key={roleId} type="info" size="small" class="mr-1">
-          {roleId}
+      return names.map((name) => (
+        <NTag key={name} type="info" size="small" class="mr-1">
+          {name}
         </NTag>
       ))
     }

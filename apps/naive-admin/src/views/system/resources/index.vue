@@ -1,15 +1,12 @@
 <template>
   <SearchPanel :cols="4" labelWidth="80" :formModel="formModel" :searchLoading="loading" searchOnUpdate @search="refresh" @reset="handleReset">
-    <template #top>
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-lg font-semibold">资源管理</h2>
-        <n-button type="primary" @click="handleAddResource">
-          <template #icon>
-            <Icon icon="ion:add" width="16" height="16" />
-          </template>
-          新增资源
-        </n-button>
-      </div>
+    <template #btn-suffix>
+      <n-button class="ml-2" type="primary" @click="handleAddResource">
+        <template #icon>
+          <Icon icon="ion:add" width="16" height="16" />
+        </template>
+        新增资源
+      </n-button>
     </template>
 
     <WrapCol label="资源名称">

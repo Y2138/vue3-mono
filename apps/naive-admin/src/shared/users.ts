@@ -25,6 +25,8 @@ export interface User {
   updatedAt: string;
   /** 用户角色列表（可选） */
   roleIds: string[];
+  /** 用户角色名称列表（可选） */
+  roleNames: string[];
 }
 
 /** 登录请求 */
