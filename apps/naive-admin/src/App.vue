@@ -1,5 +1,5 @@
 <template>
-  <n-config-provider :theme="themeVar" :theme-overrides="themeOverrides" :locale="zhCN" :date-locale="dateZhCN" inline-theme-disabled>
+  <n-config-provider :theme="themeVar" :theme-overrides="theme === 'dark' ? darkThemeOverrides : lightThemeOverrides" :locale="zhCN" :date-locale="dateZhCN" inline-theme-disabled>
     <n-dialog-provider>
       <n-message-provider>
         <n-loading-bar-provider>
@@ -24,7 +24,7 @@ import { darkTheme, zhCN, dateZhCN, GlobalThemeOverrides } from 'naive-ui'
 const route = useRoute()
 const { fullPath } = toRefs(route)
 const { pageRefreshKey, theme } = storeToRefs(useGlobalStore())
-const themeOverrides: GlobalThemeOverrides = {
+const lightThemeOverrides: GlobalThemeOverrides = {
   common: {
     primaryColor: '#3954ff',
     primaryColorHover: '#5c7cff',
@@ -38,6 +38,32 @@ const themeOverrides: GlobalThemeOverrides = {
   },
   Dialog: {
     contentMargin: '16px 0'
+  }
+}
+const darkThemeOverrides: GlobalThemeOverrides = {
+  common: {
+    primaryColor: '#5c7cff',
+    primaryColorHover: '#7aa2ff',
+    primaryColorPressed: '#3954ff',
+    primaryColorSuppl: '#3954ff',
+    // color
+    textColorBase: '#e0e7ff'
+  },
+  Tag: {
+    textColorInfo: '#e0e7ff'
+  },
+  Dialog: {
+    contentMargin: '16px 0'
+  },
+  Input: {
+    color: 'rgb(24, 24, 28)',
+    colorActive: 'rgb(24, 24, 28)',
+    border: '1px solid rgba(255, 255, 255, 0.1)'
+  },
+  InternalSelection: {
+    color: 'rgb(24, 24, 28)',
+    colorActive: 'rgb(24, 24, 28)',
+    border: '1px solid rgba(255, 255, 255, 0.1)'
   }
 }
 const themeVar = computed(() => {

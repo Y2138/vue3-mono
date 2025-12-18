@@ -2,7 +2,7 @@ const routes: CustomRouteRecord[] = [
   {
     path: '/test',
     name: '测试路由',
-    component: () => import(/* webpackChunkName: "login" */ '@/views/demo/test.vue')
+    component: () => import('@/views/demo/test.vue')
   },
   {
     path: '/test/list-demo',

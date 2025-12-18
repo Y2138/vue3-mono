@@ -50,6 +50,14 @@ const systemRoutes: CustomRouteRecord = {
       }
     },
     {
+      path: 'resourceTree',
+      name: 'resourceTree',
+      component: () => import('@/views/system/resources/tree.vue'),
+      meta: {
+        title: '资源树'
+      }
+    },
+    {
       path: 'resource/create',
       name: 'resourceCreate',
       component: () => import('@/views/system/resources/components/ResourceForm.vue'),

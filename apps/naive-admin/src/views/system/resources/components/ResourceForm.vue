@@ -2,12 +2,6 @@
   <n-card :title="isEditMode ? '编辑资源' : '创建资源'" bordered class="resource-form-card">
     <template #header-extra>
       <n-flex>
-        <n-button @click="handleCancel">
-          <template #icon>
-            <n-icon><Icon icon="ion:close-circle" /></n-icon>
-          </template>
-          取消
-        </n-button>
         <n-button type="primary" @click="handleSubmit" :loading="formLoading">
           <template #icon>
             <n-icon><Icon icon="ion:checkmark-circle" /></n-icon>
@@ -317,11 +311,6 @@ const handleSubmit = async () => {
   }
 }
 
-// 取消操作
-const handleCancel = () => {
-  router.push('/system-manage/resource')
-}
-
 // 页面加载时获取数据
 onMounted(async () => {
   await Promise.all([fetchResourceTypes(), fetchParentResources()])
@@ -332,5 +321,3 @@ onMounted(async () => {
   }
 })
 </script>
-
-<!-- 样式已迁移到Tailwind CSS类 -->
