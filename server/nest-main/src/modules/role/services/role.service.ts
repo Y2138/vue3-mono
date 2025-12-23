@@ -1,6 +1,5 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common'
 import { PrismaService } from '../../../prisma/prisma.service'
-import { Prisma } from '@prisma/client'
 import { DataNotFoundException, ValidationException, ConflictException } from '../../../common/exceptions'
 import { PaginationRequest } from '../../../shared/common'
 
@@ -320,9 +319,6 @@ export class RoleService {
     if (!resourceIds || resourceIds.length === 0) {
       throw new ValidationException('资源ID列表不能为空')
     }
-
-    // 验证角色存在
-    const existingRole = await this.findOne(roleId)
 
     // 验证所有资源存在
     const resources = await this.prisma.client.resource.findMany({

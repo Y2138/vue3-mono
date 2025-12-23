@@ -16,9 +16,6 @@ import { Icon } from '@iconify/vue'
 import { getResourceTree, deleteResource } from '@/request/api/resource'
 import type { ResourceTree, GetResourcesRequest } from '@/shared/resource'
 import { usePageLoading } from '@/hooks/usePageLoading'
-import { useEnums } from '@/hooks/useEnums'
-import type { SelectOption } from 'naive-ui'
-import { getResourceEnums } from '@/request/api/resource'
 
 defineOptions({
   name: 'ResourceTree'
@@ -41,19 +38,6 @@ const resourceTreeData = ref<ResourceTree[]>([])
 
 // 展开的节点ID列表
 const expandedKeys = ref<string[]>([])
-
-// // 获取资源枚举数据
-// const { data: enumsData } = useEnums<Record<string, SelectOption[]>>({
-//   api: async () => {
-//     const [res] = await getResourceEnums()
-//     if (res) {
-//       return res
-//     }
-//     return { data: {} }
-//   },
-//   key: 'resource-enums',
-//   autoRefresh: true
-// })
 
 // 获取资源类型名称
 const getResourceTypeName = (type: number): string => {

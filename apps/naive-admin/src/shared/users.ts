@@ -6,8 +6,17 @@
 
 /* eslint-disable */
 import type { EnumResponse, PaginationRequest, PaginationResponse, ResponseStatus } from "./common";
+import type { Resource, ResourceTree } from "./resource";
 
 export const protobufPackage = "users";
+
+/** 精简用户信息 */
+export interface SimpleUser {
+  /** 手机号（主键） */
+  phone: string;
+  /** 用户名 */
+  username: string;
+}
 
 /** 用户信息 */
 export interface User {
@@ -37,11 +46,29 @@ export interface LoginRequest {
   password: string;
 }
 
+/** 权限树响应 */
+export interface PermissionTree {
+  /** 菜单树 */
+  menuTree: ResourceTree[];
+  /** 所有资源列表 */
+  resources: Resource[];
+}
+
+/** 个人资料响应 */
+export interface ProfileResponse {
+  /** 精简用户信息 */
+  user?:
+    | SimpleUser
+    | undefined;
+  /** 权限树 */
+  permissions?: PermissionTree | undefined;
+}
+
 /** 认证响应 */
 export interface AuthResponse {
-  /** 用户信息 */
+  /** 精简用户信息 */
   user?:
-    | User
+    | SimpleUser
     | undefined;
   /** JWT token */
   token: string;
@@ -176,7 +203,7 @@ export interface UserService {
   /** 用户登录 */
   Login(request: LoginRequest): Promise<AuthResponse>;
   /** 获取当前用户信息 */
-  GetProfile(request: GetUserRequest): Promise<User>;
+  GetProfile(request: GetUserRequest): Promise<ProfileResponse>;
   /** 获取用户信息 */
   GetUser(request: GetUserRequest): Promise<User>;
   /** 获取用户列表 */

@@ -1,6 +1,6 @@
 ---
 alwaysApply: false
-description: 前端代码，前端代码开发
+description: 前端代码开发规范
 ---
 
 # 前端开发规范
@@ -19,15 +19,15 @@ src/views/system/
 
 ### 1.2 组件拆分原则
 
-- 页面级组件：负责完整功能模块（如 list.vue）
-- 功能组件：负责单一功能（如 CreateUserModal.vue）
+- 页面级组件：负责完整功能模块
+- 功能组件：负责单一功能
 - 通用组件：通过 props 和 events 实现复用
 - 路由组件：与路由配置一一对应
 
 ### 1.3 文件命名规范
 
-- 页面组件：大驼峰命名（如 PersonList.vue）或小写连字符（如 person-list.vue）
-- 功能组件：大驼峰命名（如 CreateUserModal.vue）
+- 页面组件：大驼峰（如 PersonList.vue）或小写连字符（如 person-list.vue）
+- 功能组件：大驼峰（如 CreateUserModal.vue）
 - API 模块：小写连字符（如 users.ts）
 - Hook：use 前缀 + 驼峰命名（如 useTablePage.ts）
 
@@ -41,9 +41,9 @@ src/views/system/
 
 ### 2.2 类型来源
 
-1. **Proto 生成类型**：用于接口请求和响应（如 `User`, `LoginRequest`）
-2. **扩展类型**：在 API 模块中扩展和转换（如 `LoginParams = Omit<LoginRequest, 'toJSON' | 'fromJSON'>`）
-3. **本地类型**：组件内部使用的类型（如 `IFormConfig`）
+1. **Proto 生成类型**：用于接口请求和响应
+2. **扩展类型**：在 API 模块中扩展和转换
+3. **本地类型**：组件内部使用的类型
 
 ### 2.3 类型转换
 
@@ -56,9 +56,6 @@ src/views/system/
 ### 3.1 API 模块结构
 
 ```typescript
-// 类型定义
-// ...
-
 // API 函数
 export const api_login = async (params: LoginParams) => {
   return post<LoginParams, LoginResponse>('/api/auth/login', { data: params })
@@ -71,30 +68,17 @@ export const api_login = async (params: LoginParams) => {
 - 统一处理请求拦截和响应拦截
 - 自动携带 token 等认证信息
 
-### 3.3 响应处理
+### 3.3 响应与错误处理
 
 ```typescript
 const [res, error] = await getUserList(requestParams)
 if (error) {
   return [null, error]
 }
-// 数据适配
-const adaptedData: ResResult<IPaginationResData<UserInfo[]>> = {
-  data: {
-    tableData: list || [],
-    pageData: {
-      count: Number(pagination?.total) || 0,
-      page: Number(pagination?.page) || 1,
-      pageSize: Number(pagination?.pageSize) || 30
-    }
-  }
-}
 ```
 
-### 3.4 错误处理
-
 - 使用 `try-catch` 包裹异步请求
-- 统一错误提示（如 message.error）
+- 统一错误提示
 - 详细日志记录
 
 ## 4. 状态管理
@@ -113,7 +97,6 @@ import { useEnums } from '@/hooks/useEnums'
 import { usePageLoading } from '@/hooks/usePageLoading'
 import { useMessage } from 'naive-ui'
 
-// 使用示例
 const message = useMessage()
 const { data: userEnums } = useEnums<Record<string, EnumItem[]>>({...})
 const { pagination, tableData, loading, refresh } = useTablePage<IUserListRequest, UserInfo>(...)
@@ -125,9 +108,7 @@ const { pagination, tableData, loading, refresh } = useTablePage<IUserListReques
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-// 页面跳转
 router.push({ path: '/system-manage/person/detail', query: { phone: row.phone } })
-// 返回上一页
 router.back()
 ```
 
@@ -139,7 +120,7 @@ router.back()
 - 变量名称：驼峰命名（如 userInfo, loading）
 - 常量名称：大写蛇形（如 API_URL）
 - 接口名称：I 前缀 + 大驼峰（如 IFormModel）
-- 函数名称：驼峰命名（如 handleCreate, getStatusActions）
+- 函数名称：驼峰命名（如 handleCreate）
 
 ### 5.2 代码风格
 
@@ -151,10 +132,6 @@ const router = useRouter()
 function handleCreate() {
   showCreateModal.value = true
 }
-
-// 错误示例
-const MESSAGE = useMessage() // 常量不应是动态值
-const Router = useRouter() // 变量不应使用大驼峰
 ```
 
 ### 5.3 注释规范
@@ -166,11 +143,6 @@ const Router = useRouter() // 变量不应使用大驼峰
 export interface UserStatusActionRequest {
   /** 操作类型：activate-激活，deactivate-下线，lock-锁定，unlock-解锁 */
   action: 'activate' | 'deactivate' | 'lock' | 'unlock'
-}
-
-// 状态操作函数
-async function handleActivate(phone: string) {
-  // ...
 }
 ```
 
@@ -185,57 +157,22 @@ async function handleActivate(phone: string) {
 
 ```vue
 <n-button type="primary" @click="handleSubmit" :loading="loading"> 确定 </n-button>
-<n-data-table class="mt-4" :columns="tableColumns" :data="tableData" :pagination="pagination" :loading="loading" />
+<n-data-table :columns="tableColumns" :data="tableData" :pagination="pagination" :loading="loading" />
 ```
 
-### 6.3 图标库选择与使用
+### 6.3 图标库使用
 
-- **图标库**：使用 @iconify/vue 作为图标库，支持多种图标集
-- **引入方式**：
-  ```typescript
-  import { Icon } from '@iconify/vue'
-  ```
-- **使用方式**：
-
-  ```vue
-  <!-- 直接使用 -->
-  <Icon icon="ion:menu" width="24" height="24" />
-
-  <!-- 在组合式函数中使用 -->
-  function renderIcon(icon: string) {
-    return () => h(Icon, { icon, width: '16', height: '16' })
-  }
-
-  <!-- 结合菜单组件使用 -->
-  const menuOptions = ref<MenuOption[]>([])
-  function transferMenu(menuList?: IMenuItem[]): MenuOption[] {
-    if (!menuList) return []
-    return menuList
-      .filter((item) => item.path !== '/')
-      .map((item) => {
-        return {
-          label: item.children ? item.name : () => h(RouterLink, { to: item.path }, { default: () => item.name }),
-          key: item.path,
-          icon: item.icon ? renderIcon(item.icon) : undefined,
-          children: item.children ? transferMenu(item.children) : undefined
-        } as MenuOption
-      })
-  }
-  ```
-
-- **图标集**：支持多种图标集（如 ion, mdi, ri 等），可在 https://icones.netlify.app/ 查询图标名称
-- **最佳实践**：
-  - 统一图标大小（推荐 16px/20px/24px）
-  - 使用语义化图标名称
-  - 在需要动态渲染图标的场景下使用渲染函数
+- 使用 @iconify/vue 作为图标库
+- 引入方式：`import { Icon } from '@iconify/vue'`
+- 使用方式：`<Icon icon="ion:menu" width="24" height="24" />`
+- 统一图标大小（推荐 16px/20px/24px）
 
 ### 6.4 样式规范
 
 - 优先使用 unocss 类名
 - 使用 Scoped CSS
-- 使用 CSS 变量（如 `--n-th-color`）
-- 使用深度选择器 `:deep()`
-- 保持样式简洁，避免过度定制
+- 使用 CSS 变量和深度选择器 `:deep()`
+- 保持样式简洁
 
 ## 7. 工具函数与 Hook
 
@@ -248,7 +185,7 @@ export default function useTablePage<TParams, TData>(
   dealParams: () => TParams;
   options?: IUseTablePageOptions
 ): {
-  // ... 返回响应式数据和方法
+  // 返回响应式数据和方法
 }
 ```
 
@@ -258,12 +195,6 @@ export default function useTablePage<TParams, TData>(
 - 枚举值获取（useEnums）
 - 页面加载状态（usePageLoading）
 
-### 7.3 工具函数
-
-- 提供统一的工具函数库
-- 避免重复代码
-- 提高代码复用性
-
 ## 8. 表单处理
 
 ### 8.1 表单组件
@@ -271,9 +202,10 @@ export default function useTablePage<TParams, TData>(
 - 使用封装的 dForm 组件
 - 配置式表单定义
 
-### 8.2 表单验证
+### 8.2 表单验证与提交
 
 ```typescript
+// 表单配置
 const formConfigs: IFormConfig[] = [
   {
     valueKey: 'phone',
@@ -283,15 +215,11 @@ const formConfigs: IFormConfig[] = [
     rules: [
       { required: true, message: '请输入手机号', trigger: 'blur' },
       { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号格式', trigger: 'blur' }
-    ],
-    props: { placeholder: '请输入手机号', clearable: true }
+    ]
   }
 ]
-```
 
-### 8.3 表单提交
-
-```typescript
+// 表单提交
 const handleSubmit = async () => {
   try {
     const validateResult = await formRef.value?.validate()
@@ -299,9 +227,7 @@ const handleSubmit = async () => {
 
     loading.value = true
     // 表单提交逻辑
-    // ...
   } catch (error) {
-    console.error('表单验证失败:', error)
     message.error('表单验证失败，请检查输入信息')
   } finally {
     loading.value = false
@@ -311,60 +237,22 @@ const handleSubmit = async () => {
 
 ## 9. 性能优化
 
-### 9.1 懒加载
-
-- 组件懒加载：使用 `defineAsyncComponent`
-- 路由懒加载：使用 `() => import()` 语法
-
-### 9.2 计算属性
-
+- 组件和路由懒加载
 - 使用 `computed` 缓存计算结果
-
-### 9.3 事件处理
-
-- 避免在模板中使用复杂表达式
-- 使用事件委托
-
-### 9.4 响应式优化
-
-- 使用 `shallowRef` 和 `shallowReactive`
-- 使用 `toRaw` 获取原始对象
+- 避免模板中复杂表达式
+- 使用 `shallowRef` 和 `shallowReactive` 优化响应式
 
 ## 10. 测试与调试
 
-### 10.1 类型检查
-
-```bash
-npx tsc --noEmit
-```
-
-### 10.2 调试工具
-
-- Vue DevTools
-- Browser DevTools
-
-### 10.3 日志记录
-
-```typescript
-console.log('error ==>', error)
-console.error('获取用户信息失败:', error)
-```
+- 类型检查：`npx tsc --noEmit`
+- 调试工具：Vue DevTools、Browser DevTools
+- 日志记录：清晰记录错误信息
 
 ## 11. 安全规范
 
-### 11.1 输入验证
-
-- 前端表单验证
-- 后端双重验证
-
-### 11.2 数据加密
-
+- 前后端双重输入验证
 - 敏感数据加密传输
-
-### 11.3 权限控制
-
-- 路由守卫
-- 接口权限验证
+- 路由守卫和接口权限验证
 
 ---
 

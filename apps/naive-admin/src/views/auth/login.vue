@@ -159,7 +159,7 @@ const handleLogin = async () => {
     const success = await userStore.login(formData.value.phone, formData.value.password)
 
     if (!success) {
-      throw new Error(userStore.loginError || '登录失败')
+      throw new Error('登录失败')
     }
 
     // 登录成功提示
@@ -167,7 +167,7 @@ const handleLogin = async () => {
 
     // 跳转到首页或之前访问的页面
     const redirect = router.currentRoute.value.query.redirect as string
-    await router.push(redirect || '/home')
+    window.location.href = redirect || '/home'
   } catch (error: any) {
     console.error('Login failed:', error)
     errorMessage.value = error.message || '登录失败，请检查用户名和密码'

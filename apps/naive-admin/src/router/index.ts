@@ -55,15 +55,12 @@ router.beforeEach(async (to: RouteLocationNormalized, from: RouteLocationNormali
 
     // 登录验证
     if (requiresAuth && !isLoggedIn) {
-      if (!isLoggedIn) {
-        console.log('Authentication required, redirecting to login')
-        window.$message?.warning('请先登录')
-        next({
-          path: '/login',
-          query: { redirect: to.fullPath } // 保存原始访问路径
-        })
-      }
-      // TODO 验证菜单权限
+      console.log('Authentication required, redirecting to login')
+      window.$message?.warning('请先登录')
+      next({
+        path: '/login',
+        query: { redirect: to.fullPath } // 保存原始访问路径
+      })
       return
     }
 

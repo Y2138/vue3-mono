@@ -1,10 +1,10 @@
-import { Controller, Post, Get, Body, Query, HttpCode, HttpStatus, UnauthorizedException } from '@nestjs/common'
+import { Controller, Post, Get, Body, Query, HttpCode, HttpStatus, UnauthorizedException, Request } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse as SwaggerApiResponse } from '@nestjs/swagger'
 import { BaseController } from '../../common/controllers/base.controller'
 import { Public } from '../../common/decorators/public.decorator'
 import { ApiResponse } from '../../common/response/types'
 import { UserService as UserServiceImpl } from './user.service'
-import { User, AuthResponse, GetUsersRequest, GetUsersResponse, LoginRequest, CreateUserFormRequest, UpdateUserRequest } from '../../shared/users'
+import { User, AuthResponse, GetUsersRequest, GetUsersResponse, LoginRequest, CreateUserFormRequest, UpdateUserRequest, ProfileResponse } from '../../shared/users'
 import { Validator } from '../../common/validators'
 import { USER_ENUMS, getUserStatusDesc } from './enums/user.enums'
 import { isNotEmpty } from '../../utils'
@@ -93,20 +93,14 @@ export class UserHttpController extends BaseController {
       throw new UnauthorizedException('手机号或密码错误')
     }
 
-    // 获取用户角色信息
-    const userWithRoles = await this.userService.findOne(loginRequest.phone)
+    // 获取用户基本信息
+    const user = await this.userService.findOne(loginRequest.phone)
 
     // 直接组装响应数据
     const authResponse: AuthResponse = {
       user: {
-        phone: userWithRoles!.phone,
-        username: userWithRoles!.username || '',
-        status: userWithRoles!.status,
-        statusDesc: getUserStatusDesc(userWithRoles!.status),
-        createdAt: this.formatDateTime(userWithRoles!.createdAt),
-        updatedAt: this.formatDateTime(userWithRoles!.updatedAt),
-        roleIds: userWithRoles!.user_roles?.map((ur: any) => ur.roleId) || [],
-        roleNames: userWithRoles!.user_roles?.map((ur: any) => ur.role?.name).filter((n: string | undefined) => !!n) || []
+        phone: user!.phone,
+        username: user!.username || ''
       },
       token: result.token,
       expiresAt: this.formatDateTime(new Date(Date.now() + 24 * 60 * 60 * 1000))
@@ -121,32 +115,33 @@ export class UserHttpController extends BaseController {
   @Get('auth/profile')
   @ApiOperation({
     summary: '获取当前用户信息',
-    description: '获取当前登录用户的详细信息'
+    description: '获取当前登录用户的详细信息及权限树'
   })
   @SwaggerApiResponse({
     status: 200,
-    description: '成功获取用户信息'
+    description: '成功获取用户信息及权限树'
   })
-  async getCurrentUser(@Query('phone') phone: string): Promise<ApiResponse<User>> {
-    // 验证手机号格式
-    Validator.phone(phone)
+  async getCurrentUser(@Request() request): Promise<ApiResponse<ProfileResponse>> {
+    // 从请求中获取当前用户信息
+    const currentUser = request.user
+    this.assertDataExists(currentUser, '用户', currentUser.phone)
 
-    const user = await this.userService.findOne(phone)
-    this.assertDataExists(user, '用户', phone)
+    // 获取用户权限树
+    const { tree, list } = await this.userService.getUserResources(currentUser.phone)
 
-    // 直接组装用户数据
-    const userResponse: User = {
-      phone: user.phone,
-      username: user.username || '',
-      status: user.status,
-      statusDesc: getUserStatusDesc(user.status),
-      createdAt: this.formatDateTime(user.createdAt),
-      updatedAt: this.formatDateTime(user.updatedAt),
-      roleIds: user.user_roles?.map((ur: any) => ur.roleId) || [],
-      roleNames: user.user_roles?.map((ur: any) => ur.role?.name).filter((n: string | undefined) => !!n) || []
+    // 组装响应数据
+    const profileResponse: ProfileResponse = {
+      user: {
+        phone: currentUser.phone,
+        username: currentUser.username || ''
+      },
+      permissions: {
+        menuTree: tree,
+        resources: list
+      }
     }
 
-    return this.success(userResponse, '获取用户信息成功')
+    return this.success(profileResponse, '获取用户信息成功')
   }
 
   /**

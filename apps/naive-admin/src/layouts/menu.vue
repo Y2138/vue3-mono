@@ -27,7 +27,7 @@
       </Motion>
     </AnimatePresence>
   </div>
-  <n-menu v-model:value="menuStore.activeMenuKey" ref="menuRef" :options="menuOptions" :width="240" :indent="20" :root-indent="16" :collapsed="collapsed" :collapsed-width="64" accordion> </n-menu>
+  <n-menu v-model:value="menuStore.activeMenuKey" ref="menuRef" :options="menuOptions" :width="240" :indent="20" default-expand-all :watch-props="['defaultExpandedKeys']" :root-indent="16" :collapsed="collapsed" :collapsed-width="64" accordion> </n-menu>
 </template>
 
 <script setup lang="ts">

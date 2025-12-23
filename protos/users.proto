@@ -6,6 +6,14 @@ import "common.proto";
 
 option go_package = "./users";
 
+// 精简用户信息
+message SimpleUser {
+  // 手机号（主键）
+  string phone = 1;
+  // 用户名
+  string username = 2;
+}
+
 // 用户信息
 message User {
   // 手机号（主键）
@@ -34,10 +42,29 @@ message LoginRequest {
   string password = 2;
 }
 
+// 导入资源类型
+import "resource.proto";
+
+// 权限树响应
+message PermissionTree {
+  // 菜单树
+  repeated resource.ResourceTree menuTree = 1;
+  // 所有资源列表
+  repeated resource.Resource resources = 2;
+}
+
+// 个人资料响应
+message ProfileResponse {
+  // 精简用户信息
+  SimpleUser user = 1;
+  // 权限树
+  PermissionTree permissions = 2;
+}
+
 // 认证响应
 message AuthResponse {
-  // 用户信息
-  User user = 1;
+  // 精简用户信息
+  SimpleUser user = 1;
   // JWT token
   string token = 2;
   // token过期时间
@@ -163,7 +190,7 @@ service UserService {
   rpc Login(LoginRequest) returns (AuthResponse);
 
   // 获取当前用户信息
-  rpc GetProfile(GetUserRequest) returns (User);
+  rpc GetProfile(GetUserRequest) returns (ProfileResponse);
 
   // 获取用户信息
   rpc GetUser(GetUserRequest) returns (User);

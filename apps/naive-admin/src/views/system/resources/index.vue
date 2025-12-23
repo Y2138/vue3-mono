@@ -119,7 +119,8 @@ const customColumns: DataTableColumns<Resource> = [
   {
     title: '资源名称',
     key: 'name',
-    width: 180,
+    width: 160,
+    fixed: 'left',
     ellipsis: {
       tooltip: true
     }
@@ -145,6 +146,7 @@ const customColumns: DataTableColumns<Resource> = [
   {
     title: '资源编码',
     key: 'resCode',
+    width: 160,
     ellipsis: {
       tooltip: true
     }
@@ -152,6 +154,7 @@ const customColumns: DataTableColumns<Resource> = [
   {
     title: '资源路径',
     key: 'path',
+    width: 160,
     ellipsis: {
       tooltip: true
     }
@@ -176,12 +179,12 @@ const customColumns: DataTableColumns<Resource> = [
   {
     title: '创建时间',
     key: 'createdAt',
-    width: 160
+    width: 165
   },
   {
     title: '操作',
     key: 'actions',
-    width: 200,
+    width: 140,
     fixed: 'right',
     render: (row) => {
       return (

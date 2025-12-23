@@ -64,7 +64,13 @@ message GetYourFeatureResponse {
 
 运行 `pnpm run generate:types` 自动生成 `src/shared/your-feature.ts` 类型定义
 
-#### 4. 创建 Service 层（业务逻辑）
+#### 4. 编写测试用例 （新增 - TDD 核心）
+
+- 先编写 Service 层测试用例
+- 再编写 Controller 层测试用例
+- 测试覆盖所有业务场景和边界条件
+
+#### 5. 创建 Service 层（业务逻辑）
 
 ```typescript
 // src/modules/your-feature/services/your-feature.service.ts
@@ -110,9 +116,9 @@ export class YourFeatureService {
 }
 ```
 
-#### 5. 创建 Controller 层（接口组装和参数校验）
+#### 6. 创建 Controller 层（接口组装和参数校验）
 
-> controller 的路由定义尽量使用 query 参数，而不是 path 参数
+> controller 的路由定义使用 query 参数，不要使用 path 参数，路由的语义化需要完善
 
 ```typescript
 // src/modules/your-feature/your-feature.controller.ts
@@ -130,17 +136,6 @@ export class YourFeatureController extends BaseController {
 
   @Post('create')
   @ApiOperation({ summary: '创建功能', description: '创建新的功能项' })
-  @ApiConsumes('application/json')
-  @ApiProduces('application/json')
-  @ApiResponse({
-    status: 201,
-    description: '创建成功',
-    type: Object
-  })
-  @ApiResponse({
-    status: 400,
-    description: '请求参数错误：功能名称不能为空'
-  })
   async createFeature(@Body() request: CreateYourFeatureRequest) {
     // 参数验证
     this.assertNotEmpty(request.name, '功能名称')
@@ -171,16 +166,6 @@ export class YourFeatureController extends BaseController {
 
   @Get('detail')
   @ApiOperation({ summary: '获取功能详情', description: '根据ID获取功能详细信息' })
-  @ApiParam({ name: 'id', description: '功能ID', required: true })
-  @ApiResponse({
-    status: 200,
-    description: '获取成功',
-    type: Object
-  })
-  @ApiResponse({
-    status: 404,
-    description: '功能不存在'
-  })
   async getFeature(@Query('id') id: string) {
     // 参数验证
     this.assertNotEmpty(id, '功能ID')
@@ -206,30 +191,9 @@ export class YourFeatureController extends BaseController {
     })
   }
 
-  @Delete('delete')
-  @ApiOperation({ summary: '删除功能', description: '根据ID删除功能' })
-  @ApiResponse({
-    status: 200,
-    description: '删除成功',
-    type: Object
-  })
-  @ApiResponse({
-    status: 404,
-    description: '功能不存在'
-  })
-  async deleteFeature(@Query('id') id: string) {
-    // 参数验证
-    this.assertNotEmpty(id, '功能ID')
-
-    // 检查功能是否存在
-    const existing = await this.yourFeatureService.findById(id)
-    this.assertDataExists(existing, '功能', id)
-
-    // 调用业务服务删除
-    await this.yourFeatureService.remove(id)
-
-    return this.success(null, '删除成功')
-  }
+  /**
+   * 其他业务方法
+   */
 }
 ```
 

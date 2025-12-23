@@ -54,8 +54,11 @@ export type {
 
 // Users types
 export type {
+  SimpleUser,
   User,
   LoginRequest,
+  PermissionTree,
+  ProfileResponse,
   AuthResponse,
   GetUserRequest,
   CreateUserRequest,

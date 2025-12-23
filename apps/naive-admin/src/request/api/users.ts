@@ -6,17 +6,27 @@
 import { post, get } from '../axios'
 import type { EnumItem } from '@/shared/common'
 import type { EnumResponse } from './common'
-import type { User, AuthResponse, LoginRequest, RegisterRequest, GetUsersRequest, GetUsersResponse } from '@/shared/users'
+import type { AuthResponse, LoginRequest, RegisterRequest, GetUsersRequest, GetUsersResponse, ProfileResponse, SimpleUser } from '@/shared/users'
+import type { Resource, ResourceTree } from '@/shared/resource'
 
 // ========================================
 // 🔐 用户认证相关类型（基于 proto 定义）
 // ========================================
 
 // 使用 proto 生成的类型
-export type UserInfo = User
+export type UserInfo = SimpleUser
 export type LoginResponse = AuthResponse
 export type LoginParams = Omit<LoginRequest, 'toJSON' | 'fromJSON' | 'create' | 'decode' | 'encode' | 'fromPartial'>
 export type RegisterParams = Omit<RegisterRequest, 'toJSON' | 'fromJSON' | 'create' | 'decode' | 'encode' | 'fromPartial'>
+
+// 用户配置文件响应类型
+export interface UserProfileResponse {
+  user: SimpleUser
+  permissions: {
+    menuTree: ResourceTree[]
+    resources: Resource[]
+  }
+}
 
 // 扩展的用户管理类型
 export interface CreateUserFormParams {
@@ -46,7 +56,7 @@ export const login = async (params: LoginParams) => {
  * 获取当前用户信息
  */
 export const getCurrentUser = async () => {
-  return get<void, UserInfo>('/api/auth/profile')
+  return get<void, ProfileResponse>('/api/auth/profile')
 }
 
 /**
