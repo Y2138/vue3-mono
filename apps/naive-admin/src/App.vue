@@ -20,6 +20,7 @@ import { RouterView, useRoute } from 'vue-router'
 import { useGlobalStore } from './store/modules/global'
 import { storeToRefs } from 'pinia'
 import { darkTheme, zhCN, dateZhCN, GlobalThemeOverrides } from 'naive-ui'
+import { useUserStore } from './store/modules/user'
 
 const route = useRoute()
 const { fullPath } = toRefs(route)
@@ -77,6 +78,16 @@ const showLayout = computed(() => {
   }
   return route.path !== '/login' && route.path !== '/register'
 })
+
+// 应用启动时检查登录状态并获取用户信息
+const userStore = useUserStore()
+if (userStore.checkLoginStatus()) {
+  userStore.getProfile().catch((error) => {
+    console.error('Failed to get user profile:', error)
+    // 如果获取失败，可能需要重新登录
+    userStore.logout()
+  })
+}
 </script>
 
 <style scoped>

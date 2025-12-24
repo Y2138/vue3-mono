@@ -160,11 +160,11 @@ const modalTitle = computed(() => `资源权限分配 - ${props.resource?.name |
 
 const confirmText = computed(() => (selectedPermissions.value.length > 0 || customPermissions.value.length > 0 ? `确认分配 (${getTotalPermissionCount()})` : '确认'))
 
-const showCustomPermissions = computed(() => props.resource?.type === 'api' || props.resource?.type === 'page')
+const showCustomPermissions = computed(() => props.resource?.type === 2 || props.resource?.type === 3)
 
 const availablePermissions = computed(() => {
-  const permissionsMap: Record<string, any[]> = {
-    menu: [
+  const permissionsMap: Record<number, any[]> = {
+    1: [
       {
         value: 'view',
         label: '查看',
@@ -178,7 +178,7 @@ const availablePermissions = computed(() => {
         icon: 'mdi:arrow-right'
       }
     ],
-    api: [
+    2: [
       {
         value: 'read',
         label: '读取',
@@ -204,7 +204,7 @@ const availablePermissions = computed(() => {
         icon: 'mdi:delete'
       }
     ],
-    page: [
+    3: [
       {
         value: 'view',
         label: '查看',
@@ -218,43 +218,47 @@ const availablePermissions = computed(() => {
         icon: 'mdi:pencil'
       }
     ],
-    button: [
+    4: [
       {
-        value: 'click',
-        label: '点击',
-        description: '允许点击按钮',
-        icon: 'mdi:pointer'
+        value: 'view',
+        label: '查看',
+        description: '允许查看模块内容',
+        icon: 'mdi:eye'
+      },
+      {
+        value: 'configure',
+        label: '配置',
+        description: '允许配置模块',
+        icon: 'mdi:cog'
       }
     ]
   }
 
-  const type = props.resource?.type || 'default'
-  return permissionsMap[type] || permissionsMap['page']
+  const type = props.resource?.type || 3
+  return permissionsMap[type] || permissionsMap[3]
 })
 
 const getTotalPermissionCount = computed(() => selectedPermissions.value.length + customPermissions.value.length)
 
 // 工具函数
-const getTagType = (type?: string) => {
-  const typeMap: Record<string, 'default' | 'primary' | 'success' | 'warning' | 'error'> = {
-    menu: 'primary',
-    api: 'success',
-    button: 'warning',
-    page: 'info',
-    resource: 'default'
+const getTagType = (type?: number) => {
+  const typeMap: Record<number, 'default' | 'primary' | 'success' | 'warning' | 'error'> = {
+    1: 'primary', // MENU
+    2: 'success', // API
+    3: 'info', // PAGE
+    4: 'warning' // MODULE
   }
-  return typeMap[type || 'default']
+  return typeMap[type || 3]
 }
 
-const getResourceTypeName = (type?: string) => {
-  const typeNameMap: Record<string, string> = {
-    menu: '菜单',
-    api: 'API',
-    button: '按钮',
-    page: '页面',
-    resource: '资源'
+const getResourceTypeName = (type?: number) => {
+  const typeNameMap: Record<number, string> = {
+    1: '菜单',
+    2: 'API',
+    3: '页面',
+    4: '模块'
   }
-  return typeNameMap[type || '资源']
+  return typeNameMap[type || 3]
 }
 
 const getMethodTagType = (method?: string) => {

@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Post, Query, HttpCode, HttpStatus } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiConsumes, ApiProduces, ApiQuery, ApiResponse } from '@nestjs/swagger'
 import { Public } from '@/common/decorators/public.decorator'
-import { RESOURCE_ENUMS } from '@/modules/resource/enums/resource.enums'
+import { RESOURCE_ENUMS, getResourceTypeDesc } from '@/modules/resource/enums/resource.enums'
 import { ResourceService } from '@/modules/resource/services/resource.service'
 import { ResourceTreeService } from '@/modules/resource/services/resource-tree.service'
 import { BaseController } from '@/common/controllers/base.controller'
@@ -53,6 +53,7 @@ export class ResourceController extends BaseController {
     const result = await this.resourceService.findAll(isNotEmpty(type) ? Number(type) : undefined, name, path, isNotEmpty(isActive) ? Number(isActive) : undefined, pagination)
     const data: Resource[] = result.data.map((item) => ({
       ...item,
+      typeDesc: getResourceTypeDesc(item.type),
       createdAt: this.formatDateTime(item.createdAt),
       updatedAt: this.formatDateTime(item.updatedAt)
     }))

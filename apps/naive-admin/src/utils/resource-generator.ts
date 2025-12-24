@@ -1,20 +1,33 @@
 /**
  * 资源码生成工具类
- * 基于RBAC权限系统设计方案，实现三种资源类型的resCode自动生成
+ * 基于RBAC权限系统设计方案，实现四种资源类型的resCode自动生成
  *
  * 资源码规则：
+ * - menu类型：MENU_{路径}，将路由path中的"/"转换为"_"
  * - page类型：PAGE_{路径}，将路由path中的"/"转换为"_"
  * - api类型：API_{路径}，将接口path中的"/"转换为"_"
  * - module类型：MODULE_{自定义码}，用户手动配置，不做处理
  */
 
 export enum ResourceType {
-  PAGE = 1, // 页面资源
-  API = 2, // 接口资源
-  MODULE = 3 // 模块资源
+  MENU = 1, // 菜单资源
+  PAGE = 2, // 页面资源
+  API = 3, // 接口资源
+  MODULE = 4 // 模块资源
 }
 
 export class ResourceGenerator {
+  /**
+   * 生成菜单资源码
+   * @param path 菜单路由路径，如：/user-management, /system/role
+   * @returns 格式：MENU_user_management, MENU_system_role
+   */
+  static generateMenuResCode(path: string): string {
+    // 移除开头的"/"，将"/"替换为"_"
+    const cleanPath = path.replace(/^\//, '').replace(/\//g, '_')
+    return `MENU_${cleanPath}`
+  }
+
   /**
    * 生成页面资源码
    * @param path 页面路由路径，如：/user-management, /system/role
@@ -53,18 +66,20 @@ export class ResourceGenerator {
 
   /**
    * 根据资源类型和路径生成资源码
-   * @param type 资源类型（1=page, 2=api, 3=module）
+   * @param type 资源类型（1=menu, 2=page, 3=api, 4=module）
    * @param path 资源路径
    * @param customCode 自定义代码（module类型时使用）
    * @returns 生成的资源码
    */
   static generateResCode(type: ResourceType, path: string, customCode?: string): string {
     switch (type) {
-      case 1: // ResourceType.PAGE
+      case 1: // ResourceType.MENU
+        return this.generateMenuResCode(path)
+      case 2: // ResourceType.PAGE
         return this.generatePageResCode(path)
-      case 2: // ResourceType.API
+      case 3: // ResourceType.API
         return this.generateApiResCode(path)
-      case 3: // ResourceType.MODULE
+      case 4: // ResourceType.MODULE
         if (!customCode) {
           throw new Error('模块类型资源需要提供自定义代码')
         }
@@ -91,8 +106,8 @@ export class ResourceGenerator {
    * @returns 是否符合格式规范
    */
   static validateResCode(resCode: string): boolean {
-    // 验证资源码格式：^(PAGE|API|MODULE)_[a-zA-Z0-9_]+$
-    const pattern = /^(PAGE|API|MODULE)_[a-zA-Z0-9_]+$/
+    // 验证资源码格式：^(MENU|PAGE|API|MODULE)_[a-zA-Z0-9_]+$
+    const pattern = /^(MENU|PAGE|API|MODULE)_[a-zA-Z0-9_]+$/
     return pattern.test(resCode)
   }
 
@@ -102,12 +117,14 @@ export class ResourceGenerator {
    * @returns 资源类型枚举
    */
   static extractResourceType(resCode: string): ResourceType | null {
-    if (resCode.startsWith('PAGE_')) {
-      return 1 // ResourceType.PAGE
+    if (resCode.startsWith('MENU_')) {
+      return 1 // ResourceType.MENU
+    } else if (resCode.startsWith('PAGE_')) {
+      return 2 // ResourceType.PAGE
     } else if (resCode.startsWith('API_')) {
-      return 2 // ResourceType.API
+      return 3 // ResourceType.API
     } else if (resCode.startsWith('MODULE_')) {
-      return 3 // ResourceType.MODULE
+      return 4 // ResourceType.MODULE
     }
     return null
   }
@@ -129,11 +146,13 @@ export class ResourceGenerator {
    */
   static getResourceTypeName(type: ResourceType): string {
     switch (type) {
-      case 1: // ResourceType.PAGE
+      case 1: // ResourceType.MENU
+        return '菜单'
+      case 2: // ResourceType.PAGE
         return '页面'
-      case 2: // ResourceType.API
+      case 3: // ResourceType.API
         return '接口'
-      case 3: // ResourceType.MODULE
+      case 4: // ResourceType.MODULE
         return '模块'
       default:
         return '未知'

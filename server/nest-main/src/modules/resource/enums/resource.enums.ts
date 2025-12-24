@@ -9,31 +9,38 @@ export const RESOURCE_ENUMS = {
    * 资源类型
    */
   RESOURCE_TYPE: {
-    PAGE: {
+    MENU: {
       value: 1,
+      label: '目录',
+      disabled: false,
+      extra: JSON.stringify({ color: 'primary', description: '目录资源，用于前端菜单展示' })
+    },
+    PAGE: {
+      value: 2,
       label: '页面',
       disabled: false,
-      extra: JSON.stringify({ color: 'primary', description: '页面资源，用于前端路由和菜单' })
+      extra: JSON.stringify({ color: 'info', description: '页面资源，用于前端路由权限控制，不展示在菜单' })
     },
     API: {
-      value: 2,
+      value: 3,
       label: '接口',
       disabled: false,
-      extra: JSON.stringify({ color: 'info', description: 'API接口资源，用于后端接口访问控制' })
+      extra: JSON.stringify({ color: 'success', description: 'API接口资源，用于后端接口访问控制' })
     },
     MODULE: {
-      value: 3,
+      value: 4,
       label: '模块',
       disabled: false,
-      extra: JSON.stringify({ color: 'success', description: '模块资源，用于前端页面内的操作权限' })
+      extra: JSON.stringify({ color: 'warning', description: '模块资源，用于前端页面内的操作权限' })
     }
   } as Record<string, EnumItem>
 } as const
 
 export enum ResourceType {
-  PAGE = 1,
-  API = 2,
-  MODULE = 3
+  MENU = 1,    // 目录 - 用于菜单展示
+  PAGE = 2,    // 页面 - 用于路由权限控制
+  API = 3,     // 接口 - 用于接口权限控制
+  MODULE = 4   // 模块 - 用于页面内操作权限
 }
 
 /**

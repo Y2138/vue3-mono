@@ -127,18 +127,19 @@ const customColumns: DataTableColumns<Resource> = [
   },
   {
     title: '资源类型',
-    key: 'type',
+    key: 'typeDesc',
     width: 100,
     render: (row) => {
       const typeMap: Record<number, { label: string; color: string }> = {
-        1: { label: '页面', color: 'info' },
-        2: { label: '接口', color: 'success' },
-        3: { label: '模块', color: 'warning' }
+        1: { label: '目录', color: 'info' },
+        2: { label: '页面', color: 'success' },
+        3: { label: '接口', color: 'warning' },
+        4: { label: '模块', color: 'primary' }
       }
       const typeInfo = typeMap[row.type] || { label: '未知', color: 'default' }
       return (
         <NTag type={typeInfo.color as any} size="small">
-          {typeInfo.label}
+          {row.typeDesc}
         </NTag>
       )
     }

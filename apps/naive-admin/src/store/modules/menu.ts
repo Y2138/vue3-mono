@@ -51,12 +51,14 @@ export const useMenuStore = defineStore('menu', () => {
   }
 
   /**
-   * 将 ResourceTree 数组转换为 IMenuItem 数组
+   * 将 ResourceTree 数组转换为 IMenuItem 数组（过滤 MENU 类型）
    * @param resourceTrees 资源树数组
    * @returns 菜单项数组
    */
   function convertResourceTreesToMenuItems(resourceTrees: ResourceTree[]): IMenuItem[] {
-    return resourceTrees.map((resourceTree) => convertResourceToMenuItem(resourceTree))
+    // 过滤出 MENU 类型（type=1）的资源
+    const menuResources = resourceTrees.filter((resource) => resource.type === 1)
+    return menuResources.map((resourceTree) => convertResourceToMenuItem(resourceTree))
   }
 
   /**

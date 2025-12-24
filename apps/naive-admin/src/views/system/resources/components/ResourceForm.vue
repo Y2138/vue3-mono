@@ -68,8 +68,8 @@ const formConfigs = computed<IFormConfig[]>(() => [
     comp: 'n-select',
     valueKey: 'parentId',
     label: '父级资源',
-    required: formData.type === 2 || formData.type === 3,
-    showRequireMark: formData.type === 2 || formData.type === 3,
+    required: formData.type === 2 || formData.type === 3 || formData.type === 4,
+    showRequireMark: formData.type === 2 || formData.type === 3 || formData.type === 4,
     props: {
       placeholder: '请选择父级资源',
       clearable: true,
@@ -111,14 +111,14 @@ const formConfigs = computed<IFormConfig[]>(() => [
     valueKey: 'suffix',
     label: '资源后缀',
     required: false,
-    visibleLinks: (data: any) => !isEditMode.value && data.type === 3,
+    visibleLinks: (data: any) => !isEditMode.value && data.type === 4,
     rules: [
       {
         message: '请输入资源后缀',
         trigger: 'blur',
         validator: (rule: any, value: string) => {
-          // 模块类型时必填
-          if (formData.type === 3 && (!value || value.trim() === '')) {
+          // 模块类型（type=4）时必填
+          if (formData.type === 4 && (!value || value.trim() === '')) {
             return new Error('资源后缀不能为空')
           }
           return true

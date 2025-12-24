@@ -80,7 +80,7 @@ describe('RoleController', () => {
       // Assert
       expect(result.success).toBe(true)
       expect(result.code).toBe(200)
-      expect(result.message).toBe('success')
+      expect(result.message).toBe('查询成功')
       expect(result.data.roles).toEqual(mockData.data)
       expect(result.data.pagination.page).toBe(1)
       expect(result.data.pagination.pageSize).toBe(10)
@@ -132,7 +132,8 @@ describe('RoleController', () => {
         is_active: true,
         is_super_admin: false,
         createdAt: new Date('2023-01-01'),
-        updatedAt: new Date('2023-01-01')
+        updatedAt: new Date('2023-01-01'),
+        role_resources: []
       }
       service.findOne.mockResolvedValue(mockRole)
 
@@ -142,11 +143,11 @@ describe('RoleController', () => {
       // Assert
       expect(result.success).toBe(true)
       expect(result.code).toBe(200)
-      expect(result.message).toBe('success')
+      expect(result.message).toBe('操作成功')
       expect(result.data.id).toBe(mockRole.id)
       expect(result.data.name).toBe(mockRole.name)
-      expect(result.data.createdAt).toBe('2023-01-01T00:00:00.000Z')
-      expect(result.data.updatedAt).toBe('2023-01-01T00:00:00.000Z')
+      expect(result.data.createdAt).toBe('2023-01-01 00:00:00')
+      expect(result.data.updatedAt).toBe('2023-01-01 00:00:00')
       expect(service.findOne).toHaveBeenCalledWith('1')
     })
 
@@ -159,7 +160,8 @@ describe('RoleController', () => {
         is_active: true,
         is_super_admin: false,
         createdAt: new Date('2023-01-01'),
-        updatedAt: new Date('2023-12-31')
+        updatedAt: new Date('2023-12-31'),
+        role_resources: []
       }
       service.findOne.mockResolvedValue(mockRole)
 
@@ -167,8 +169,8 @@ describe('RoleController', () => {
       const result = await controller.getRole('1')
 
       // Assert
-      expect(result.data.createdAt).toBe('2023-01-01T00:00:00.000Z')
-      expect(result.data.updatedAt).toBe('2023-12-31T00:00:00.000Z')
+      expect(result.data.createdAt).toBe('2023-01-01 00:00:00')
+      expect(result.data.updatedAt).toBe('2023-12-31 00:00:00')
     })
   })
 
@@ -198,7 +200,7 @@ describe('RoleController', () => {
       // Assert
       expect(result.success).toBe(true)
       expect(result.code).toBe(200)
-      expect(result.message).toBe('success')
+      expect(result.message).toBe('创建成功')
       expect(result.data.id).toBe(mockRole.id)
       expect(result.data.name).toBe(mockRole.name)
       expect(result.data.isActive).toBe(true)
@@ -456,8 +458,8 @@ describe('RoleController', () => {
       })
 
       // Assert
-      expect(result.data.roles).toEqual([])
-      expect(result.data.pagination.total).toBe('0')
+      expect(result.data).toEqual([])
+      expect(result.pagination.total).toBe(0)
     })
   })
 })

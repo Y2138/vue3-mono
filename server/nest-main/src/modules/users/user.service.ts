@@ -5,6 +5,7 @@ import { JwtService } from '@nestjs/jwt'
 import * as bcrypt from 'bcryptjs'
 import { DataNotFoundException, ValidationException, ConflictException, BusinessRuleException } from '../../common/exceptions'
 import { PaginationRequest } from '../../shared/common'
+import { getResourceTypeDesc } from '../resource/enums/resource.enums'
 
 @Injectable()
 export class UserService {
@@ -459,7 +460,7 @@ export class UserService {
   /**
    * 获取用户资源树（聚合用户所有角色的资源）
    * @param phone 手机号
-   * @returns 资源树和平铺列表
+   * @returns 资源树、菜单树和平铺列表
    */
   async getUserResources(phone: string) {
     this.logger.log(`获取用户资源: ${phone}`)
@@ -502,6 +503,7 @@ export class UserService {
           resourceIdSet.add(rr.resourceId)
           resourceMap.set(rr.resourceId, {
             ...rr.resource,
+            typeDesc: getResourceTypeDesc(rr.resource.type),
             createdAt: rr.resource.createdAt.toISOString(),
             updatedAt: rr.resource.updatedAt.toISOString()
           })
@@ -514,6 +516,7 @@ export class UserService {
     if (allResourceIds.length === 0) {
       return {
         tree: [],
+        menuTree: [],
         list: []
       }
     }
@@ -538,18 +541,26 @@ export class UserService {
     // 转换资源时间字段
     const convertedResources = resources.map((r) => ({
       ...r,
+      typeDesc: getResourceTypeDesc(r.type),
       createdAt: r.createdAt.toISOString(),
       updatedAt: r.updatedAt.toISOString()
     }))
 
-    // 构建资源树
+    // 过滤出 MENU 类型（type=1）的资源，用于构建菜单树
+    const menuResources = convertedResources.filter((r) => r.type === 1)
+
+    // 构建完整资源树（包含所有类型）
     const tree = this.buildResourceTree(convertedResources)
+
+    // 构建 MENU 类型的菜单树
+    const menuTree = this.buildResourceTree(menuResources)
 
     // 过滤出用户实际拥有的资源（平铺列表）
     const userResourceList = convertedResources.filter((r) => resourceIdSet.has(r.id))
 
     return {
       tree,
+      menuTree,
       list: userResourceList
     }
   }

@@ -3,6 +3,12 @@ package resource;
 
 import "common.proto";
 
+// 资源类型说明（使用int32基础类型，不使用enum）
+// 1 = MENU - 菜单资源：用于前端菜单显示，通常是顶层和二级目录资源
+// 2 = PAGE - 页面资源：用于前端路由页面，通常是具体的业务页面
+// 3 = API - 接口资源：用于后端API接口权限控制
+// 4 = MODULE - 模块资源：用于功能模块级别的权限控制
+
 // 基础资源类型（不包含children，用于列表和详情）
 message Resource {
   string id = 1;
@@ -20,6 +26,7 @@ message Resource {
   // 移除metadata字段，code不再在metadata中维护，改为独立字段resCode
   string path = 13;
   optional string suffix = 14;  // 资源后缀，模块类型专用
+  string typeDesc = 15;  // 资源类型描述
 }
 
 // 树形资源类型（包含children，用于树形结构）
@@ -44,7 +51,7 @@ message ResourceTree {
 
 message CreateResourceRequest {
   string name = 1;
-  int32 type = 2;  // 使用基础类型（1=page, 2=api, 3=module）
+  int32 type = 2;  // 使用基础类型（1=menu, 2=page, 3=api, 4=module）
   optional string parentId = 3;  // 可选字段
   string path = 4;
   int32 sortOrder = 5;  // 排序字段
@@ -56,7 +63,7 @@ message CreateResourceRequest {
 message UpdateResourceRequest {
   string id = 1;
   string name = 2;
-  int32 type = 3;  // 使用基础类型（1=page, 2=api, 3=module）
+  int32 type = 3;  // 使用基础类型（1=menu, 2=page, 3=api, 4=module）
   optional string parentId = 4;  // 可选字段
   string path = 5;
   int32 sortOrder = 6;  // 排序字段

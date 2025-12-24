@@ -33,7 +33,11 @@ export interface Resource {
   /** 移除metadata字段，code不再在metadata中维护，改为独立字段resCode */
   path: string;
   /** 资源后缀，模块类型专用 */
-  suffix?: string | undefined;
+  suffix?:
+    | string
+    | undefined;
+  /** 资源类型描述 */
+  typeDesc: string;
 }
 
 /** 树形资源类型（包含children，用于树形结构） */
@@ -69,7 +73,7 @@ export interface ResourceTree {
 
 export interface CreateResourceRequest {
   name: string;
-  /** 使用基础类型（1=page, 2=api, 3=module） */
+  /** 使用基础类型（1=menu, 2=page, 3=api, 4=module） */
   type: number;
   /** 可选字段 */
   parentId?: string | undefined;
@@ -87,7 +91,7 @@ export interface CreateResourceRequest {
 export interface UpdateResourceRequest {
   id: string;
   name: string;
-  /** 使用基础类型（1=page, 2=api, 3=module） */
+  /** 使用基础类型（1=menu, 2=page, 3=api, 4=module） */
   type: number;
   /** 可选字段 */
   parentId?: string | undefined;

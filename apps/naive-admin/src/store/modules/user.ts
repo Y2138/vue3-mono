@@ -10,6 +10,15 @@ import type { SimpleUser } from '@/shared/users'
 import type { Resource } from '@/shared/resource'
 import { useMenuStore } from './menu'
 
+interface UserResource {
+  name: string
+  resCode: string
+  parentId: string
+  /** 资源类型 1: 菜单 2: 页面 3: 接口 4: 模块 */
+  type: number
+  path: string
+}
+
 export const useUserStore = defineStore(
   'user',
   () => {
@@ -18,7 +27,7 @@ export const useUserStore = defineStore(
     const userInfo = ref<SimpleUser | null>(null)
     const authToken = ref<string | null>(null)
     // 用户资源列表
-    const resources = ref<Resource[]>([])
+    const resources = ref<UserResource[]>([])
 
     // 登录状态
     const isLoggedIn = computed(() => {
@@ -57,7 +66,7 @@ export const useUserStore = defineStore(
           // 更新用户信息
           userInfo.value = profileResponse.data.user || null
           // 更新用户资源
-          resources.value = profileResponse.data.permissions?.resources || []
+          setUserResources(profileResponse.data.permissions?.resources || [])
 
           // 更新菜单树
           const menuStore = useMenuStore()
@@ -71,6 +80,20 @@ export const useUserStore = defineStore(
         console.error('[User Store] Get profile failed:', error)
         return false
       }
+    }
+
+    /**
+     * 设置用户资源
+     * @param resources 用户资源列表
+     */
+    function setUserResources(_resources: Resource[]): void {
+      resources.value = _resources.map((item) => ({
+        name: item.name,
+        resCode: item.resCode,
+        parentId: item.parentId || '',
+        type: item.type,
+        path: item.path
+      }))
     }
 
     /**

@@ -126,8 +126,8 @@ export class UserHttpController extends BaseController {
     const currentUser = request.user
     this.assertDataExists(currentUser, '用户', currentUser.phone)
 
-    // 获取用户权限树
-    const { tree, list } = await this.userService.getUserResources(currentUser.phone)
+    // 获取用户权限树（使用 menuTree，仅包含 MENU 类型资源）
+    const { menuTree, list } = await this.userService.getUserResources(currentUser.phone)
 
     // 组装响应数据
     const profileResponse: ProfileResponse = {
@@ -136,7 +136,7 @@ export class UserHttpController extends BaseController {
         username: currentUser.username || ''
       },
       permissions: {
-        menuTree: tree,
+        menuTree: menuTree,
         resources: list
       }
     }

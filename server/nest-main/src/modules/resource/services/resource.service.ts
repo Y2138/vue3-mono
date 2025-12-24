@@ -3,7 +3,7 @@ import { Prisma, Resource as ResourcePrisma } from '@prisma/client'
 import { PrismaService } from '@/prisma/prisma.service'
 import { CreateResourceRequest, UpdateResourceRequest } from '@/shared/resource'
 import { PaginationRequest } from '@/shared/common'
-import { isValidResourceType, ResourceType } from '@/modules/resource/enums/resource.enums'
+import { getResourceTypeDesc, isValidResourceType, ResourceType } from '@/modules/resource/enums/resource.enums'
 import { ResourceGenerator } from '@/modules/resource/utils/resource-generator'
 import { isNotEmpty } from '@/utils'
 
@@ -15,6 +15,7 @@ export class ResourceService {
    * 创建资源
    * 根据RBAC权限系统设计方案，自动生成resCode资源码
    * 规则：
+   * - menu类型：MENU_{路径}，将路由path中的"/"转换为"_"
    * - page类型：PAGE_{路径}，将路由path中的"/"转换为"_"
    * - api类型：API_{路径}，将接口path中的"/"转换为"_"
    * - module类型：MODULE_{自定义码}，用户手动配置
@@ -138,6 +139,10 @@ export class ResourceService {
         })
         total = data.length
       }
+      data = data.map((item) => ({
+        ...item,
+        typeDesc: getResourceTypeDesc(item.type)
+      }))
 
       return { data, total }
     } catch (error) {
@@ -164,7 +169,10 @@ export class ResourceService {
       if (!resource) {
         throw new NotFoundException(`资源不存在，ID: ${id}`)
       }
-      return resource
+      return {
+        ...resource,
+        typeDesc: getResourceTypeDesc(resource.type)
+      }
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error
