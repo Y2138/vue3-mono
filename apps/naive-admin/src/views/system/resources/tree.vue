@@ -11,11 +11,12 @@
 <script setup lang="tsx">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { NButton, NTag, useMessage, NDropdown, type TreeOption, type TreeProps, type DropdownOption } from 'naive-ui'
+import { NButton, useMessage, NDropdown, type TreeOption, type TreeProps, type DropdownOption } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { getResourceTree, deleteResource } from '@/request/api/resource'
 import type { ResourceTree, GetResourcesRequest } from '@/shared/resource'
 import { usePageLoading } from '@/hooks/usePageLoading'
+import ResourceTypeTag from '../components/ResourceTypeTag.vue'
 
 defineOptions({
   name: 'ResourceTree'
@@ -38,26 +39,6 @@ const resourceTreeData = ref<ResourceTree[]>([])
 
 // 展开的节点ID列表
 const expandedKeys = ref<string[]>([])
-
-// 获取资源类型名称
-const getResourceTypeName = (type: number): string => {
-  const typeMap: Record<number, string> = {
-    1: '页面',
-    2: '接口',
-    3: '模块'
-  }
-  return typeMap[type] || '未知'
-}
-
-// 获取资源类型颜色
-const getResourceTypeColor = (type: number): string => {
-  const colorMap: Record<number, string> = {
-    1: 'info',
-    2: 'success',
-    3: 'warning'
-  }
-  return colorMap[type] || 'default'
-}
 
 // 获取资源树数据
 const fetchResourceTree = async () => {
@@ -160,9 +141,7 @@ const renderTreeLabel: TreeProps['renderLabel'] = ({ option }: { option: TreeOpt
       {/* 资源名称 */}
       <span class="mr-2 truncate">{resource.name}</span>
       {/* 资源类型标签 */}
-      <NTag type={getResourceTypeColor(resource.type) as any} size="small" class="mr-2">
-        {getResourceTypeName(resource.type)}
-      </NTag>
+      <ResourceTypeTag type={resource.type} />
     </div>
   )
 }

@@ -13,6 +13,7 @@ import { NTree, NInput, NButton, NIcon, NTag } from 'naive-ui'
 import type { TreeOption } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import type { ResourceTree as ResourceTreeType } from '@/shared/resource'
+import ResourceTypeTag from './ResourceTypeTag.vue'
 
 interface Props {
   mode?: 'view' | 'edit'
@@ -34,8 +35,7 @@ const props = withDefaults(defineProps<Props>(), {
   expandAll: false,
   cascade: true,
   disabledIds: () => [],
-  iconMap: () => ({ 1: 'ion:folder', 2: 'ion:aperture', 3: 'ion:cube' }),
-  typeTextMap: () => ({ 1: '页面', 2: '接口', 3: '模块' }),
+  iconMap: () => ({ 1: 'ion:folder', 2: 'icon-park-outline:page', 3: 'ion:aperture', 4: 'ion:cube' }),
   filterKeys: () => ['name', 'path', 'resCode']
 })
 
@@ -142,14 +142,13 @@ const handleSelect = (_keys: string[], selectedNodes: any[]) => {
 const renderLabel = (info: { option: TreeOption }) => {
   const raw = (info.option as any).raw as ResourceTreeType
   const icon = props.iconMap[raw.type] || 'ion:folder'
-  const typeText = props.typeTextMap[raw.type] || '类型'
   return (
     <div class="flex items-center gap-2">
       <n-icon>
         <Icon icon={icon} />
       </n-icon>
       <span class="resource-name">{raw.name}</span>
-      <n-tag size="small">{typeText}</n-tag>
+      <ResourceTypeTag type={raw.type} />
       <slot name="suffix" />
     </div>
   )

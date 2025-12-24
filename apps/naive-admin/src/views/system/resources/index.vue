@@ -32,7 +32,7 @@
 <script setup lang="tsx">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { NButton, NTag, NIcon, NPopconfirm, useMessage } from 'naive-ui'
+import { NButton, NIcon, NPopconfirm, useMessage } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import useTablePage from '@/hooks/useTablePage'
 import { getResources, deleteResource, getResourceEnums } from '@/request/api/resource'
@@ -41,6 +41,7 @@ import type { DataTableColumns, SelectOption } from 'naive-ui'
 import { Resource } from '@/shared/resource'
 import { usePageLoading } from '@/hooks/usePageLoading'
 import { useEnums } from '@/hooks/useEnums'
+import ResourceTypeTag from '../components/ResourceTypeTag.vue'
 
 // 页面加载状态
 usePageLoading()
@@ -130,18 +131,7 @@ const customColumns: DataTableColumns<Resource> = [
     key: 'typeDesc',
     width: 100,
     render: (row) => {
-      const typeMap: Record<number, { label: string; color: string }> = {
-        1: { label: '目录', color: 'info' },
-        2: { label: '页面', color: 'success' },
-        3: { label: '接口', color: 'warning' },
-        4: { label: '模块', color: 'primary' }
-      }
-      const typeInfo = typeMap[row.type] || { label: '未知', color: 'default' }
-      return (
-        <NTag type={typeInfo.color as any} size="small">
-          {row.typeDesc}
-        </NTag>
-      )
+      return <ResourceTypeTag type={row.type} typeDesc={row.typeDesc} />
     }
   },
   {

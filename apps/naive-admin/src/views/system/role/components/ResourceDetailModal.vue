@@ -11,9 +11,7 @@
             </div>
             <div class="flex items-center gap-2">
               <label class="font-medium text-gray-600 dark:text-gray-400 min-w-[80px]">资源类型：</label>
-              <n-tag size="small" :type="getTagType(resource?.type)">
-                {{ getResourceTypeName(resource?.type) }}
-              </n-tag>
+              <ResourceTypeTag :type="resource?.type" />
             </div>
             <div class="flex items-center gap-2" v-if="resource?.description">
               <label class="font-medium text-gray-600 dark:text-gray-400 min-w-[80px]">描述：</label>
@@ -121,6 +119,7 @@
 import { ref, computed, watch } from 'vue'
 import { useMessage, NModal, NCheckboxGroup, NForm, NFormItem, NText } from 'naive-ui'
 import { Icon } from '@iconify/vue'
+import ResourceTypeTag from '../../components/ResourceTypeTag.vue'
 
 // Props
 interface Props {
@@ -241,26 +240,6 @@ const availablePermissions = computed(() => {
 const getTotalPermissionCount = computed(() => selectedPermissions.value.length + customPermissions.value.length)
 
 // 工具函数
-const getTagType = (type?: number) => {
-  const typeMap: Record<number, 'default' | 'primary' | 'success' | 'warning' | 'error'> = {
-    1: 'primary', // MENU
-    2: 'success', // API
-    3: 'info', // PAGE
-    4: 'warning' // MODULE
-  }
-  return typeMap[type || 3]
-}
-
-const getResourceTypeName = (type?: number) => {
-  const typeNameMap: Record<number, string> = {
-    1: '菜单',
-    2: 'API',
-    3: '页面',
-    4: '模块'
-  }
-  return typeNameMap[type || 3]
-}
-
 const getMethodTagType = (method?: string) => {
   const methodTypeMap: Record<string, 'success' | 'info' | 'warning' | 'error'> = {
     GET: 'success',

@@ -519,6 +519,7 @@ export class RoleService {
    * 构建资源树（用于预览，返回简化的树结构）
    */
   private buildResourcesTreeForPreview(resources: any[], parentId?: string | null): any[] {
+    // TODO 为啥只有目录级
     return resources
       .filter((resource) => (parentId === null || parentId === undefined ? !resource.parentId : resource.parentId === parentId))
       .map((resource) => ({
